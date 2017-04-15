@@ -5,16 +5,17 @@ defmodule Tapper.Tracer.Trace do
         :config,        # configuration from supervisor
         :trace_id,      # root trace_id
         :span_id,       # root span id
-        :parent_id,     # parent of trace, or nil if new root trace
+        :parent_id,     # parent of trace, or :root if new root trace
         :sample,        # we are sampling this trace
         :debug,         # we are debugging this trace
+
         :spans,         # map of spans in this trace
         :timestamp,     # start of trace
         :end_timestamp, # end of trace
         :last_activity  # last time a span was started or ended
     ]
 
-    @type trace :: %__MODULE__{}
+    @type trace :: %__MODULE__{trace_id: Tapper.TraceId.t, span_id: Tapper.SpanId.t, parent_id: Tapper.SpanId.t | nil, spans: [Tapper.Traceer.SpanInfo.t]}
 
     defmodule SpanInfo do
         defstruct [
@@ -26,14 +27,8 @@ defmodule Tapper.Tracer.Trace do
             :annotations,
             :binary_annotations
         ]
-    end
-
-    defmodule Annotation do
-        defstruct [
-            :timestamp,
-            :value,
-            :host
-        ]
+        
+        @type t :: %__MODULE__{}
     end
 
     defmodule Endpoint do
@@ -43,6 +38,33 @@ defmodule Tapper.Tracer.Trace do
             :service_name,
             :ipv6
         ]
+
+        @type t :: %__MODULE__{}
+    end
+
+    defmodule Annotation do
+        defstruct [
+            :timestamp,
+            :value,
+            :host
+        ]
+
+        @type t :: %__MODULE__{}
+
+        def new(value, timestamp, endpoint = %Tapper.Tracer.Trace.Endpoint{}) do
+            %__MODULE__{
+                value: value,
+                timestamp: timestamp,
+                host: endpoint
+            }
+        end
+
+        def new(value, timestamp) do
+            %__MODULE__{
+                value: value,
+                timestamp: timestamp
+            }
+        end
     end
 
     defmodule BinaryAnnotation do
@@ -52,6 +74,8 @@ defmodule Tapper.Tracer.Trace do
             :annotation_type,
             :host
         ]
+
+        @type t :: %__MODULE__{}
     end
 
     @spec to_protocol_spans(%Tapper.Tracer.Trace{}) :: [%Tapper.Protocol.Span{}]

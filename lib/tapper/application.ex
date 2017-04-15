@@ -37,11 +37,17 @@ defmodule Tapper.Application do
   def host_ip() do
     {:ok, addresses} = :inet.getifaddrs()
 
-    hd(for {_, opts} <- addresses, 
+    ips = for {_, opts} <- addresses, 
         {:addr, addr} <- opts, 
         {:flags, flags} <- opts,
         :loopback in flags != true, 
-        tuple_size(addr) == 4, do: addr)
+        tuple_size(addr) == 4, do: addr
+
+    case ips do # NB when off network, won't be a non-loopback address!
+      [] -> {127,0,0,1}
+      _ -> hd(ips)
+    end
+
   end
 
 end

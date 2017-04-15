@@ -26,15 +26,23 @@ defmodule TracerTest do
       assert_receive {:DOWN, ^ref, _, _, _}, 1000
   end
 
-  # test "enter span" do
-  #     trace = Tapper.Tracer.start_trace()
-  #     span = Tapper.Tracer.start_span(trace)
-  #     end_span = Tapper.TraceId.end_span(span)
+  test "start_span, finish_span returns to previous id" do
+      trace = Tapper.Tracer.start(debug: true, name: "main-span")
+      start_span = Tapper.Tracer.start_span(trace, name: "sub-span")
+      finish_span = Tapper.Tracer.finish_span(start_span)
 
-  #     assert trace.trace_id == span.trace_id == end_span.trace_id
-  #     assert trace.span_id == end_span.span_id
-  #     assert span.span_id != trace.span_id
-  #     assert span.span_id != end_span.span_id
-  # end
+      # IO.inspect [trace.span_id, start_span.span_id, finish_span.span_id]
+
+      assert trace.trace_id == start_span.trace_id
+      assert trace.trace_id == finish_span.trace_id
+      
+      assert trace.span_id == finish_span.span_id
+
+      assert start_span.span_id != trace.span_id
+      assert start_span.span_id != finish_span.span_id
+
+      assert start_span.parent_ids == [trace.span_id]
+      assert finish_span.parent_ids == []      
+  end
 
 end

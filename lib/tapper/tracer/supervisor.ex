@@ -18,7 +18,7 @@ defmodule Tapper.TracerSupervisor do
     @spec start_tracer(Tapper.Tracer.Api.trace_init(), timestamp :: integer(), opts :: Keyword.t) :: Supervisor.on_start_child()
     def start_tracer(trace_init, timestamp, opts) do
 
-        result = Supervisor.start_child(__MODULE__, [trace_init, timestamp, opts]) # NB calls Tapper.Tracer.start_link()
+        result = Supervisor.start_child(__MODULE__, [trace_init, self(), timestamp, opts]) # NB calls Tapper.Tracer.start_link()
 
         case result do
             {:ok, _child} -> 
