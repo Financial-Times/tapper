@@ -81,7 +81,7 @@ defmodule Tapper.Tracer.Trace do
     @spec to_protocol_spans(%Tapper.Tracer.Trace{}) :: [%Tapper.Protocol.Span{}]
     def to_protocol_spans(%__MODULE__{trace_id: trace_id, debug: debug, spans: spans, end_timestamp: end_timestamp}) do
         
-        {hi, lo, _} = trace_id
+        {trace_id, _} = trace_id
 
         spans
         |> Map.values
@@ -93,11 +93,10 @@ defmodule Tapper.Tracer.Trace do
             end
 
             %Tapper.Protocol.Span{
-                trace_id: lo,
+                trace_id: trace_id,
                 name: span.name,
                 id: span.id,
                 parent_id: span.parent_id,
-                trace_id_high: hi,
                 debug: debug,
                 timestamp: span.start_timestamp,
                 duration: max(duration, 1),

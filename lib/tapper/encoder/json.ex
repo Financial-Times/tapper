@@ -22,21 +22,18 @@ defmodule Tapper.Encoder.Json do
         Poison.encode_to_iodata!(map)
     end
 
-    def encode_trace_id(map, %Tapper.Protocol.Span{trace_id_high: 0, trace_id: trace_id}) do
-        put_in(map, [:trace_id], Tapper.Id.Utils.to_hex64(trace_id))
-    end
-    def encode_trace_id(map, %Tapper.Protocol.Span{trace_id_high: trace_id_high, trace_id: trace_id_low}) do
-        put_in(map, [:trace_id], Tapper.Id.Utils.to_hex64(trace_id_high) <> Tapper.Id.Utils.to_hex64(trace_id_low))
+    def encode_trace_id(map, %Tapper.Protocol.Span{trace_id: trace_id}) do
+        put_in(map, [:trace_id], Tapper.Id.Utils.to_hex(trace_id))
     end
 
     def encode_span_id(map, span) do
-        put_in(map, [:id], Integer.to_string(span.id,16))
+        put_in(map, [:id], Tapper.Id.Utils.to_hex(span.id))
     end
 
     def encode_parent_id(map, span) do
         case span.parent_id do
             :root -> map
-            _ -> put_in(map, [:parent_id], Integer.to_string(span.parent_id, 16))
+            _ -> put_in(map, [:parent_id], Tapper.Id.Utils.to_hex(span.parent_id))
         end
     end
 

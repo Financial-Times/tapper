@@ -8,8 +8,7 @@ defmodule Tapper.Protocol.Span do
         :binary_annotations,
         :debug,
         :timestamp,
-        :duration,
-        :trace_id_high
+        :duration
     ]
 end
 

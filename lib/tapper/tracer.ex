@@ -1,5 +1,6 @@
 defmodule Tapper.Tracer do
     use GenServer
+    use Bitwise
     require Logger
 
     @behaviour Tapper.Tracer.Api
@@ -26,7 +27,8 @@ defmodule Tapper.Tracer do
         NB if neither `sample` nor `debug` are set, all operations on this trace become a no-op.
     """
     def start(opts \\ []) when is_list(opts) do
-        trace_id = {_, span_id, _} = Tapper.TraceId.generate()
+        trace_id = Tapper.TraceId.generate()
+        span_id = elem(trace_id,0) &&& 0xFFFFFFFFFFFFFFFF # lower 64 bits
         timestamp = System.os_time(:microseconds)
 
         # check and default type to :client

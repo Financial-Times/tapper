@@ -3,14 +3,13 @@ defmodule TraceIdTest do
   doctest Tapper.TraceId
 
   test "can generate id" do
-    {hi, lo, uniq} = Tapper.TraceId.generate()
-    assert is_integer(hi)
-    assert is_integer(lo)
+    {id, uniq} = Tapper.TraceId.generate()
+    assert is_integer(id)
     assert is_integer(uniq)
   end
 
   test "format" do
-    assert Tapper.TraceId.format({100,200,300}) == "#Tapper.TraceId<000000000000006400000000000000C8.300>"
+    assert Tapper.TraceId.format({100,200}) == "#Tapper.TraceId<64.200>"
   end
 end
 
@@ -24,7 +23,7 @@ defmodule SpanIdTest do
   end
 
   test "format" do
-    assert Tapper.SpanId.format(1024) == "#Tapper.SpanId<0000000000000400>"
+    assert Tapper.SpanId.format(1024) == "#Tapper.SpanId<400>"
   end
 end
 
@@ -111,17 +110,17 @@ defmodule TapperIdTest do
       parent_ids: []
     }
 
-    regex = ~r/#Tapper.Id<(.+),(.+):(.+)>/
+    regex = ~r/#Tapper.Id<#Tapper.TraceId<(.+)\.(.+)>:#Tapper.SpanId<(.+)>>/
     assert Regex.match?(regex,inspect(id))
 
-    [_, hi, lo, span_id] = Regex.run(regex, inspect(id))
+    [_, trace_id, uniq, span_id] = Regex.run(regex, inspect(id))
 
-    {hi, ""} = Integer.parse(hi, 16)
-    {lo, ""} = Integer.parse(lo, 16)
+    {trace_id, ""} = Integer.parse(trace_id, 16)
+    {uniq, ""} = Integer.parse(uniq, 10)
     {span_id, ""} = Integer.parse(span_id, 16)
 
-    assert hi == elem(id.trace_id,0)
-    assert lo == elem(id.trace_id,1)
+    assert trace_id == elem(id.trace_id,0)
+    assert uniq == elem(id.trace_id,1)
     assert span_id == id.span_id
   end
   
@@ -132,20 +131,20 @@ defmodule TapperIdTest do
       parent_ids: []
     }
 
-    regex = ~r/#Tapper.Id<(.+),(.+):(.+)>/
+    regex = ~r/#Tapper.Id<#Tapper.TraceId<(.+)\.(.+)>:#Tapper.SpanId<(.+)>>/
 
     chars = to_string(id)
 
     assert Regex.match?(regex, chars)
 
-    [_, hi, lo, span_id] = Regex.run(regex, chars)
+    [_, trace_id, uniq, span_id] = Regex.run(regex, chars)
 
-    {hi, ""} = Integer.parse(hi, 16)
-    {lo, ""} = Integer.parse(lo, 16)
+    {trace_id, ""} = Integer.parse(trace_id, 16)
+    {uniq, ""} = Integer.parse(uniq, 10)
     {span_id, ""} = Integer.parse(span_id, 16)
 
-    assert hi == elem(id.trace_id,0)
-    assert lo == elem(id.trace_id,1)
+    assert trace_id == elem(id.trace_id,0)
+    assert uniq == elem(id.trace_id,1)
     assert span_id == id.span_id
   end
 end
