@@ -19,7 +19,12 @@ defmodule Tapper do
   ```
   """
   
+  def start(opts \\ []), do: Tapper.Tracer.start(opts)
+  def join(trace_id, span_id, parent_id, sample, debug, opts \\ []), do: Tapper.Tracer.join(trace_id, span_id, parent_id, sample, debug, opts)
 
+  def finish(id, opts \\ []), do: Tapper.Tracer.finish(id, opts)
 
-  
+  def start_span(id, opts \\ []), do: Tapper.Tracer.start_span(id, opts)
+  def finish_span(id, opts \\ []), do: Tapper.Tracer.finish_span(id, opts)
+
 end

@@ -106,10 +106,12 @@ defmodule Tapper.Tracer.Trace do
         end)
     end
 
+    def to_protocol_annotations(annotations) when is_nil(annotations), do: []
     def to_protocol_annotations(annotations) when is_list(annotations) do
         Enum.map(annotations, &to_protocol_annotation/1)
     end
 
+    def to_protocol_binary_annotations(binary_annotations) when is_nil(binary_annotations), do: []
     def to_protocol_binary_annotations(binary_annotations) when is_list(binary_annotations) do
         Enum.map(binary_annotations, &to_protocol_binary_annotation/1)
     end
@@ -133,10 +135,9 @@ defmodule Tapper.Tracer.Trace do
 
     def to_protocol_endpoint(nil), do: nil
     def to_protocol_endpoint(host = %__MODULE__.Endpoint{}) do
-        {a,b,c,d} = host.ipv4
-        
+      
         %Tapper.Protocol.Endpoint{
-            ipv4: <<a,b,c,d>>,
+            ipv4: host.ipv4,
             port: host.port,
             service_name: host.service_name
         }

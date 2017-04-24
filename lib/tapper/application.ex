@@ -14,7 +14,7 @@ defmodule Tapper.Application do
     config = %{
       host_info: %{
         ipv4: Application.get_env(:tapper, :ipv4, ipv4),
-        system_id: Application.get_env(:tapper, :system_id, "")
+        system_id: Application.get_env(:tapper, :system_id, "unknown")
       },
       reporter: Application.get_env(:tapper, :reporter, Tapper.Reporter.Console)
     }

@@ -17,10 +17,10 @@ defmodule Tapper.Tracer do
         Options:
 
            * `name` - the name of the span.
-           * `type` - the type of the span, i.e.. `:client`, `:server`; defaults to `:client`.
-           * `endpoint` - the remote Endpoint (when `:client`).
            * `sample` - boolean, whether to sample this trace or not.
            * `debug` - boolean, enabled debug.
+           * `type` - the type of the span, i.e.. `:client`, `:server`; defaults to `:client`.
+           * `endpoint` - the remote Endpoint (when `:client`).
            * `ttl` - how long this span should live before automatically finishing it 
              (useful for long-running async operations); milliseconds.
 
@@ -32,8 +32,8 @@ defmodule Tapper.Tracer do
         timestamp = System.os_time(:microseconds)
 
         # check and default type to :client
-        opts = default_type_opts(opts, :client)
-        :ok = check_endpoint_opt(opts)
+        opts = default_type_opts(opts, :client) # if we're starting a trace, we're a client
+        :ok = check_endpoint_opt(opts) # if we're sending an endpoint, check it's an %Endpoint{}
 
         sample = Keyword.get(opts, :sample, false) === true
         debug = Keyword.get(opts, :debug, false) === true
@@ -71,7 +71,7 @@ defmodule Tapper.Tracer do
     end
 
     defp check_endpoint_opt(opts) do
-        case Keyword.get(opts, :endpoint, nil) do
+        case opts[:endpoint] do
             nil -> :ok
             _endpoint = %Trace.Endpoint{} -> :ok
             _ -> {:error, "invalid endpoint: expected struct %Tapper.Tracer.Trace.Endpoint{}"}
@@ -104,7 +104,7 @@ defmodule Tapper.Tracer do
         NB if neither `sample` nor `debug` are set, all operations on this trace become a no-op.
     """
     def join(trace_id, span_id, parent_id, sample, debug, opts \\ []), do: join({trace_id, span_id, parent_id, sample, debug}, opts)
-    def join({trace_id, span_id, _parent_id, sample, debug} = trace_init, opts \\ []) when is_list(opts) do
+    def join(trace_init = {trace_id, span_id, _parent_id, sample, debug}, opts \\ []) when is_list(opts) do
 
         timestamp = System.os_time(:microseconds)
 
@@ -217,13 +217,16 @@ defmodule Tapper.Tracer do
 
         Logger.info("Start Trace #{Tapper.TraceId.format(trace_id)}")
 
-        endpoint = self_as_endpoint(config)
+        endpoint = case opts[:type] do
+            :client -> self_as_endpoint(config)
+            :server -> opts[:endpoint]
+        end
 
         # we shouldn't be stopped by our parent's exit, and nor should we finish 
         # the trace on our parent's exit, because async processes may still be processing; 
         # we use either an explicit `finish\1` or the `ttl` option to terminate hanging traces.
         # TODO support `ttl` option
-        Process.unlink(pid)
+        # Process.unlink(pid)
 
         span_info = initial_span_info(span_id, parent_id, timestamp, endpoint, opts)
 
@@ -239,7 +242,7 @@ defmodule Tapper.Tracer do
             debug: debug
         }
 
-        IO.inspect {:ok, trace}
+        {:ok, trace}
     end
 
     @doc "via finish()"
@@ -262,7 +265,7 @@ defmodule Tapper.Tracer do
         trace = put_in(trace.spans[span_info.id], span_info)
         trace = put_in(trace.last_activity, span_info.start_timestamp)
 
-        IO.inspect {:noreply, trace}
+        {:noreply, trace}
     end
 
     @doc "via finish_span()"
@@ -272,7 +275,7 @@ defmodule Tapper.Tracer do
         trace = put_in(trace.spans[span_info.id].end_timestamp, span_info.end_timestamp) 
         trace = put_in(trace.last_activity, span_info.end_timestamp)
 
-        IO.inspect {:noreply, trace}
+        {:noreply, trace}
     end
 
     def handle_cast(msg = {:annotation, span_id, value, timestamp}, trace) do
