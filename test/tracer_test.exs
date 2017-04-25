@@ -5,7 +5,7 @@ defmodule TracerTest do
   test "start root trace starts process" do
     id = Tapper.Tracer.start(debug: true)
 
-    state = :sys.get_state(Tapper.Tracer.via_tuple(id))
+    state = :sys.get_state(Tapper.Tracer.Server.via_tuple(id))
 
     assert state.trace_id == id.trace_id
     assert state.span_id == id.span_id

@@ -9,7 +9,7 @@ defmodule Tapper.TracerSupervisor do
     def init([config]) do
         Logger.debug(fn -> "TracerSupervisor init #{:erlang.pid_to_list(self())}" end)
         supervise(
-            [worker(Tapper.Tracer, [config], restart: :temporary)], # template for children, with config as first param
+            [worker(Tapper.Tracer.Server, [config], restart: :temporary)], # template for children, with config as first param
             strategy: :simple_one_for_one # i.e. on demand
         )
     end
@@ -18,7 +18,7 @@ defmodule Tapper.TracerSupervisor do
     @spec start_tracer(Tapper.Tracer.Api.trace_init(), timestamp :: integer(), opts :: Keyword.t) :: Supervisor.on_start_child()
     def start_tracer(trace_init, timestamp, opts) do
 
-        result = Supervisor.start_child(__MODULE__, [trace_init, self(), timestamp, opts]) # NB calls Tapper.Tracer.start_link()
+        result = Supervisor.start_child(__MODULE__, [trace_init, self(), timestamp, opts]) # NB calls Tapper.Tracer.Server.start_link()
 
         case result do
             {:ok, _child} -> 
