@@ -31,8 +31,6 @@ defmodule TracerTest do
       start_span = Tapper.Tracer.start_span(trace, name: "sub-span")
       finish_span = Tapper.Tracer.finish_span(start_span)
 
-      # IO.inspect [trace.span_id, start_span.span_id, finish_span.span_id]
-
       assert trace.trace_id == start_span.trace_id
       assert trace.trace_id == finish_span.trace_id
       

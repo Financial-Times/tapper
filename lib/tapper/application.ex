@@ -20,7 +20,6 @@ defmodule Tapper.Application do
     }
 
     Logger.info("Starting Tapper Application")
-    IO.inspect("XX Starting Tapper Application")
     # Define workers and child supervisors to be supervised
     children = [
       supervisor(Registry, [:unique, Tapper.Tracers]),
@@ -34,6 +33,7 @@ defmodule Tapper.Application do
   end
 
   @doc "get the first non-loopback IPv4 interface address tuple"
+  @spec host_ip() :: {integer(), integer(), integer(), integer()}
   def host_ip() do
     {:ok, addresses} = :inet.getifaddrs()
 

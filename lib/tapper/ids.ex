@@ -38,7 +38,6 @@ defmodule Tapper.Id do
     end
 
     defimpl String.Chars do
-        import Inspect.Algebra
         def to_string(id) do
             "#Tapper.Id<" <> Tapper.TraceId.format(id.trace_id) <> ":" <> Tapper.SpanId.format(id.span_id) <> ">"
         end
@@ -50,9 +49,9 @@ defmodule Tapper.TraceId do
     @moduledoc """
     Generate, or format a top-level trace id.
 
-    The TraceId comprises the 128-bit Zipkin id (with 64-bit compatibility),
-    with a second component which is a per-VM unique key, to disabiguate parallel requests to the same
-    server, so each request gets it's own trace server, which prevents lifecycle confusion.
+    The TraceId comprises the 128-bit Zipkin id, with a second component which is a per-VM unique key, 
+    to disambiguate parallel requests to the same server, so each request gets it's own trace server, 
+    which prevents lifecycle confusion.
     """
     @type int128 :: integer()
 

@@ -18,8 +18,6 @@ defmodule JsonTest do
 
         json = Tapper.Encoder.Json.encode!([proto_span])
 
-        # IO.inspect json
-
         assert is_list(json)
         assert json == [91,
             [[123,
@@ -129,8 +127,6 @@ defmodule JsonTest do
         json_iolist = Tapper.Encoder.Json.encode!([proto_span])
 
         assert is_list(json_iolist)
-
-        # IO.inspect(IO.iodata_to_binary(json_iolist))
 
         json = Poison.decode!(IO.iodata_to_binary(json_iolist))
 
