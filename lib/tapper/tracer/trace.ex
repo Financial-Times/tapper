@@ -1,5 +1,5 @@
 defmodule Tapper.Tracer.Trace do
-    
+
     @doc "Tracer state: the state of a single trace session."
     defstruct [
         :config,        # configuration from supervisor
@@ -12,7 +12,8 @@ defmodule Tapper.Tracer.Trace do
         :spans,         # map of spans in this trace
         :timestamp,     # start of trace
         :end_timestamp, # end of trace
-        :last_activity  # last time a span was started or ended
+        :last_activity, # last time a span was started, ended or updated
+        :ttl            # time to live in ms, past last_activity
     ]
 
     @type trace :: %__MODULE__{trace_id: Tapper.TraceId.t, span_id: Tapper.SpanId.t, parent_id: Tapper.SpanId.t | nil, spans: [Tapper.Traceer.SpanInfo.t]}
@@ -27,17 +28,6 @@ defmodule Tapper.Tracer.Trace do
             :annotations,
             :binary_annotations
         ]
-        
-        @type t :: %__MODULE__{}
-    end
-
-    defmodule Endpoint do
-        defstruct [
-            :ipv4,
-            :port,
-            :service_name,
-            :ipv6
-        ]
 
         @type t :: %__MODULE__{}
     end
@@ -51,7 +41,7 @@ defmodule Tapper.Tracer.Trace do
 
         @type t :: %__MODULE__{}
 
-        def new(value, timestamp, endpoint = %Tapper.Tracer.Trace.Endpoint{}) do
+        def new(value, timestamp, endpoint = %Tapper.Endpoint{}) do
             %__MODULE__{
                 value: value,
                 timestamp: timestamp,
@@ -72,15 +62,32 @@ defmodule Tapper.Tracer.Trace do
             :key,
             :value,
             :annotation_type,
-            :host
+            :host # optional
         ]
 
         @type t :: %__MODULE__{}
+
+        def new(key, value, type, endpoint = %Tapper.Endpoint{}) do
+            %__MODULE__{
+                key: key,
+                value: value,
+                annotation_type: type,
+                host: endpoint
+            }
+        end
+
+        def new(key, value, type) do
+            %__MODULE__{
+                key: key,
+                value: value,
+                annotation_type: type,
+            }
+        end
     end
 
     @spec to_protocol_spans(%Tapper.Tracer.Trace{}) :: [%Tapper.Protocol.Span{}]
     def to_protocol_spans(%__MODULE__{trace_id: trace_id, debug: debug, spans: spans, end_timestamp: end_timestamp}) do
-        
+
         {trace_id, _} = trace_id
 
         spans
@@ -134,8 +141,8 @@ defmodule Tapper.Tracer.Trace do
     end
 
     def to_protocol_endpoint(nil), do: nil
-    def to_protocol_endpoint(host = %__MODULE__.Endpoint{}) do
-      
+    def to_protocol_endpoint(host = %Tapper.Endpoint{}) do
+
         %Tapper.Protocol.Endpoint{
             ipv4: host.ipv4,
             port: host.port,

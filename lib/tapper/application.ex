@@ -23,7 +23,7 @@ defmodule Tapper.Application do
     # Define workers and child supervisors to be supervised
     children = [
       supervisor(Registry, [:unique, Tapper.Tracers]),
-      supervisor(Tapper.TracerSupervisor, [config]),
+      supervisor(Tapper.Tracer.Supervisor, [config]),
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
@@ -37,13 +37,13 @@ defmodule Tapper.Application do
   def host_ip() do
     {:ok, addresses} = :inet.getifaddrs()
 
-    ips = for {_, opts} <- addresses, 
-        {:addr, addr} <- opts, 
+    ips = for {_, opts} <- addresses,
+        {:addr, addr} <- opts,
         {:flags, flags} <- opts,
-        :loopback in flags != true, 
+        :loopback in flags != true,
         tuple_size(addr) == 4, do: addr
 
-    case ips do # NB when off network, won't be a non-loopback address!
+    case ips do # NB when off network, there won't be a non-loopback address!
       [] -> {127,0,0,1}
       _ -> hd(ips)
     end
