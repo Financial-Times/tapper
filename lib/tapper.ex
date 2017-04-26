@@ -90,8 +90,7 @@ defmodule Tapper do
     ### Arguments
         * `id` - Tapper id
     ### Options
-        * `local` (string) - provide a local span context name (lc binary annotation)
-
+        * `local` (string) - provide a local span context name (via a "lc"" binary annotation)
     """
     def start_span(id, opts \\ []), do: Tapper.Tracer.start_span(id, opts)
 
@@ -101,60 +100,75 @@ defmodule Tapper do
     @doc "name (or rename) the current span"
     def name(id, name), do: Tapper.Tracer.name(id, name)
 
+    @doc "mark a server_receive event; see also `:server` option on `Tapper.start/1`"
     def server_receive(id), do: Tapper.Tracer.annotate(id, :sr)
+    @doc "mark a server_send event"
     def server_send(id), do: Tapper.Tracer.annotate(id, :ss)
 
+    @doc "mark a client_send event; see also `:client` option on `Tapper.start/1`"
     def client_send(id), do: Tapper.Tracer.annotate(id, :cs)
+    @doc "mark a client_receive event"
     def client_receive(id), do: Tapper.Tracer.annotate(id, :cr)
 
+    @doc "mark a send event"
     def wire_send(id), do: Tapper.Tracer.annotate(id, :ws)
+    @doc "mark a receive event"
     def wire_receive(id), do: Tapper.Tracer.annotate(id, :wr)
 
-    def annotate(id, value, endpoint \\ nil), do: Tapper.Tracer.annotate(id, value, endpoint: endpoint)
+    @doc "mark an error event"
+    def error(id), do: Tapper.Tracer.annotate(id, :error)
 
-    @doc "Tag the current span with HTTP host information."
-    def http_host(id, hostname) when is_binary(hostname), do: Tapper.Tracer.binary_annotate(id, :string, "http.host", hostname)
+    @doc "mark an event, general interface"
+    def annotate(id, type, endpoint \\ nil), do: Tapper.Tracer.annotate(id, type, endpoint: endpoint)
 
-    @doc "Tag the current span with HTTP method information."
-    def http_method(id, method) when is_binary(method), do: Tapper.Tracer.binary_annotate(id, :string, "http.method", method)
 
-    @doc "Tag the current span with HTTP path information (should be without query parameters)"
-    def http_path(id, path) when is_binary(path), do: Tapper.Tracer.binary_annotate(id, :string, "http.path", path)
-
-    @doc "Tag the current span with HTTP URL information"
-    def http_url(id, url) when is_binary(url), do: Tapper.Tracer.binary_annotate(id, :string, "http.url", url)
-
-    @doc "Tag the current span with an HTTP status code"
-    def http_status_code(id, code) when is_integer(code), do: Tapper.Tracer.binary_annotate(id, :i16, "http.status_code", code)
-
-    @doc "Tag the current span with an HTTP request size"
-    def http_request_size(id, size) when is_integer(size), do: Tapper.Tracer.binary_annotate(id, :i64, "http.request.size", size)
-
-    @doc "Tag the current span with an HTTP reponse size"
-    def http_response_size(id, size) when is_integer(size), do: Tapper.Tracer.binary_annotate(id, :i64, "http.response.size", size)
-
-    @doc "Tag the current span with the client's address"
+    @doc "Tag with the client's address"
     def client_address(id, host = %Tapper.Endpoint{}), do: Tapper.Tracer.binary_annotate(id, :bool, "ca", true, host)
 
-    @doc "Tag the current span with the server's address"
+    @doc "Tag with the server's address"
     def server_address(id, host = %Tapper.Endpoint{}), do: Tapper.Tracer.binary_annotate(id, :bool, "sa", true, host)
 
-    @doc """
-    Tag the current span with a binary annotation.
+    @doc "Tag with HTTP host information."
+    def http_host(id, hostname) when is_binary(hostname), do: Tapper.Tracer.binary_annotate(id, :string, "http.host", hostname)
 
-    ```
-    id
-    |> tag(id, "user-id", user_id)
-    |> tag(id, :bool, "synthetic", true)
-    ```
+    @doc "Tag with HTTP method information."
+    def http_method(id, method) when is_binary(method), do: Tapper.Tracer.binary_annotate(id, :string, "http.method", method)
 
-    NB there is no need to update the id.
-    """
+    @doc "Tag with HTTP path information (should be without query parameters)"
+    def http_path(id, path) when is_binary(path), do: Tapper.Tracer.binary_annotate(id, :string, "http.path", path)
+
+    @doc "Tag with HTTP URL information"
+    def http_url(id, url) when is_binary(url), do: Tapper.Tracer.binary_annotate(id, :string, "http.url", url)
+
+    @doc "Tag with an HTTP status code"
+    def http_status_code(id, code) when is_integer(code), do: Tapper.Tracer.binary_annotate(id, :i16, "http.status_code", code)
+
+    @doc "Tag with an HTTP request size"
+    def http_request_size(id, size) when is_integer(size), do: Tapper.Tracer.binary_annotate(id, :i64, "http.request.size", size)
+
+    @doc "Tag with an HTTP reponse size"
+    def http_response_size(id, size) when is_integer(size), do: Tapper.Tracer.binary_annotate(id, :i64, "http.response.size", size)
+
+    @doc "Tag with a database query"
+    def sql_query(id, query) when is_binary(query), do: Tapper.Tracer.binary_annotate(id, :string, "sql.query", query)
+
+    @doc "Tag with an error message"
+    def error(id, message) when is_binary(message), do: Tapper.Tracer.binary_annotate(id, :string, :error, message)
+
+    @doc "Tag with a general (key,value,host) binary annotation, determining type of annotation automatically"
     def tag(id, key, value, opts \\ [])
     def tag(id, key, value, opts) when is_binary(key) and is_binary(value), do: Tapper.Tracer.binary_annotate(id, :string, key, value, opts)
     def tag(id, key, value, opts) when is_binary(key) and is_integer(value), do: Tapper.Tracer.binary_annotate(id, :i64, key, value, opts)
     def tag(id, key, value, opts) when is_binary(key) and is_float(value), do: Tapper.Tracer.binary_annotate(id, :double, key, value, opts)
+    def tag(id, key, value, opts) when is_binary(key), do: Tapper.Tracer.binary_annotate(id, :string, key, inspect(value), opts)
 
+    @doc """
+    Tag with a general binary annotation.
+
+    ```
+    binary_annotation(id, :i16, "tab", 4, host: remote)
+    ```
+    """
     def binary_annotation(id, type, key, value, opts \\ [])
     def binary_annotation(id, type, key, value, opts) when type in [:string, :bool, :i16, :i32, :i64, :double] and is_binary(key), do: Tapper.Tracer.binary_annotate(id, type, key, value, opts)
 
