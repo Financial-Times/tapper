@@ -19,7 +19,7 @@ defmodule Test.Helper.Server do
     end
 
     def init_with_opts(opts \\ []) do
-        config = config()
+        config = opts[:config] || config()
         trace_id = Tapper.TraceId.generate()
         span_id = Tapper.SpanId.generate()
         timestamp = System.os_time(:microseconds)

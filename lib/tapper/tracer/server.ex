@@ -76,16 +76,21 @@ defmodule Tapper.Tracer.Server do
     end
 
     @doc "via Tapper.Tracer.finish/2"
-    # TODO support flush?
-    def handle_cast(msg = {:finish, timestamp, _opts}, trace) do
+    def handle_cast(msg = {:finish, timestamp, opts}, trace) do
         Logger.debug(fn -> inspect({trace.trace_id, msg}) end)
 
-        trace = %Trace{trace | end_timestamp: timestamp}
+        case opts[:async] do
+            true ->
+                Logger.info("Finish Trace #{Tapper.TraceId.format(trace.trace_id)} ASYNC")
+                handle_cast({:annotation, trace.span_id, :async, timestamp, nil}, trace)
+            _ ->
+                trace = %Trace{trace | end_timestamp: timestamp}
 
-        report_trace(trace)
+                report_trace(trace)
 
-        Logger.info("End Trace #{Tapper.TraceId.format(trace.trace_id)}")
-        {:stop, :normal, []}
+                Logger.info("Finish Trace #{Tapper.TraceId.format(trace.trace_id)}")
+                {:stop, :normal, []}
+        end
     end
 
     @doc "via start_span()"
@@ -210,7 +215,10 @@ defmodule Tapper.Tracer.Server do
 
         spans = Trace.to_protocol_spans(trace)
 
-        apply(trace.config.reporter, :ingest, [spans])
+        case trace.config.reporter do
+            fun when is_function(fun,1) -> fun.(spans)
+            mod when is_atom(mod) -> apply(mod, :ingest, [spans])
+        end
     end
 
 end

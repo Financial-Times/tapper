@@ -5,7 +5,7 @@ defmodule Tapper.Tracer.Annotations do
     def annotation(value, timestamp, endpoint)
     def annotation(value, timestamp, endpoint = %Tapper.Endpoint{}) when is_atom(value) and is_integer(timestamp) do
         cond do
-            value in [:cs,:cr,:ss,:sr,:ws,:wr,:csf,:crf,:ssf,:srf,:error] ->
+            value in [:cs,:cr,:ss,:sr,:ws,:wr,:csf,:crf,:ssf,:srf,:error,:async] ->
                 Trace.Annotation.new(value, timestamp, endpoint)
             true -> nil
         end

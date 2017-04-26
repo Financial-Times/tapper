@@ -65,7 +65,7 @@ Tapper.finish(id)
 
 NB in general `start*` and `finish*` return an updated id, all other functions return the same id as before (so you don't need to propagate it backwards to just add annotations).
 
-## Implementation
+## Implementation
 
 The Tapper API starts, and communicates with a `gen_server` process (`Tapper.Tracer.Server`), with one server started per trace; all traces are thus isolated.
 
@@ -75,7 +75,7 @@ When a trace is terminated with `Tapper.finish/1`, the server sends the trace to
 
 If a trace is not terminated by an API call, Tapper will time-out after a pre-determined time since the last API operation (`:ttl` option on trace creation, default 30s), and terminate the trace as if `Tapper.finish/1` was called. This will also happen if the client process exits before finishing the trace.
 
-If the API client registers asynchronous spans, and exits before they have finished, it should call `finish/1` passing the `async: true` option (TODO async currently does nothing); async spans should be closed by their processes calling `finish_span/2`, otherwise they will eventually be terminated by the TTL behaviour.
+If the API client registers asynchronous spans, and exits before they have finished, it should call `finish/1` passing the `async: true` option; async spans should be closed by their processes calling `finish_span/2`, otherwise they will eventually be terminated by the TTL behaviour.
 
 The API client is not effected by the termination, normally or otherwise, of a trace-server, and the trace-server is likewise isolated from the API client, i.e. there is a separate supervision tree. 
 Thus if the API client crashes, then the span can still be reported. The trace-server monitors the API client process for abnormal termination, and annotates the trace with an error (TODO monitoring).
