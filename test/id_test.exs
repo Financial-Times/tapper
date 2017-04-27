@@ -11,6 +11,15 @@ defmodule TraceIdTest do
   test "format" do
     assert Tapper.TraceId.format({100,200}) == "#Tapper.TraceId<64.200>"
   end
+
+  test "parse" do
+      assert :error == Tapper.TraceId.parse("")
+      assert :error == Tapper.TraceId.parse("xxx")
+      assert :error == Tapper.TraceId.parse("123x")
+      assert :error == Tapper.TraceId.parse("x123")
+      assert {:ok, {291, u}} = Tapper.TraceId.parse("123")
+      assert is_integer(u)
+  end
 end
 
 defmodule SpanIdTest do
@@ -24,6 +33,14 @@ defmodule SpanIdTest do
 
   test "format" do
     assert Tapper.SpanId.format(1024) == "#Tapper.SpanId<400>"
+  end
+
+  test "parse" do
+      assert :error == Tapper.SpanId.parse("")
+      assert :error == Tapper.SpanId.parse("xxx")
+      assert :error == Tapper.SpanId.parse("123x")
+      assert :error == Tapper.SpanId.parse("x123")
+      assert {:ok, 291} = Tapper.SpanId.parse("123")
   end
 end
 

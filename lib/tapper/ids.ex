@@ -60,8 +60,7 @@ defmodule Tapper.TraceId do
     @spec generate() :: t
     def generate() do
         <<id :: size(128)>> = :crypto.strong_rand_bytes(16)
-        uniq = System.unique_integer([:monotonic, :positive])
-        {id,uniq}
+        {id, uniq()}
     end
 
     def format({id, unique}) do
@@ -72,13 +71,23 @@ defmodule Tapper.TraceId do
         Tapper.Id.Utils.to_hex(id)
     end
 
+    @spec parse(String.t) :: {:ok, t} | :error
+    def parse(s) do
+        case Integer.parse(s, 16) do
+            :error -> :error
+            {integer, remaining} when byte_size(remaining) == 0 -> {:ok, {integer, uniq()}}
+            _ -> :error
+        end
+    end
+
+    defp uniq(), do: System.unique_integer([:monotonic, :positive])
 end
 
 defmodule Tapper.SpanId do
     @moduledoc """
     Generate, or parse a span id.
 
-    A span id is a 64-bit bitfield.
+    A span id is a 64-bit integer.
     """
     @type int64 :: integer()
     @type t :: int64()
@@ -95,5 +104,14 @@ defmodule Tapper.SpanId do
 
     def to_hex(span_id) do
         Tapper.Id.Utils.to_hex(span_id)
+    end
+
+    @spec parse(String.t) :: {:ok, t} | :error
+    def parse(s) do
+        case Integer.parse(s, 16) do
+            :error -> :error
+            {integer, remaining} when byte_size(remaining) == 0 -> {:ok, integer}
+            _ -> :error
+        end
     end
 end
