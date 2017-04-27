@@ -223,6 +223,8 @@ defmodule Tapper.Tracer do
         timestamp = System.os_time(:microseconds)
 
         GenServer.cast(via_tuple(id), {:binary_annotation, span_id, type, key, value, timestamp, check_endpoint(endpoint)})
+
+        id
     end
 
     def whereis(%Tapper.Id{trace_id: trace_id}), do: whereis(trace_id)
