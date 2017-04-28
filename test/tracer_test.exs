@@ -2,6 +2,8 @@ defmodule TracerTest do
   use ExUnit.Case
   doctest Tapper.Tracer
 
+  import Test.Helper.Server
+
   test "start root trace starts process" do
     id = Tapper.Tracer.start(debug: true)
 
@@ -20,7 +22,7 @@ defmodule TracerTest do
 
       [{pid,_}] = Tapper.Tracer.whereis(id.trace_id)
       ref = Process.monitor(pid)
-      
+
       Tapper.Tracer.finish(id)
 
       assert_receive {:DOWN, ^ref, _, _, _}, 1000
@@ -33,14 +35,46 @@ defmodule TracerTest do
 
       assert trace.trace_id == start_span.trace_id
       assert trace.trace_id == finish_span.trace_id
-      
+
       assert trace.span_id == finish_span.span_id
 
       assert start_span.span_id != trace.span_id
       assert start_span.span_id != finish_span.span_id
 
       assert start_span.parent_ids == [trace.span_id]
-      assert finish_span.parent_ids == []      
+      assert finish_span.parent_ids == []
+  end
+
+  test "add binary_annotation returns same id" do
+      {ref, reporter} = msg_reporter()
+
+      id1 = Tapper.Tracer.start(debug: true, name: "main-span", reporter: reporter)
+      id2 = Tapper.Tracer.binary_annotate(id1, :string, "test", "value")
+
+      assert id1 == id2
+      assert %Tapper.Id{} = id1
+
+      Tapper.Tracer.finish(id2)
+
+      assert_receive {^ref, spans}, 5000
+      assert is_list(spans)
+  end
+
+  test "add annotation returns id same id" do
+      {ref, reporter} = msg_reporter()
+
+      id1 = Tapper.Tracer.start(debug: true, name: "main-span", reporter: reporter)
+      id2 = Tapper.Tracer.annotate(id1, :cr)
+
+      assert id1 == id2
+      assert %Tapper.Id{} = id1
+
+      Tapper.Tracer.finish(id2)
+
+      assert_receive {^ref, spans}, 5000
+      assert is_list(spans)
+  end
+
   test "ignored id" do
     assert :ignore == Tapper.Tracer.start_span(:ignore)
     assert :ignore == Tapper.Tracer.finish_span(:ignore)

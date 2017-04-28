@@ -1,4 +1,6 @@
 defmodule Test.Helper.Server do
+
+    # create some basic Tapper.Tracer.Server configuration
     def config() do
         %{
             host_info: %{
@@ -8,6 +10,7 @@ defmodule Test.Helper.Server do
         }
     end
 
+    # create a random endpoint for testing
     def random_endpoint() do
         n = :rand.uniform(254)
         p = :rand.uniform(9999)
@@ -18,6 +21,7 @@ defmodule Test.Helper.Server do
         }
     end
 
+    # initialise a Tapper.Tracer.Server outside of GenServer, in sample mode, passing `opts`
     def init_with_opts(opts \\ []) do
         config = opts[:config] || config()
         trace_id = Tapper.TraceId.generate()
@@ -26,6 +30,31 @@ defmodule Test.Helper.Server do
 
         {:ok, trace, _ttl} = Tapper.Tracer.Server.init([config, {trace_id, span_id, :root, true, false}, self(), timestamp, opts])
         {trace, span_id}
+    end
+
+    @doc """
+    returns a function (arity 1) which, when called, sends a message to the original caller, passing the `term()` 
+    given to the function.
+
+    Use in tests to receive values from (possibly async) functions which take, or are configured with,
+    a callback function, e.g. the `Tapper.Tracer.Server` reporter.
+
+    ### Example
+    ```
+    {ref, fun} = msg_reporter()
+
+    # invoked from another function/process
+    spawn(fn -> fun.("hello") end)
+
+    assert_receive {ref, "hello"}
+    ```
+    """
+    @spec msg_reporter() :: {ref :: reference(), (arg :: term() -> {ref :: reference(), arg :: term()}) }
+    def msg_reporter() do
+        self_pid = self()
+        ref = make_ref()
+        fun = fn(term) -> send(self_pid, {ref, term}) end
+        {ref, fun}
     end
 
 end

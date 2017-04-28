@@ -1,66 +1,102 @@
 defmodule Tracer.Server.SpanTest do
-    use ExUnit.Case
 
-    import Test.Helper.Server
+  # NB these tests run outside of a GenServer, i.e. we call the server directly in a single test process,
 
-    require Logger
+  use ExUnit.Case
 
-    def new_agent() do
-        {:ok, agent} = Agent.start_link(fn -> nil end)
-        agent
-    end
+  import Test.Helper.Server
 
-    def agent_updater(agent) do
-        fn(state) -> 
-            Agent.update(agent, fn(_) -> state end)
-        end
-    end
+  require Logger
 
-    def agent_get(agent) do
-        Agent.get(agent, &(&1))
-    end 
+  test "finish (not async) reports spans" do
 
-    test "finish normally" do
+    {ref, reporter} = msg_reporter()
+    config = put_in(config()[:reporter], reporter)
 
-        agent = new_agent()
+    {trace, span_id} = init_with_opts(config: config)
 
-        {trace, span_id} = init_with_opts(config: put_in(config()[:reporter], agent_updater(agent)))
-        timestamp = System.os_time(:microseconds)
+    timestamp = System.os_time(:microseconds)
 
-        {:stop, :normal, []} =
-            Tapper.Tracer.Server.handle_cast({:finish, timestamp, []}, trace)
+    {:stop, :normal, []} = Tapper.Tracer.Server.handle_cast({:finish, timestamp, []}, trace)
 
-        spans = agent_get(agent)
+    assert_received {^ref, spans}
 
-        assert is_list(spans)
-        assert length(spans) == 1
-    end
+    assert is_list(spans)
+    assert length(spans) == 1
 
-    test "finish async" do
+    [%Tapper.Protocol.Span{id: ^span_id, annotations: annotations, binary_annotations: binary_annotations}] = spans
 
-        agent = new_agent()
+    assert [%Tapper.Protocol.Annotation{value: :cs}] = annotations
+    assert binary_annotations == []
+  end
 
-        config = put_in(config()[:reporter], agent_updater(agent))
-        {trace, span_id} = init_with_opts(config: config)
-        timestamp = System.os_time(:microseconds)
+  test "finish async tags main span and timeout reports spans" do
 
-        {:noreply, state, _ttl} =
-            Tapper.Tracer.Server.handle_cast({:finish, timestamp, [async: true]}, trace)
+    {ref, reporter} = msg_reporter()
+    config = put_in(config()[:reporter], reporter)
 
-        spans = agent_get(agent)
+    ttl = 1000
 
-        assert spans == nil
+    {trace, span_id} = init_with_opts(config: config, ttl: 1000)
 
-        annotations = state.spans[trace.span_id].annotations
+    # add a child span to simulate one running async
+    timestamp = System.os_time(:microseconds)
 
-        assert is_list(annotations)
-        assert length(annotations) == 2
+    child_span = child_span_info("child", Tapper.SpanId.generate(), span_id, timestamp)
+    {:noreply, state, ^ttl} = Tapper.Tracer.Server.handle_cast({:start_span, child_span, []}, trace)
 
-        assert hd(annotations) == %Tapper.Tracer.Trace.Annotation{
-            value: :async,
-            timestamp: timestamp,
-            host: Tapper.Tracer.Server.endpoint_from_config(config)
-        }
-    end
+    assert state.spans[child_span.id]
+
+    # finish asynchronously
+    timestamp = System.os_time(:microseconds)
+
+    {:noreply, state, ^ttl} = Tapper.Tracer.Server.handle_cast({:finish, timestamp, [async: true]}, state)
+
+    annotations = state.spans[trace.span_id].annotations
+
+    assert is_list(annotations)
+    assert length(annotations) == 2
+
+    assert hd(annotations) == %Tapper.Tracer.Trace.Annotation{
+      value: :async,
+      timestamp: timestamp,
+      host: Tapper.Tracer.Server.endpoint_from_config(config)
+    }
+
+    refute_received {^ref, _spans}, "Async finish should not have called reporter"
+
+    # simulate timeout (since we're not running in a GenServer)
+    {:stop, :normal, _} = Tapper.Tracer.Server.handle_info(:timeout, state)
+
+    assert_received {^ref, spans}
+
+    assert is_list(spans)
+    assert length(spans) == 2
+
+    main_proto_span = Enum.find(spans, fn(span) -> span.id == span_id end)
+    child_proto_span = Enum.find(spans, fn(span) -> span.id == child_span.id end)
+
+    assert main_proto_span
+    assert child_proto_span
+
+    %Tapper.Protocol.Span{id: ^span_id, annotations: annotations, binary_annotations: binary_annotations} = main_proto_span
+
+    assert Enum.any?(annotations, fn(an) -> match?(%Tapper.Protocol.Annotation{value: :cs}, an) end)
+    assert Enum.any?(annotations, fn(an) -> match?(%Tapper.Protocol.Annotation{value: :async}, an) end)
+
+    assert binary_annotations == []
+  end
+
+
+  def child_span_info(name, child_span_id, parent_id, timestamp) do
+    %Tapper.Tracer.Trace.SpanInfo{
+      name: name,
+      id: child_span_id,
+      parent_id: parent_id,
+      start_timestamp: timestamp,
+      annotations: [],
+      binary_annotations: []
+    }
+  end
 
 end
