@@ -157,6 +157,8 @@ defmodule Tapper.Tracer do
     """
     def start_span(id, opts \\ [])
 
+    def start_span(:ignore, _opts), do: :ignore
+
     def start_span(id = %Tapper.Id{sampled: false}, _opts), do: id
 
     def start_span(id = %Tapper.Id{span_id: span_id}, opts) when is_list(opts) do
@@ -184,6 +186,8 @@ defmodule Tapper.Tracer do
 
     def finish_span(id)
 
+    def finish_span(:ignore), do: :ignore
+
     def finish_span(id = %Tapper.Id{sampled: false}), do: id
 
     def finish_span(id = %Tapper.Id{}) do
@@ -203,13 +207,19 @@ defmodule Tapper.Tracer do
         updated_id
     end
 
+    def name(:ignore, _name), do: :ignore
+
     def name(id = %Tapper.Id{span_id: span_id}, name) when is_binary(name) do
         timestamp = System.os_time(:microseconds)
         GenServer.cast(via_tuple(id), {:name, span_id, name, timestamp})
         id
     end
 
-    def annotate(id = %Tapper.Id{span_id: span_id}, type, opts \\ []) do
+    def annotate(id, type, opts \\ [])
+
+    def annotate(:ignore, _type, _opts), do: :ignore
+
+    def annotate(id = %Tapper.Id{span_id: span_id}, type, opts) do
         timestamp = opts[:timestamp] || System.os_time(:microseconds)
         value = map_annotation_type(type)
         endpoint = check_endpoint(opts[:endpoint])
@@ -219,7 +229,11 @@ defmodule Tapper.Tracer do
         id
     end
 
-    def binary_annotate(id = %Tapper.Id{span_id: span_id}, type, key, value, endpoint \\ nil) do
+    def binary_annotate(id, type, key, value, endpoint \\ nil)
+
+    def binary_annotate(:ignore, _type, _key, _value, _endpoint), do: :ignore
+
+    def binary_annotate(id = %Tapper.Id{span_id: span_id}, type, key, value, endpoint) do
         timestamp = System.os_time(:microseconds)
 
         GenServer.cast(via_tuple(id), {:binary_annotation, span_id, type, key, value, timestamp, check_endpoint(endpoint)})
@@ -227,6 +241,7 @@ defmodule Tapper.Tracer do
         id
     end
 
+    def whereis(:ignore), do: []
     def whereis(%Tapper.Id{trace_id: trace_id}), do: whereis(trace_id)
     def whereis(trace_id) do
         Registry.lookup(Tapper.Tracers, trace_id)

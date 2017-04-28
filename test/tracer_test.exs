@@ -41,6 +41,12 @@ defmodule TracerTest do
 
       assert start_span.parent_ids == [trace.span_id]
       assert finish_span.parent_ids == []      
+  test "ignored id" do
+    assert :ignore == Tapper.Tracer.start_span(:ignore)
+    assert :ignore == Tapper.Tracer.finish_span(:ignore)
+    assert :ignore == Tapper.Tracer.name(:ignore, "name")
+    assert :ignore == Tapper.Tracer.annotate(:ignore, :ss)
+    assert :ignore == Tapper.Tracer.binary_annotate(:ignore, :string, "key", "value")
   end
 
 end
