@@ -64,11 +64,14 @@ defmodule Tapper do
 
         ### Arguments
 
-           * `sampled` is the incoming sampling status; `true` implies trace has been sampled, and
-            down-stream spans should be sampled also, `false` that it will not be sampled,
-            and down-stream spans should not be sampled either.
+           * `trace_id` - the trace id, as `Tapper.TraceId.t`.
+           * `span_id` - the current span id, as `Tapper.SpanId.t`.
+           * `parent_span_id` - the parent span id, as `Tapper.SpanId.t` or `:root` if root trace.
+           * `sample` is the incoming sampling status; `true` implies trace has been sampled, and
+              down-stream spans should be sampled also, `false` that it will not be sampled,
+              and down-stream spans should not be sampled either.
            * `debug` is the debugging flag, if `true` this turns sampling for this trace on, regardless of
-           the value of `sampled`.
+              the value of `sampled`.
 
         ### Options
             * `name` (String) - name of span

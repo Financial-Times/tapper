@@ -9,17 +9,17 @@ defmodule Tapper.Tracer.Server do
     @doc """
     Starts a Tracer, registering a name derived from the Tapper trace_id.
 
-    ## Options
-       * `reporter` - override the configured reporter for this trace; useful for testing
-       * other options passed to `Tapper.Tracer.Server.init/1`
+    ## Arguments
+       * config - worker config from Tapper.Tracer.Supervisor's worker spec.
+       * trace_init - trace parameters (trace_id, span_id, etc.)
+       * pid - pid of process that called `start/1` or `join/6` in API.
+       * timestamp - microsecond timestamp of trace receive/start event.
+       * opts - options which were passed to start or join, see `Tapper.Server.init/1`.
 
-    NB called by Tapper.Tracer.Supervisor when starting a trace with `start_tracer/2`.
+    NB called by `Tapper.Tracer.Supervisor` when starting a trace with `start_tracer/2`.
     """
     def start_link(config, trace_init = {trace_id, _, _, _, _}, pid, timestamp, opts) do
         Logger.debug(fn -> inspect {"Tracer: start_link", trace_init} end)
-        
-        # override the reporter config, if specified
-        config = if(opts[:reporter], do: %{config | reporter: opts[:reporter]}, else: config)
 
         GenServer.start_link(Tapper.Tracer.Server, [config, trace_init, pid, timestamp, opts], name: via_tuple(trace_id)) # calls Tapper.Tracer.Server.init/1
     end
@@ -32,21 +32,33 @@ defmodule Tapper.Tracer.Server do
     @doc """
     Initializes the Tracer's state.
 
-    ## Options
-       * `type` (`:client` or `:server`) - determines whether the first annotation should be `:cs` (`:client`) or `:sr` (`:server`).
-       * `name` (String) - name of the span.
-       * `endpoint` - sets the endpoint for the initial annotation, defaults to one derived from tapper configuration (see `Tapper.Application.start/2`).
-       * `ttl` - set the activity time-out for this trace in milliseconds; defaults to 30000 ms.
+    ## Arguments (as list)
+       * config - worker config from Tapper.Tracer.Supervisor's worker spec.
+       * trace_init - trace parameters i.e. `{trace_id, span_id, parent_span_id, sample, debug}`
+       * pid - pid of process that called `start/1` or `join/6` in API.
+       * timestamp - microsecond timestamp of trace receive/start event.
+       * opts - options passed to start or join, see below.
 
-    NB passed the list of arguments supplied by `Tapper.Tracer.Server.start_link/4` via `Tapper.Tracer.Supervisor.start_tracer/3`.
+    ## Options
+       * `type` (`:client` or `:server`) - determines whether the first annotation should be `cs` (`:client`) or `sr` (`:server`).
+       * `name` (String) - name of the span.
+       * `endpoint` - sets the endpoint for the initial `cr` or `sr` annotation, defaults to one derived from Tapper configuration (see `Tapper.Application.start/2`).
+       * `remote` - an endpoint to set as the `sa` (:client) or `ca` (:server) binary annotation.
+       * `ttl` - set the no-activity time-out for this trace in milliseconds; defaults to 30000 ms.
+       * `reporter` - override the configured reporter for this trace; useful for testing.
+
+    NB passed the list of arguments supplied by `Tapper.Tracer.Server.start_link/5` via `Tapper.Tracer.Supervisor.start_tracer/3`.
     """
     def init([config, trace_init = {trace_id, span_id, parent_id, sample, debug}, _pid, timestamp, opts]) do
         Logger.debug(fn -> inspect {"Tracer: started tracer", trace_init} end)
 
         Logger.info("Start Trace #{Tapper.TraceId.format(trace_id)}")
 
-        # this is the local host: can be overridden by a client, if needs to be dynamically generated.
-        endpoint = opts[:endpoint] || endpoint_from_config(config)
+        # override the reporter config, if specified
+        config = if(opts[:reporter], do: %{config | reporter: opts[:reporter]}, else: config)
+
+        # this is the local host for `cs` or `sr`: can be overridden by an API client, e.g. if needs to be dynamically generated.
+        endpoint = %Tapper.Endpoint{} = (opts[:endpoint] || endpoint_from_config(config))
 
         # we shouldn't be stopped by the exit of the process that started the trace because async
         # processes may still be processing; we use either an explicit `finish/1` or

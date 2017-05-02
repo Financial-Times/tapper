@@ -16,7 +16,7 @@ defmodule Tapper.Id do
         sampled: false
     ]
 
-    @type t :: %__MODULE__{trace_id: Tapper.TraceId.t, span_id: Tapper.SpanId.t, parent_ids: [Tapper.SpanId.t], sampled: boolean()}
+    @type t :: %__MODULE__{trace_id: Tapper.TraceId.t, span_id: Tapper.SpanId.t, parent_ids: [Tapper.SpanId.t], sampled: boolean()} | :ignore
 
     @spec push(Tapper.Id.t, Tapper.SpanId.t) :: Tapper.Id.t
     def push(id, span_id) do

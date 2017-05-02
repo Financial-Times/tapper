@@ -18,10 +18,11 @@ defmodule Tapper.Tracer.Supervisor do
     @spec start_tracer(Tapper.Tracer.Api.trace_init(), timestamp :: integer(), opts :: Keyword.t) :: Supervisor.on_start_child()
     def start_tracer(trace_init, timestamp, opts) do
 
-        result = Supervisor.start_child(__MODULE__, [trace_init, self(), timestamp, opts]) # NB calls Tapper.Tracer.Server.start_link()
+        # NB calls Tapper.Tracer.Server.start_link/5 with our worker init config as first argument (see worker above)
+        result = Supervisor.start_child(__MODULE__, [trace_init, self(), timestamp, opts])
 
         case result do
-            {:ok, _child} -> 
+            {:ok, _child} ->
                 Logger.debug(fn -> "Started tracer for #{inspect(trace_init)}" end)
                 result
             _ ->
