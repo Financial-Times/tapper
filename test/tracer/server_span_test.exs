@@ -40,6 +40,20 @@ defmodule Tracer.Server.SpanTest do
     assert state.last_activity == child_end_timestamp
   end
 
+  test "start_span with local context option adds lc annotation" do
+
+    {trace, span_id} = init_with_opts(config: config())
+
+    timestamp = System.os_time(:microseconds)
+    child_span = child_span_info("child", Tapper.SpanId.generate(), span_id, timestamp)
+
+    {:noreply, state, _ttl} = Tapper.Tracer.Server.handle_cast({:start_span, child_span, [local: "my_function"]}, trace)
+
+    assert state.spans[child_span.id]
+    binary_annotations = state.spans[child_span.id].binary_annotations
+    assert %Tapper.Tracer.Trace.BinaryAnnotation{annotation_type: :string, key: :lc, value: "my_function", host: Tapper.Tracer.Server.endpoint_from_config(config())} in binary_annotations
+  end
+
   test "finish_span when no matching span is harmless (supervisor restart case)" do
 
     {trace, _span_id} = init_with_opts(config: config())
