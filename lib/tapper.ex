@@ -23,14 +23,18 @@ defmodule Tapper do
 
   defmodule Endpoint do
     @moduledoc "endpoint description struct"
-      defstruct [
-        :ipv4,
-        :port,
-        :service_name,
-        :ipv6
-      ]
 
-      @type t :: %__MODULE__{}
+    defstruct [
+      :ipv4,
+      :port,
+      :service_name,
+      :ipv6
+    ]
+
+    @type ipv4 :: {integer(), integer(), integer(), integer()}
+    @type ipv6 :: binary()
+
+    @type t :: %__MODULE__{ipv4: ipv4(), port: integer(), service_name: String.t, ipv6: ipv6() | nil}
   end
 
   @doc """

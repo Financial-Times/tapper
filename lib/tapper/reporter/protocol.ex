@@ -19,7 +19,13 @@ defmodule Tapper.Protocol do
       :duration
     ]
 
-    @type t :: %__MODULE__{}
+    @type trace_id :: integer()
+    @type span_id :: integer()
+
+    @type timestamp :: integer()
+    @type duration :: integer()
+
+    @type t :: %__MODULE__{trace_id: trace_id(), id: span_id(), parent_id: span_id(), annotations: [Annotation.t], binary_annotations: [BinaryAnnotation.t], debug: boolean, timestamp: timestamp(), duration: duration() }
   end
 
   defmodule Annotation do
@@ -28,6 +34,11 @@ defmodule Tapper.Protocol do
       :value,
       :host
     ]
+
+    @type timestamp :: Tapper.Span.timestamp()
+
+
+    @type t :: %__MODULE__{timestamp: timestamp(), value: String.t | atom(), host: Endpoint.t}
   end
 
   defmodule Endpoint do
@@ -37,6 +48,11 @@ defmodule Tapper.Protocol do
       :service_name,
       :ipv6
     ]
+
+    @type ipv4 :: {integer(), integer(), integer(), integer()}
+    @type ipv6 :: binary()
+
+    @type t :: %__MODULE__{ipv4: ipv4(), port: integer(), service_name: String.t, ipv6: ipv6() | nil}
   end
 
   defmodule BinaryAnnotation do
@@ -46,6 +62,8 @@ defmodule Tapper.Protocol do
       :annotation_type,
       :host
     ]
+
+    @type t :: %__MODULE__{}
   end
 
 end
