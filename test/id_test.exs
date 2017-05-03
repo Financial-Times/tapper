@@ -6,6 +6,8 @@ defmodule TraceIdTest do
     {id, uniq} = Tapper.TraceId.generate()
     assert is_integer(id)
     assert is_integer(uniq)
+
+    assert {id, uniq} != Tapper.TraceId.generate()
   end
 
   test "format" do
@@ -29,6 +31,8 @@ defmodule SpanIdTest do
   test "can generate id" do
     span_id = Tapper.SpanId.generate()
     assert is_integer(span_id)
+
+    assert span_id != Tapper.SpanId.generate()
   end
 
   test "format" do
@@ -81,7 +85,7 @@ defmodule TapperIdTest do
 
   test "pop span, one parent" do
     parent_span_id = Tapper.SpanId.generate()
-    
+
     id = %Tapper.Id{
       trace_id: Tapper.TraceId.generate(),
       span_id: Tapper.SpanId.generate(),
@@ -97,7 +101,7 @@ defmodule TapperIdTest do
   test "pop span, more than one parent" do
     parent1_span_id = Tapper.SpanId.generate()
     parent2_span_id = Tapper.SpanId.generate()
-    
+
     id = %Tapper.Id{
       trace_id: Tapper.TraceId.generate(),
       span_id: Tapper.SpanId.generate(),
@@ -124,13 +128,14 @@ defmodule TapperIdTest do
     id = %Tapper.Id{
       trace_id: Tapper.TraceId.generate(),
       span_id: Tapper.SpanId.generate(),
-      parent_ids: []
+      parent_ids: [],
+      sampled: true
     }
 
-    regex = ~r/#Tapper.Id<#Tapper.TraceId<(.+)\.(.+)>:#Tapper.SpanId<(.+)>>/
+    regex = ~r/#Tapper.Id<#Tapper.TraceId<(.+)\.(.+)>:#Tapper.SpanId<(.+)>,(.+)>/
     assert Regex.match?(regex,inspect(id))
 
-    [_, trace_id, uniq, span_id] = Regex.run(regex, inspect(id))
+    [_, trace_id, uniq, span_id, sampled] = Regex.run(regex, inspect(id))
 
     {trace_id, ""} = Integer.parse(trace_id, 16)
     {uniq, ""} = Integer.parse(uniq, 10)
@@ -139,22 +144,24 @@ defmodule TapperIdTest do
     assert trace_id == elem(id.trace_id,0)
     assert uniq == elem(id.trace_id,1)
     assert span_id == id.span_id
+    assert sampled == "SAMPLED"
   end
-  
+
   test "String.Chars protocol" do
     id = %Tapper.Id{
       trace_id: Tapper.TraceId.generate(),
       span_id: Tapper.SpanId.generate(),
-      parent_ids: []
+      parent_ids: [],
+      sampled: true
     }
 
-    regex = ~r/#Tapper.Id<#Tapper.TraceId<(.+)\.(.+)>:#Tapper.SpanId<(.+)>>/
+    regex = ~r/#Tapper.Id<#Tapper.TraceId<(.+)\.(.+)>:#Tapper.SpanId<(.+)>,(.+)>/
 
     chars = to_string(id)
 
     assert Regex.match?(regex, chars)
 
-    [_, trace_id, uniq, span_id] = Regex.run(regex, chars)
+    [_, trace_id, uniq, span_id, sampled] = Regex.run(regex, chars)
 
     {trace_id, ""} = Integer.parse(trace_id, 16)
     {uniq, ""} = Integer.parse(uniq, 10)
@@ -163,5 +170,6 @@ defmodule TapperIdTest do
     assert trace_id == elem(id.trace_id,0)
     assert uniq == elem(id.trace_id,1)
     assert span_id == id.span_id
+    assert sampled == "SAMPLED"
   end
 end

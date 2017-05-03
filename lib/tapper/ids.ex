@@ -1,15 +1,3 @@
-defmodule Tapper.Id.Utils do
-  @moduledoc false
-
-  @doc "Lower-case base-16 conversion"
-  def to_hex(val) when is_integer(val) do
-    val
-    |> Integer.to_string(16)
-    |> String.downcase
-  end
-
-end
-
 defmodule Tapper.Id do
   @moduledoc "The ID used with the API; tracks nested spans. Consider opaque!"
 
@@ -38,14 +26,15 @@ defmodule Tapper.Id do
   defimpl Inspect do
     import Inspect.Algebra
     def inspect(id, _opts) do
-
-      concat ["#Tapper.Id<", Tapper.TraceId.format(id.trace_id), ":", Tapper.SpanId.format(id.span_id), ">"]
+      sampled = if(id.sampled, do: "SAMPLED", else: "-")
+      concat ["#Tapper.Id<", Tapper.TraceId.format(id.trace_id), ":", Tapper.SpanId.format(id.span_id), ",", sampled, ">"]
     end
   end
 
   defimpl String.Chars do
     def to_string(id) do
-      "#Tapper.Id<" <> Tapper.TraceId.format(id.trace_id) <> ":" <> Tapper.SpanId.format(id.span_id) <> ">"
+      sampled = if(id.sampled, do: "SAMPLED", else: "-")
+      "#Tapper.Id<" <> Tapper.TraceId.format(id.trace_id) <> ":" <> Tapper.SpanId.format(id.span_id) <> "," <> sampled <> ">"
     end
   end
 
@@ -120,4 +109,16 @@ defmodule Tapper.SpanId do
       _ -> :error
     end
   end
+end
+
+defmodule Tapper.Id.Utils do
+  @moduledoc false
+
+  @doc "Lower-case base-16 conversion"
+  def to_hex(val) when is_integer(val) do
+    val
+    |> Integer.to_string(16)
+    |> String.downcase
+  end
+
 end
