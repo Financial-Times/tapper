@@ -1,4 +1,6 @@
 defmodule Tapper.Tracer.Supervisor do
+  @moduledoc false
+
   use Supervisor
   require Logger
 
@@ -9,7 +11,7 @@ defmodule Tapper.Tracer.Supervisor do
   def init([config]) do
     Logger.debug(fn -> "Tracer.Supervisor init #{:erlang.pid_to_list(self())}" end)
     supervise(
-      [worker(Tapper.Tracer.Server, [config], restart: :temporary)], # template for children, with config as first param
+      [worker(Tapper.Tracer.Server, [config], restart: :transient)], # template for children, with config as first param
       strategy: :simple_one_for_one # i.e. on demand
     )
   end

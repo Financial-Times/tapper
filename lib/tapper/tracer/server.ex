@@ -1,4 +1,6 @@
 defmodule Tapper.Tracer.Server do
+  @moduledoc "The Trace server. There is one server per trace, which persists until the trace is finished, at which point it sends its spans to a reporter."
+
   use GenServer
 
   require Logger
@@ -7,7 +9,7 @@ defmodule Tapper.Tracer.Server do
   alias Tapper.Tracer.Annotations
 
   @doc """
-  Starts a Tracer, registering a name derived from the Tapper trace_id.
+  Starts a Tracer, registering a name derived from the Tapper `trace_id`.
 
   ## Arguments
       * config - worker config from Tapper.Tracer.Supervisor's worker spec.
@@ -137,11 +139,12 @@ defmodule Tapper.Tracer.Server do
   end
 
   @doc "via Tapper.Tracer.finish_span/1"
-  def handle_cast(msg = {:finish_span, span_info}, trace) do
+  def handle_cast(msg = {:finish_span, span_id, timestamp}, trace) do
     Logger.debug(fn -> inspect({trace.trace_id, msg}) end)
 
-    trace = put_in(trace.spans[span_info.id].end_timestamp, span_info.end_timestamp)
-    trace = put_in(trace.last_activity, span_info.end_timestamp)
+    trace = update_span(trace, span_id, fn(span) -> put_in(span.end_timestamp, timestamp) end)
+
+    trace = put_in(trace.last_activity, timestamp)
 
     {:noreply, trace, trace.ttl}
   end
@@ -150,7 +153,8 @@ defmodule Tapper.Tracer.Server do
   def handle_cast(msg = {:name, span_id, name, timestamp}, trace) do
     Logger.debug(fn -> inspect({trace.trace_id, msg}) end)
 
-    trace = put_in(trace.spans[span_id].name, name)
+    trace = update_span(trace, span_id, fn(span) -> put_in(span.name, name) end)
+
     trace = put_in(trace.last_activity, timestamp)
 
     {:noreply, trace, trace.ttl}
@@ -164,8 +168,9 @@ defmodule Tapper.Tracer.Server do
 
     trace = case new_annotation do
       nil -> trace
-      _ ->
-        trace = update_in(trace.spans[span_id].annotations, &([new_annotation | &1]))
+      _annotation ->
+        # trace = update_in(trace.spans[span_id].annotations, &([new_annotation | &1]))
+        trace = update_span(trace, span_id, fn(span) -> update_in(span.annotations, &([new_annotation | &1])) end)
         %{trace | last_activity: timestamp}
     end
 
@@ -183,11 +188,23 @@ defmodule Tapper.Tracer.Server do
     trace = case new_annotation do
       nil -> trace
       _ ->
-        trace = update_in(trace.spans[span_id].binary_annotations, &([new_annotation | &1]))
+        trace = update_span(trace, span_id, fn(span) -> update_in(span.binary_annotations, &([new_annotation | &1])) end)
         %{trace | last_activity: timestamp}
     end
 
     {:noreply, trace, trace.ttl}
+  end
+
+  @doc "update a span (identified by span id) in a trace with an updater function, taking care of case where span does not exit."
+  @spec update_span(Trace.t, Tapper.SpanId.t, (Trace.SpanInfo.t -> Trace.SpanInfo.t)) :: Trace.t
+  def update_span(trace = %Trace{}, span_id, span_updater) when is_integer(span_id) and is_function(span_updater, 1) do
+    case trace.spans[span_id] do
+      nil ->
+        # if we've been restarted by our supervisor, we may have no record of the span...
+        trace
+      _span ->
+        update_in(trace.spans[span_id], span_updater)
+    end
   end
 
   def endpoint_from_config(%{host_info: %{ipv4: ipv4, system_id: system_id}}) do
@@ -236,6 +253,7 @@ defmodule Tapper.Tracer.Server do
     end
   end
 
+  @doc "convert trace to protocol spans, and invoke reporter."
   def report_trace(trace = %Trace{}) do
     Logger.debug(fn -> "Sending trace #{inspect trace}" end)
 

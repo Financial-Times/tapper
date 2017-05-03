@@ -199,13 +199,7 @@ defmodule Tapper.Tracer do
 
     updated_id = Tapper.Id.pop(id)
 
-    span = %Trace.SpanInfo {
-      id: id.span_id,
-      parent_id: updated_id.span_id,
-      end_timestamp: timestamp
-    }
-
-    GenServer.cast(via_tuple(id), {:finish_span, span})
+    GenServer.cast(via_tuple(id), {:finish_span, id.span_id, timestamp})
 
     updated_id
   end

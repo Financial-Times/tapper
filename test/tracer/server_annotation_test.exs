@@ -100,6 +100,19 @@ defmodule Tracer.Server.AnnotationTest do
     assert timestamp_2 == state_2.last_activity
   end
 
+  test "add annotatation, no matching span, does nothing (supervisor restart case)" do
+    {trace, _span_id} = init_with_opts()
+
+    value = :cr
+    timestamp = System.os_time(:microseconds)
+
+    no_span_id = Tapper.SpanId.generate()
+    {:noreply, state, _ttl} =
+        Tapper.Tracer.Server.handle_cast({:annotation, no_span_id, value, timestamp, nil}, trace)
+
+    assert state.spans == trace.spans
+    assert timestamp == state.last_activity
+  end
 
   test "add binary annotation, no endpoint" do
     {trace, span_id} = init_with_opts()
@@ -209,6 +222,22 @@ defmodule Tracer.Server.AnnotationTest do
     } == annotation_2
 
     assert timestamp_2 == state_2.last_activity
+  end
+
+  test "add binary annotation, no matching span, does nothing (supervisor restart case)" do
+    {trace, _span_id} = init_with_opts()
+
+    type = :string
+    key = "http_method"
+    value = "POST"
+    timestamp = System.os_time(:microseconds)
+
+    no_span_id = Tapper.SpanId.generate()
+    {:noreply, state, _ttl} =
+      Tapper.Tracer.Server.handle_cast({:binary_annotation, no_span_id, type, key, value, timestamp, nil}, trace)
+
+    assert state.spans == trace.spans
+    assert timestamp == state.last_activity
   end
 
 end

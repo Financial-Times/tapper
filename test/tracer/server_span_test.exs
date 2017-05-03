@@ -8,6 +8,51 @@ defmodule Tracer.Server.SpanTest do
 
   require Logger
 
+  test "start_span updates spans and last_activity" do
+
+    {trace, span_id} = init_with_opts(config: config())
+
+    timestamp = System.os_time(:microseconds)
+    child_span = child_span_info("child", Tapper.SpanId.generate(), span_id, timestamp)
+
+    {:noreply, state, _ttl} = Tapper.Tracer.Server.handle_cast({:start_span, child_span, []}, trace)
+
+    assert state.spans[child_span.id]
+    assert state.spans[child_span.id].start_timestamp == timestamp
+    assert state.last_activity == timestamp
+  end
+
+  test "finish_span updates spans and last_activity" do
+
+    {trace, span_id} = init_with_opts(config: config())
+
+    timestamp = System.os_time(:microseconds)
+    child_span = child_span_info("child", Tapper.SpanId.generate(), span_id, timestamp)
+
+    {:noreply, state, _ttl} = Tapper.Tracer.Server.handle_cast({:start_span, child_span, []}, trace)
+
+    child_end_timestamp = timestamp + 100
+    {:noreply, state, _ttl} = Tapper.Tracer.Server.handle_cast({:finish_span, child_span.id, child_end_timestamp}, state)
+
+    assert state.spans[child_span.id]
+    assert state.spans[child_span.id].start_timestamp == timestamp
+    assert state.spans[child_span.id].end_timestamp == child_end_timestamp
+    assert state.last_activity == child_end_timestamp
+  end
+
+  test "finish_span when no matching span is harmless (supervisor restart case)" do
+
+    {trace, _span_id} = init_with_opts(config: config())
+
+    timestamp = System.os_time(:microseconds)
+    span_id = Tapper.SpanId.generate()
+
+    {:noreply, state, _ttl} = Tapper.Tracer.Server.handle_cast({:finish_span, span_id, timestamp}, trace)
+
+    assert state.spans == trace.spans
+    assert state.last_activity == timestamp
+  end
+
   test "finish (not async) reports spans" do
 
     {ref, reporter} = msg_reporter()
