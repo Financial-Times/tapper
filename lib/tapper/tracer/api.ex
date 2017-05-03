@@ -18,5 +18,7 @@ defmodule Tapper.Tracer.Api do
 
     @callback annotate(tapper_id :: Tapper.Id.t, type :: atom(), opts :: Keyword.t) :: Tapper.Id.t
 
-    @callback binary_annotate(tapper_id :: Tapper.Id.t, type :: atom(), key :: String.t, value :: any(), endpoint :: Tapper.Endpoint.t | nil) :: Tapper.Id.t
+    @type binary_annotation_type :: :string | :bool | :i16 | :i32 | :i64 | :double | :bytes
+
+    @callback binary_annotate(tapper_id :: Tapper.Id.t, type :: binary_annotation_type(), key :: String.t | atom(), value :: any(), endpoint :: Tapper.Endpoint.t | nil) :: Tapper.Id.t
 end

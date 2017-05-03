@@ -225,18 +225,21 @@ defmodule Tapper.Tracer do
   def annotate(id = %Tapper.Id{span_id: span_id}, type, opts) do
     timestamp = opts[:timestamp] || System.os_time(:microseconds)
     value = map_annotation_type(type)
-    endpoint = check_endpoint(opts[:endpoint])
+    endpoint = check_endpoint(opts[:endpoint]) # ensure endpoint is an Endpoint.t, or nil
 
     GenServer.cast(via_tuple(id), {:annotation, span_id, value, timestamp, endpoint})
 
     id
   end
 
+  @binary_annotation_types [:string, :bool, :i16, :i32, :i64, :double, :bytes]
+
+  @spec binary_annotate(Tapper.Id.t, Tapper.Tracer.Api.binary_annotation_type(), atom() | String.t, any(), Tapper.Endpoint.t | nil) :: Tapper.Id.t
   def binary_annotate(id, type, key, value, endpoint \\ nil)
 
   def binary_annotate(:ignore, _type, _key, _value, _endpoint), do: :ignore
 
-  def binary_annotate(id = %Tapper.Id{span_id: span_id}, type, key, value, endpoint) do
+  def binary_annotate(id = %Tapper.Id{span_id: span_id}, type, key, value, endpoint) when type in @binary_annotation_types do
     timestamp = System.os_time(:microseconds)
 
     GenServer.cast(via_tuple(id), {:binary_annotation, span_id, type, key, value, timestamp, check_endpoint(endpoint)})

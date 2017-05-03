@@ -41,7 +41,7 @@ defmodule Tapper.Tracer.Trace do
 
     @type t :: %__MODULE__{}
 
-    def new(value, timestamp, endpoint = %Tapper.Endpoint{}) do
+    def new(value, timestamp, endpoint = %Tapper.Endpoint{}) when is_integer(timestamp) do
       %__MODULE__{
         value: value,
         timestamp: timestamp,
@@ -49,7 +49,7 @@ defmodule Tapper.Tracer.Trace do
       }
     end
 
-    def new(value, timestamp) do
+    def new(value, timestamp) when is_integer(timestamp) do
       %__MODULE__{
         value: value,
         timestamp: timestamp
@@ -67,7 +67,9 @@ defmodule Tapper.Tracer.Trace do
 
     @type t :: %__MODULE__{}
 
-    def new(key, value, type, endpoint = %Tapper.Endpoint{}) do
+    @types [:string, :bool, :i16, :i32, :i64, :double, :bytes]
+
+    def new(key, value, type, endpoint = %Tapper.Endpoint{}) when type in @types do
       %__MODULE__{
         key: key,
         value: value,
@@ -76,7 +78,7 @@ defmodule Tapper.Tracer.Trace do
       }
     end
 
-    def new(key, value, type) do
+    def new(key, value, type) when type in @types do
       %__MODULE__{
         key: key,
         value: value,

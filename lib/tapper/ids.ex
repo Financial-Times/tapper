@@ -11,7 +11,7 @@ defmodule Tapper.Id.Utils do
 end
 
 defmodule Tapper.Id do
-  @moduledoc "The ID used with the API; tracks top-level trace and nested spans. Consider opaque!"
+  @moduledoc "The ID used with the API; tracks nested spans. Consider opaque!"
 
   defstruct [
     trace_id: nil,
@@ -22,11 +22,13 @@ defmodule Tapper.Id do
 
   @type t :: %__MODULE__{trace_id: Tapper.TraceId.t, span_id: Tapper.SpanId.t, parent_ids: [Tapper.SpanId.t], sampled: boolean()} | :ignore
 
+  @doc "Push the current span id onto the parent stack, and set new span id, returning updated Tapper Id"
   @spec push(Tapper.Id.t, Tapper.SpanId.t) :: Tapper.Id.t
-  def push(id, span_id) do
+  def push(id = %Tapper.Id{}, span_id) do
     %Tapper.Id{id | parent_ids: [id.span_id | id.parent_ids], span_id: span_id}
   end
 
+  @doc "Pop the last parent span id from the parent stack, returning updated Tapper Id"
   @spec pop(Tapper.Id.t) :: Tapper.Id.t
   def pop(id = %Tapper.Id{parent_ids: []}), do: id
   def pop(id = %Tapper.Id{parent_ids: [parent_id | parent_ids]}) do
