@@ -1,4 +1,5 @@
 defmodule Tapper.Tracer.Trace do
+  @moduledoc "Tracer internal state, and functions to convert this to protocol spans (Tapper.Protocol)"
 
   @doc "Tracer state: the state of a single trace session."
   defstruct [

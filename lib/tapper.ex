@@ -165,6 +165,9 @@ defmodule Tapper do
   def tag(id, key, value, opts) when is_binary(key) and is_float(value), do: Tapper.Tracer.binary_annotate(id, :double, key, value, opts)
   def tag(id, key, value, opts) when is_binary(key), do: Tapper.Tracer.binary_annotate(id, :string, key, inspect(value), opts)
 
+
+  @binary_annotation_types [:string, :bool, :i16, :i32, :i64, :double, :bytes]
+
   @doc """
   Tag with a general binary annotation.
 
@@ -173,6 +176,6 @@ defmodule Tapper do
   ```
   """
   def binary_annotation(id, type, key, value, opts \\ [])
-  def binary_annotation(id, type, key, value, opts) when type in [:string, :bool, :i16, :i32, :i64, :double] and is_binary(key), do: Tapper.Tracer.binary_annotate(id, type, key, value, opts)
+  def binary_annotation(id, type, key, value, opts) when type in @binary_annotation_types, do: Tapper.Tracer.binary_annotate(id, type, key, value, opts)
 
 end

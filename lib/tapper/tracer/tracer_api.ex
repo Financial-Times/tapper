@@ -1,5 +1,5 @@
 defmodule Tapper.Tracer.Api do
-  @moduledoc "The (minimal) API for the `Tapper.Tracer`; clients will normally use the `Tapper` module."
+  @moduledoc "The (minimal) low-level API for the `Tapper.Tracer`; clients will normally use the `Tapper` module."
 
     @type trace_init :: {Tapper.TraceId.t, Tapper.SpanId.t, Tapper.SpanId.t | :root, boolean(), boolean()}
 

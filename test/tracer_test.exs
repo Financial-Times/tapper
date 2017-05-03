@@ -60,7 +60,7 @@ defmodule TracerTest do
       assert is_list(spans)
   end
 
-  test "add annotation returns id same id" do
+  test "add annotation returns same id" do
       {ref, reporter} = msg_reporter()
 
       id1 = Tapper.Tracer.start(debug: true, name: "main-span", reporter: reporter)

@@ -1,4 +1,5 @@
 defmodule Tapper.Encoder.Json do
+  @moduledoc "Encode protocol spans to JSON suitable for sending to Zipkin Server API"
 
   @spec encode!([%Tapper.Protocol.Span{}]) :: iodata | no_return
   def encode!(spans = [%Tapper.Protocol.Span{} | _spans ]) do
