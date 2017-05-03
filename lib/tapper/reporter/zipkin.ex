@@ -1,6 +1,8 @@
 defmodule Tapper.Reporter.Zipkin do
   require Logger
 
+  @behaviour Tapper.Reporter.Api
+
   @options hackney: [pool: :tapper]
 
   def ingest(spans) when is_list(spans) do
