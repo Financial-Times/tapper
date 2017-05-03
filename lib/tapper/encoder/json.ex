@@ -2,7 +2,7 @@ defmodule Tapper.Encoder.Json do
   @moduledoc "Encode protocol spans to JSON suitable for sending to Zipkin Server API"
 
   @spec encode!([%Tapper.Protocol.Span{}]) :: iodata | no_return
-  def encode!(spans = [%Tapper.Protocol.Span{} | _spans ]) do
+  def encode!(spans = [%Tapper.Protocol.Span{} | _spans]) do
     [?[, Enum.intersperse(Enum.map(spans, &encode(&1)), ?,), ?]]
   end
 
@@ -68,14 +68,14 @@ defmodule Tapper.Encoder.Json do
     end
 
 
-    @max_safe_integer_value 9007199254740991
+    @max_safe_integer_value 9_007_199_254_740_991
     @max_64_bit_value 18_446_744_073_709_551_615
 
     def encode_binary_annotation_value(type, value) when type in [:bool, :double, :string], do: value
-    def encode_binary_annotation_value(:i16, value) when value < 32768, do: value
+    def encode_binary_annotation_value(:i16, value) when value < 32_768, do: value
     def encode_binary_annotation_value(:i16, _value), do: raise ArgumentError, "Value out of range for 16-bit integer"
 
-    def encode_binary_annotation_value(:i32, value) when value < 4294967296, do: value
+    def encode_binary_annotation_value(:i32, value) when value < 4_294_967_296, do: value
     def encode_binary_annotation_value(:i32, _value), do: raise ArgumentError, "Value out of range for 32-bit integer"
 
     def encode_binary_annotation_value(:i64, value) when value <= @max_safe_integer_value, do: value
@@ -104,7 +104,7 @@ defmodule Tapper.Encoder.Json do
     def add_port(map, port) when is_integer(port), do: put_in(map, [:port], port)
 
     def add_ipv4(map, ipv4) when is_nil(ipv4), do: map
-    def add_ipv4(map, {a,b,c,d}) do
+    def add_ipv4(map, {a, b, c, d}) do
       put_in(map, [:ipv4], "#{a}.#{b}.#{c}.#{d}")
     end
 

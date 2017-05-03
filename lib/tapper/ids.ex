@@ -50,7 +50,7 @@ defmodule Tapper.TraceId do
   """
   @type int128 :: integer()
 
-  @type t :: {int128,integer()}
+  @type t :: {int128, integer()}
 
   @spec generate() :: t
   def generate() do

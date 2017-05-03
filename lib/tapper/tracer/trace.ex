@@ -20,6 +20,8 @@ defmodule Tapper.Tracer.Trace do
   @type trace :: %__MODULE__{trace_id: Tapper.TraceId.t, span_id: Tapper.SpanId.t, parent_id: Tapper.SpanId.t | nil, spans: [Tapper.Traceer.SpanInfo.t]}
 
   defmodule SpanInfo do
+    @moduledoc false
+
     defstruct [
       :name,
       :id,
@@ -34,6 +36,8 @@ defmodule Tapper.Tracer.Trace do
   end
 
   defmodule Annotation do
+    @moduledoc false
+
     defstruct [
       :timestamp,
       :value,
@@ -59,6 +63,7 @@ defmodule Tapper.Tracer.Trace do
   end
 
   defmodule BinaryAnnotation do
+    @moduledoc false
     defstruct [
       :key,
       :value,
@@ -97,10 +102,7 @@ defmodule Tapper.Tracer.Trace do
     |> Map.values
     |> Enum.map(fn(span) ->
 
-      duration = cond do
-        is_nil(span.end_timestamp) -> end_timestamp - span.start_timestamp
-        true -> span.end_timestamp - span.start_timestamp
-      end
+      duration = if(is_nil(span.end_timestamp), do: end_timestamp - span.start_timestamp, else: span.end_timestamp - span.start_timestamp)
 
       %Tapper.Protocol.Span{
         trace_id: trace_id,

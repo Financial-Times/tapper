@@ -33,7 +33,7 @@ defmodule Tapper.Tracer do
   """
   def start(opts \\ []) when is_list(opts) do
     trace_id = Tapper.TraceId.generate()
-    span_id = elem(trace_id,0) &&& 0xFFFFFFFFFFFFFFFF # lower 64 bits
+    span_id = elem(trace_id, 0) &&& 0xFFFFFFFFFFFFFFFF # lower 64 bits
     timestamp = System.os_time(:microseconds)
 
     # check tyoe, and default to :client

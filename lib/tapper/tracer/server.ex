@@ -54,7 +54,7 @@ defmodule Tapper.Tracer.Server do
   def init([config, trace_init = {trace_id, span_id, parent_id, sample, debug}, _pid, timestamp, opts]) do
     Logger.debug(fn -> inspect {"Tracer: started tracer", trace_init} end)
 
-    Logger.info("Start Trace #{Tapper.TraceId.format(trace_id)}")
+    Logger.info(fn -> "Start Trace #{Tapper.TraceId.format(trace_id)}" end)
 
     # override the reporter config, if specified
     config = if(opts[:reporter], do: %{config | reporter: opts[:reporter]}, else: config)
@@ -99,7 +99,7 @@ defmodule Tapper.Tracer.Server do
 
     report_trace(trace)
 
-    Logger.info("End Trace #{Tapper.TraceId.format(trace.trace_id)} (timeout)")
+    Logger.info(fn -> "End Trace #{Tapper.TraceId.format(trace.trace_id)} (timeout)" end)
     {:stop, :normal, []}
   end
 
@@ -109,14 +109,14 @@ defmodule Tapper.Tracer.Server do
 
     case opts[:async] do
       true ->
-        Logger.info("Finish Trace #{Tapper.TraceId.format(trace.trace_id)} ASYNC")
+        Logger.info(fn -> "Finish Trace #{Tapper.TraceId.format(trace.trace_id)} ASYNC" end)
         handle_cast({:annotation, trace.span_id, :async, timestamp, nil}, trace)
       _ ->
         trace = %Trace{trace | end_timestamp: timestamp}
 
         report_trace(trace)
 
-        Logger.info("Finish Trace #{Tapper.TraceId.format(trace.trace_id)}")
+        Logger.info(fn -> "Finish Trace #{Tapper.TraceId.format(trace.trace_id)}" end)
         {:stop, :normal, []}
     end
   end
@@ -243,10 +243,10 @@ defmodule Tapper.Tracer.Server do
 
   def add_remote_address_annotation(annotations, span_type, opts) do
     case {span_type, opts[:remote]} do
-      {:sr, client_endpoint = %Tapper.Endpoint{} } ->
+      {:sr, client_endpoint = %Tapper.Endpoint{}} ->
         [Annotations.binary_annotation(:ca, client_endpoint) | annotations]
 
-      {:cs, server_endpoint= %Tapper.Endpoint{} } ->
+      {:cs, server_endpoint = %Tapper.Endpoint{}} ->
         [Annotations.binary_annotation(:sa, server_endpoint) | annotations]
 
       _else -> annotations
@@ -260,7 +260,7 @@ defmodule Tapper.Tracer.Server do
     spans = Trace.to_protocol_spans(trace)
 
     case trace.config.reporter do
-      fun when is_function(fun,1) -> fun.(spans)
+      fun when is_function(fun, 1) -> fun.(spans)
       mod when is_atom(mod) -> apply(mod, :ingest, [spans])
     end
   end

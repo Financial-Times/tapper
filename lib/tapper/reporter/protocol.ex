@@ -6,6 +6,7 @@ defmodule Tapper.Protocol do
   """
 
   defmodule Span do
+    @moduledoc false
 
     defstruct [
       :trace_id,
@@ -25,10 +26,12 @@ defmodule Tapper.Protocol do
     @type timestamp :: integer()
     @type duration :: integer()
 
-    @type t :: %__MODULE__{trace_id: trace_id(), id: span_id(), parent_id: span_id(), annotations: [Annotation.t], binary_annotations: [BinaryAnnotation.t], debug: boolean, timestamp: timestamp(), duration: duration() }
+    @type t :: %__MODULE__{trace_id: trace_id(), id: span_id(), parent_id: span_id(), annotations: [Annotation.t], binary_annotations: [BinaryAnnotation.t], debug: boolean, timestamp: timestamp(), duration: duration()}
   end
 
   defmodule Annotation do
+    @moduledoc false
+
     defstruct [
       :timestamp,
       :value,
@@ -42,6 +45,8 @@ defmodule Tapper.Protocol do
   end
 
   defmodule Endpoint do
+    @moduledoc false
+
     defstruct [
       :ipv4,
       :port,
@@ -56,6 +61,8 @@ defmodule Tapper.Protocol do
   end
 
   defmodule BinaryAnnotation do
+    @moduledoc false
+
     defstruct [
       :key,
       :value,

@@ -1,4 +1,6 @@
 defmodule Tapper.Reporter.Zipkin do
+  @moduledoc "Reporter that sends spans to Zipkin Server API"
+
   require Logger
 
   use HTTPoison.Base
