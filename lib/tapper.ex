@@ -163,11 +163,12 @@ defmodule Tapper do
   def error(id, message) when is_binary(message), do: Tapper.Tracer.binary_annotate(id, :string, :error, message)
 
   @doc "Tag with a general (key,value,host) binary annotation, determining type of annotation automatically"
-  def tag(id, key, value, opts \\ [])
-  def tag(id, key, value, opts) when is_binary(key) and is_binary(value), do: Tapper.Tracer.binary_annotate(id, :string, key, value, opts)
-  def tag(id, key, value, opts) when is_binary(key) and is_integer(value), do: Tapper.Tracer.binary_annotate(id, :i64, key, value, opts)
-  def tag(id, key, value, opts) when is_binary(key) and is_float(value), do: Tapper.Tracer.binary_annotate(id, :double, key, value, opts)
-  def tag(id, key, value, opts) when is_binary(key), do: Tapper.Tracer.binary_annotate(id, :string, key, inspect(value), opts)
+  def tag(id, key, value, endpoint \\ nil)
+
+  def tag(id, key, value, endpoint) when is_binary(key) and is_binary(value), do: Tapper.Tracer.binary_annotate(id, :string, key, value, endpoint)
+  def tag(id, key, value, endpoint) when is_binary(key) and is_integer(value), do: Tapper.Tracer.binary_annotate(id, :i64, key, value, endpoint)
+  def tag(id, key, value, endpoint) when is_binary(key) and is_float(value), do: Tapper.Tracer.binary_annotate(id, :double, key, value, endpoint)
+  def tag(id, key, value, endpoint) when is_binary(key), do: Tapper.Tracer.binary_annotate(id, :string, key, inspect(value), endpoint)
 
 
   @binary_annotation_types [:string, :bool, :i16, :i32, :i64, :double, :bytes]
@@ -176,10 +177,11 @@ defmodule Tapper do
   Tag with a general binary annotation.
 
   ```
-  binary_annotation(id, :i16, "tab", 4, host: remote)
+  binary_annotation(id, :i16, "tab", 4)
   ```
   """
-  def binary_annotation(id, type, key, value, opts \\ [])
-  def binary_annotation(id, type, key, value, opts) when type in @binary_annotation_types, do: Tapper.Tracer.binary_annotate(id, type, key, value, opts)
+  def binary_annotation(id, type, key, value, endpoint \\ nil)
+
+  def binary_annotation(id, type, key, value, endpoint) when type in @binary_annotation_types, do: Tapper.Tracer.binary_annotate(id, type, key, value, endpoint)
 
 end

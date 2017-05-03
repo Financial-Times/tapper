@@ -49,7 +49,7 @@ defmodule Tapper.Tracer do
     if sampled do
       trace_init = {trace_id, span_id, :root, sample, debug}
 
-      Tapper.Tracer.Supervisor.start_tracer(trace_init, timestamp, opts)
+      {:ok, _pid} = Tapper.Tracer.Supervisor.start_tracer(trace_init, timestamp, opts)
     end
 
     id = %Tapper.Id{
@@ -101,7 +101,7 @@ defmodule Tapper.Tracer do
     sampled = sample || debug
 
     if sampled do
-      Tapper.Tracer.Supervisor.start_tracer(trace_init, timestamp, opts)
+      {:ok, _pid} = Tapper.Tracer.Supervisor.start_tracer(trace_init, timestamp, opts)
     end
 
     id = %Tapper.Id{
@@ -228,7 +228,7 @@ defmodule Tapper.Tracer do
 
   @binary_annotation_types [:string, :bool, :i16, :i32, :i64, :double, :bytes]
 
-  @spec binary_annotate(Tapper.Id.t, Tapper.Tracer.Api.binary_annotation_type(), atom() | String.t, any(), Tapper.Endpoint.t | nil) :: Tapper.Id.t
+  @spec binary_annotate(Tapper.Id.t | :ignore, Tapper.Tracer.Api.binary_annotation_type(), atom() | String.t, any(), Tapper.Endpoint.t | nil) :: Tapper.Id.t
   def binary_annotate(id, type, key, value, endpoint \\ nil)
 
   def binary_annotate(:ignore, _type, _key, _value, _endpoint), do: :ignore
