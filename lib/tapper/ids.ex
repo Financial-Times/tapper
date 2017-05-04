@@ -30,7 +30,7 @@ defmodule Tapper.Id do
   def destructure(%Tapper.Id{trace_id: trace_id, span_id: span_id, origin_parent_id: origin_parent_id, parent_ids: [], sample: sample, debug: debug}) do
     {trace_id, span_id, origin_parent_id, sample, debug}
   end
-  def destructure(%Tapper.Id{trace_id: trace_id, span_id: span_id, origin_parent_id: origin_parent_id, parent_ids: [parent_id | _rest], sample: sample, debug: debug}) do
+  def destructure(%Tapper.Id{trace_id: trace_id, span_id: span_id, origin_parent_id: _origin_parent_id, parent_ids: [parent_id | _rest], sample: sample, debug: debug}) do
     {trace_id, span_id, parent_id, sample, debug}
   end
 
