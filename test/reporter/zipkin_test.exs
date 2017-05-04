@@ -37,4 +37,18 @@ defmodule ZipkinTest do
     assert hackney: [pool: :tapper] in options
   end
 
+  test "url from config" do
+    Application.put_env(:tapper, Tapper.Reporter.Zipkin, collector_url: "http://localhost/spans")
+
+    assert Tapper.Reporter.Zipkin.url() == "http://localhost/spans"
+
+    Application.delete_env(:tapper, Tapper.Reporter.Zipkin)
+
+    assert_raise ArgumentError, fn -> Tapper.Reporter.Zipkin.url() end
+
+    Application.put_env(:tapper, Tapper.Reporter.Zipkin, test: "test")
+
+    assert_raise ArgumentError, fn -> Tapper.Reporter.Zipkin.url() end
+  end
+
 end

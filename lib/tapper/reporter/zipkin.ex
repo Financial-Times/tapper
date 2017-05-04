@@ -3,6 +3,7 @@ defmodule Tapper.Reporter.Zipkin do
 
   require Logger
 
+  # NB dialyzer hates HTTPPoison.Base
   use HTTPoison.Base
 
   @behaviour Tapper.Reporter.Api
@@ -12,7 +13,7 @@ defmodule Tapper.Reporter.Zipkin do
   def ingest(spans) when is_list(spans) do
     Logger.debug(fn -> "Sending #{length(spans)} spans to Zipkin" end)
 
-    url = env(Application.get_env(:tapper, :collector_url))
+    url = url()
 
     # result = HTTPoison.post!(url, data, [{"Content-Type", "application/json"}], @options)
     result = post!(url, spans)
@@ -22,19 +23,29 @@ defmodule Tapper.Reporter.Zipkin do
     :ok
   end
 
-  defp env({:system, name}), do: System.get_env(name)
-  defp env(val), do: val
+  def url() do
+    env(config()[:collector_url]) || raise ArgumentError, "#{__MODULE__} reporter needs collector_url configuration"
+  end
 
+  @doc "HTTPPoison.Base callback"
   def process_request_body(spans) do
       Tapper.Encoder.Json.encode!(spans)
   end
 
+  @doc "HTTPPoison.Base callback"
   def process_request_headers(headers) do
     [{"Content-Type", "application/json"} | headers]
   end
 
+  @doc "HTTPPoison.Base callback"
   def process_request_options(options) do
     [@options | options]
   end
 
+  def config() do
+    Application.get_env(:tapper, __MODULE__)
+  end
+
+  defp env({:system, name}), do: System.get_env(name)
+  defp env(val), do: val
 end
