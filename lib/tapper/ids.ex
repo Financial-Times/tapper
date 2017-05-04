@@ -4,11 +4,14 @@ defmodule Tapper.Id do
   defstruct [
     trace_id: nil,
     span_id: nil,
-    parent_ids: [],
-    sampled: false
+    origin_parent_id: :root, # root span from incoming trace, or :root
+    parent_ids: [],          # stack of child spans
+    sample: false,           # incoming trace sampled flag, or sample decision
+    debug: false,            # incoming trace debug flag, or debug option
+    sampled: false           # i.e. sample || debug
   ]
 
-  @type t :: %__MODULE__{trace_id: Tapper.TraceId.t, span_id: Tapper.SpanId.t, parent_ids: [Tapper.SpanId.t], sampled: boolean()} | :ignore
+  @type t :: %__MODULE__{trace_id: Tapper.TraceId.t, span_id: Tapper.SpanId.t, parent_ids: [Tapper.SpanId.t], sampled: boolean(), origin_parent_id: Tapper.SpanId.t | :root, sample: boolean(), debug: boolean()} | :ignore
 
   @doc "Push the current span id onto the parent stack, and set new span id, returning updated Tapper Id"
   @spec push(Tapper.Id.t, Tapper.SpanId.t) :: Tapper.Id.t
@@ -21,6 +24,14 @@ defmodule Tapper.Id do
   def pop(id = %Tapper.Id{parent_ids: []}), do: id
   def pop(id = %Tapper.Id{parent_ids: [parent_id | parent_ids]}) do
     %Tapper.Id{id | parent_ids: parent_ids, span_id: parent_id}
+  end
+
+  @doc "Destructure the id, for trace propagation purposes."
+  def destructure(%Tapper.Id{trace_id: {trace_id, _}, span_id: span_id, origin_parent_id: origin_parent_id, parent_ids: [], sample: sample, debug: debug}) do
+    {trace_id, span_id, origin_parent_id, sample, debug}
+  end
+  def destructure(%Tapper.Id{trace_id: {trace_id, _}, span_id: span_id, origin_parent_id: origin_parent_id, parent_ids: [parent_id | _rest], sample: sample, debug: debug}) do
+    {trace_id, span_id, parent_id, sample, debug}
   end
 
   defimpl Inspect do

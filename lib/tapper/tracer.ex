@@ -55,7 +55,10 @@ defmodule Tapper.Tracer do
     id = %Tapper.Id{
       trace_id: trace_id,
       span_id: span_id,
+      origin_parent_id: :root,
       parent_ids: [],
+      sample: sample,
+      debug: debug,
       sampled: sampled
     }
 
@@ -90,7 +93,7 @@ defmodule Tapper.Tracer do
     NB if neither `sample` nor `debug` are set, all operations on this trace become a no-op.
   """
   def join(trace_id, span_id, parent_id, sample, debug, opts \\ []), do: join({trace_id, span_id, parent_id, sample, debug}, opts)
-  def join(trace_init = {trace_id, span_id, _parent_id, sample, debug}, opts \\ []) when is_list(opts) do
+  def join(trace_init = {trace_id, span_id, parent_id, sample, debug}, opts \\ []) when is_list(opts) do
 
     timestamp = System.os_time(:microseconds)
 
@@ -107,8 +110,11 @@ defmodule Tapper.Tracer do
     id = %Tapper.Id{
       trace_id: trace_id,
       span_id: span_id,
+      origin_parent_id: parent_id,
       parent_ids: [],
-      sampled: sampled
+      sample: sample,
+      debug: debug,
+      sampled: sampled,
     }
 
     Logger.metadata(tapper_id: id)

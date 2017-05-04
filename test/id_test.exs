@@ -124,6 +124,78 @@ defmodule TapperIdTest do
     assert Tapper.Id.pop(id) == id
   end
 
+  test "destructure main span with origin parent span" do
+    id = %Tapper.Id{
+      trace_id: Tapper.TraceId.generate(),
+      span_id: Tapper.SpanId.generate(),
+      origin_parent_id: Tapper.SpanId.generate(),
+      parent_ids: [],
+      sample: true,
+      debug: false
+    }
+
+    {trace_id, span_id, parent_span_id, _sample, _debug} = Tapper.Id.destructure(id)
+
+    assert trace_id == elem(id.trace_id, 0)
+    assert span_id == id.span_id
+    assert parent_span_id == id.origin_parent_id
+  end
+
+  test "destructure main span with root parent span" do
+    id = %Tapper.Id{
+      trace_id: Tapper.TraceId.generate(),
+      span_id: Tapper.SpanId.generate(),
+      origin_parent_id: :root,
+      parent_ids: [],
+      sample: true,
+      debug: false
+    }
+
+    {trace_id, span_id, parent_span_id, _sample, _debug} = Tapper.Id.destructure(id)
+
+    assert trace_id == elem(id.trace_id, 0)
+    assert span_id == id.span_id
+    assert parent_span_id == :root
+  end
+
+  test "destructure child span" do
+    id = %Tapper.Id{
+      trace_id: Tapper.TraceId.generate(),
+      span_id: Tapper.SpanId.generate(),
+      origin_parent_id: :root,
+      parent_ids: [Tapper.SpanId.generate()],
+      sample: true,
+      debug: false
+    }
+
+    {trace_id, span_id, parent_span_id, _sample, _debug} = Tapper.Id.destructure(id)
+
+    assert trace_id == elem(id.trace_id, 0)
+    assert span_id == id.span_id
+    assert parent_span_id == hd(id.parent_ids)
+  end
+
+  test "destructure sample and debug" do
+    h = fn(sample, debug) ->
+      {_, _, _, is_sampled, is_debug} = Tapper.Id.destructure(
+        %Tapper.Id{
+          trace_id: Tapper.TraceId.generate(),
+          span_id: Tapper.SpanId.generate(),
+          origin_parent_id: :root,
+          parent_ids: [],
+          sample: sample,
+          debug: debug
+      })
+      {is_sampled, is_debug}
+    end
+
+    assert {true, true} == (h.(true, true))
+    assert {true, false} == (h.(true, false))
+    assert {false, false} == (h.(false, false))
+    assert {false, true} == (h.(false, true))
+  end
+
+
   test "Inspect protocol" do
     id = %Tapper.Id{
       trace_id: Tapper.TraceId.generate(),
