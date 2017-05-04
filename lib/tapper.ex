@@ -53,6 +53,8 @@ defmodule Tapper do
         * `remote` (%Tapper.Endpoint{}) - the remote Endpoint: automatically creates a "sa" (client) or "ca" (server) binary annotation on this span.
         * `ttl` - how long this span should live before automatically finishing it
             (useful for long-running async operations); milliseconds (default 30,000 ms)
+        * `endpoint` - sets the endpoint for the initial `cr` or `sr` annotation, defaults to one derived from Tapper configuration (see `Tapper.Application.start/2`).
+        * `reporter` - override the configured reporter for this trace; useful for testing.
 
     NB if neither `sample` nor `debug` are set, all operations on this trace become a no-op.
   """
@@ -83,6 +85,8 @@ defmodule Tapper do
         * `remote` (%Tapper.Endpoint{}) - the remote Endpoint: automatically creates a "sa" (client) or "ca" (server) binary annotation on this span.
         * `ttl` (integer) - how long this span should live before automatically finishing it (useful for long-running async operations);
             milliseconds, defaults to 30,000 ms.
+        * `endpoint` - sets the endpoint for the initial `cr` or `sr` annotation, defaults to one derived from Tapper configuration (see `Tapper.Application.start/2`).
+        * `reporter` - override the configured reporter for this trace; useful for testing.
 
     NB if neither `sample` nor `debug` are set, all operations on this trace become a no-op.
   """
@@ -180,8 +184,8 @@ defmodule Tapper do
   binary_annotation(id, :i16, "tab", 4)
   ```
   """
-  def binary_annotation(id, type, key, value, endpoint \\ nil)
+  def binary_annotate(id, type, key, value, endpoint \\ nil)
 
-  def binary_annotation(id, type, key, value, endpoint) when type in @binary_annotation_types, do: Tapper.Tracer.binary_annotate(id, type, key, value, endpoint)
+  def binary_annotate(id, type, key, value, endpoint) when type in @binary_annotation_types, do: Tapper.Tracer.binary_annotate(id, type, key, value, endpoint)
 
 end

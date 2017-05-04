@@ -93,7 +93,7 @@ defmodule Tapper.Encoder.Json do
 
     def encode_endpoint(%Tapper.Protocol.Endpoint{ipv4: ipv4, port: port, service_name: service_name}) do
       %{
-        serviceName: service_name
+        serviceName: service_name || "unknown"
       }
       |> add_port(port)
       |> add_ipv4(ipv4)
