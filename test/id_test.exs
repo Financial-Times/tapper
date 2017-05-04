@@ -136,7 +136,7 @@ defmodule TapperIdTest do
 
     {trace_id, span_id, parent_span_id, _sample, _debug} = Tapper.Id.destructure(id)
 
-    assert trace_id == elem(id.trace_id, 0)
+    assert trace_id == id.trace_id
     assert span_id == id.span_id
     assert parent_span_id == id.origin_parent_id
   end
@@ -153,7 +153,7 @@ defmodule TapperIdTest do
 
     {trace_id, span_id, parent_span_id, _sample, _debug} = Tapper.Id.destructure(id)
 
-    assert trace_id == elem(id.trace_id, 0)
+    assert trace_id == id.trace_id
     assert span_id == id.span_id
     assert parent_span_id == :root
   end
@@ -170,7 +170,7 @@ defmodule TapperIdTest do
 
     {trace_id, span_id, parent_span_id, _sample, _debug} = Tapper.Id.destructure(id)
 
-    assert trace_id == elem(id.trace_id, 0)
+    assert trace_id == id.trace_id
     assert span_id == id.span_id
     assert parent_span_id == hd(id.parent_ids)
   end
