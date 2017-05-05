@@ -71,7 +71,7 @@ defmodule Tracer.Server.AnnotationTest do
     {:noreply, state_1, _ttl} =
       Tapper.Tracer.Server.handle_cast({:annotation, span_id, value_1, timestamp_1, endpoint_1}, trace)
 
-    value_2 = :error
+    value_2 = :my_custom_annotation
     timestamp_2 = timestamp_1 + 1
     endpoint_2 = random_endpoint()
 

@@ -6,11 +6,7 @@ defmodule Tapper.Tracer.Annotations do
   @spec annotation(value :: atom() | String.t, timestamp :: integer(), Tapper.Endpoint.t) :: Trace.BinaryAnnotation.t | nil
   def annotation(value, timestamp, endpoint)
   def annotation(value, timestamp, endpoint = %Tapper.Endpoint{}) when is_atom(value) and is_integer(timestamp) do
-    case value do
-      value when value in [:cs, :cr, :ss, :sr, :ws, :wr, :csf, :crf, :ssf, :srf, :error, :async] ->
-        Trace.Annotation.new(value, timestamp, endpoint)
-      _ -> nil
-    end
+    Trace.Annotation.new(value, timestamp, endpoint)
   end
 
   @spec binary_annotation(type :: atom(), Tapper.Endpoint.t) :: Trace.BinaryAnnotation.t | nil
