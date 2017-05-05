@@ -92,10 +92,9 @@ defmodule Tapper.Tracer.Server do
 
   def handle_info(:timeout, trace) do
     Logger.debug(fn -> inspect({trace.trace_id, :timeout}) end)
+    timestamp = System.os_time(:microsecond)
 
-    trace = %Trace{trace | end_timestamp: trace.last_activity}
-
-    # TODO clean-up spans?
+    trace = %Trace{trace | end_timestamp: timestamp}
 
     report_trace(trace)
 
@@ -110,7 +109,7 @@ defmodule Tapper.Tracer.Server do
     case opts[:async] do
       true ->
         Logger.info(fn -> "Finish Trace #{Tapper.TraceId.format(trace.trace_id)} ASYNC" end)
-        handle_cast({:annotation, trace.span_id, :async, timestamp, nil}, trace)
+        {:noreply, _trace, _ttl} = handle_cast({:annotation, trace.span_id, :async, timestamp, nil}, trace)
       _ ->
         trace = %Trace{trace | end_timestamp: timestamp}
 
