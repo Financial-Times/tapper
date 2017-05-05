@@ -126,7 +126,7 @@ defmodule Tapper.Tracer.Server do
     Logger.debug(fn -> inspect({Tapper.TraceId.format(trace.trace_id), msg}) end)
 
     span_info = case opts[:local] do
-      val when is_binary(val) ->
+      val when not is_nil(val) ->
           annotation = Trace.BinaryAnnotation.new(:lc, val, :string, endpoint_from_config(trace.config))
           update_in(span_info.binary_annotations, &([annotation | &1]))
       _ -> span_info
