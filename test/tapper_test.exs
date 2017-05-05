@@ -255,6 +255,9 @@ defmodule TapperTest do
     assert child_1.duration >= 100_000, "Unterminated child_1 span should have duration >= the TTL time #{child_1.duration}"
 
     assert child_2.duration >= 50_000, "child_2 span should have a duration greater than its sleep time"
+
+    assert protocol_annotation_by_value(child_1, :timeout), "expected :timeout annotation on unfinished span"
+    refute protocol_annotation_by_value(child_2, :timeout), "unexpected :timeout annotation"
   end
 
 end

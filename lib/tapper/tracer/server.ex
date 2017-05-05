@@ -95,6 +95,7 @@ defmodule Tapper.Tracer.Server do
     timestamp = System.os_time(:microsecond)
 
     trace = %Trace{trace | end_timestamp: timestamp}
+    trace = %Trace{trace | spans: annotate_timeout_spans(trace.spans, timestamp, endpoint_from_config(trace.config))}
 
     report_trace(trace)
 
@@ -194,7 +195,7 @@ defmodule Tapper.Tracer.Server do
     {:noreply, trace, trace.ttl}
   end
 
-  @doc "update a span (identified by span id) in a trace with an updater function, taking care of case where span does not exit."
+  @doc "update a span (identified by span id) in a trace with an updater function, taking care of case where span does not exist."
   @spec update_span(Trace.t, Tapper.SpanId.t, (Trace.SpanInfo.t -> Trace.SpanInfo.t)) :: Trace.t
   def update_span(trace = %Trace{}, span_id, span_updater) when is_integer(span_id) and is_function(span_updater, 1) do
     case trace.spans[span_id] do
@@ -250,6 +251,18 @@ defmodule Tapper.Tracer.Server do
 
       _else -> annotations
     end
+  end
+
+  def annotate_timeout_spans(spans, timestamp, endpoint) when is_map(spans) do
+    spans
+    |> Enum.map(fn({span_id,span}) ->
+      span = case span.end_timestamp do
+        nil ->  %Trace.SpanInfo{span | annotations: [Annotations.annotation(:timeout, timestamp, endpoint) | span.annotations], end_timestamp: timestamp}
+        _set -> span
+      end
+      {span_id, span}
+    end)
+    |> Enum.into(Map.new)
   end
 
   @doc "convert trace to protocol spans, and invoke reporter."

@@ -89,7 +89,7 @@ Once a trace has been started, all span operations and annotation updates are pe
 
 When a trace is terminated with `Tapper.finish/1`, the server sends the trace to the configured collector (e.g. a Zipkin server), and exits normally.
 
-If a trace is not terminated by an API call, Tapper will time-out after a pre-determined time since the last API operation (`ttl` option on trace creation, default 30s), and terminate the trace as if `Tapper.finish/1` was called. This will also happen if the client process exits before finishing the trace.
+If a trace is not terminated by an API call, Tapper will time-out after a pre-determined time since the last API operation (`ttl` option on trace creation, default 30s), and terminate the trace as if `Tapper.finish/1` was called, annotating the unfinished spans with a `timeout` annotation. Timeout will will also happen if the client process exits before finishing the trace.
 
 If the API client starts spans in, or around, asynchronous processes, and exits before they have finished, it should call `Tapper.finish/2` passing the `async: true` option; async spans should be closed as normal by `Tapper.finish_span/1`, otherwise they will eventually be terminated by the TTL behaviour.
 

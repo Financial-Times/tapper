@@ -3,6 +3,7 @@ defmodule Tracer.Server.AnnotationTest do
 
   import Test.Helper.Server
 
+  alias Tapper.Tracer.Trace
 
   test "add annotatation, no endpoint; stores default endpoint" do
     {trace, span_id} = init_with_opts()
@@ -23,7 +24,7 @@ defmodule Tracer.Server.AnnotationTest do
     assert is_list(span.binary_annotations)
     assert length(span.binary_annotations) == 0
 
-    assert %Tapper.Tracer.Trace.Annotation{
+    assert %Trace.Annotation{
       value: value,
       timestamp: timestamp,
       host: Tapper.Tracer.Server.endpoint_from_config(config())
@@ -52,7 +53,7 @@ defmodule Tracer.Server.AnnotationTest do
     assert is_list(span.binary_annotations)
     assert length(span.binary_annotations) == 0
 
-    assert %Tapper.Tracer.Trace.Annotation{
+    assert %Trace.Annotation{
       value: value,
       timestamp: timestamp,
       host: endpoint
@@ -85,13 +86,13 @@ defmodule Tracer.Server.AnnotationTest do
 
     [annotation_2, annotation_1, _] = span.annotations
 
-    assert %Tapper.Tracer.Trace.Annotation{
+    assert %Trace.Annotation{
       value: value_1,
       timestamp: timestamp_1,
       host: endpoint_1
     } == annotation_1
 
-    assert %Tapper.Tracer.Trace.Annotation{
+    assert %Trace.Annotation{
       value: value_2,
       timestamp: timestamp_2,
       host: endpoint_2
@@ -136,7 +137,7 @@ defmodule Tracer.Server.AnnotationTest do
     assert is_list(span.binary_annotations)
     assert length(span.binary_annotations) == 1
 
-    assert %Tapper.Tracer.Trace.BinaryAnnotation{
+    assert %Trace.BinaryAnnotation{
       annotation_type: type,
       key: key,
       value: value,
@@ -169,7 +170,7 @@ defmodule Tracer.Server.AnnotationTest do
     assert is_list(span.binary_annotations)
     assert length(span.binary_annotations) == 1
 
-    assert %Tapper.Tracer.Trace.BinaryAnnotation{
+    assert %Trace.BinaryAnnotation{
       annotation_type: type,
       key: key,
       value: value,
@@ -207,14 +208,14 @@ defmodule Tracer.Server.AnnotationTest do
 
     [annotation_2, annotation_1] = span.binary_annotations
 
-    assert %Tapper.Tracer.Trace.BinaryAnnotation{
+    assert %Trace.BinaryAnnotation{
       annotation_type: type_1,
       key: key_1,
       value: value_1,
       host: endpoint_1
     } == annotation_1
 
-    assert %Tapper.Tracer.Trace.BinaryAnnotation{
+    assert %Trace.BinaryAnnotation{
       annotation_type: type_2,
       key: key_2,
       value: value_2,
@@ -238,6 +239,57 @@ defmodule Tracer.Server.AnnotationTest do
 
     assert state.spans == trace.spans
     assert timestamp == state.last_activity
+  end
+
+  test "annotate timeout spans" do
+    endpoint = random_endpoint()
+    timestamp = :rand.uniform(2000)
+
+    spans = %{
+      "1" => %Trace.SpanInfo{
+        start_timestamp: timestamp,
+        end_timestamp: timestamp + 100,
+        annotations: []
+      },
+      "2" => %Trace.SpanInfo{
+        start_timestamp: timestamp + 200,
+        annotations: []
+      },
+      "3" => %Trace.SpanInfo{
+        start_timestamp: timestamp + 400,
+        annotations: [
+          %Trace.Annotation{
+            value: :cr,
+            timestamp: timestamp + 410,
+            host: endpoint
+          }
+        ]
+      }
+    }
+
+    timestamp = timestamp + 500
+    expected_annotation = %Trace.Annotation{value: :timeout, timestamp: timestamp, host: endpoint}
+
+
+    annotated_spans = Tapper.Tracer.Server.annotate_timeout_spans(spans, timestamp, endpoint)
+
+
+    assert is_map(annotated_spans)
+
+    %{"1" => annotated_span_1 = %Trace.SpanInfo{}, "2" => annotated_span_2 = %Trace.SpanInfo{}, "3" => annotated_span_3 = %Trace.SpanInfo{}} = annotated_spans
+
+    assert annotated_span_1 == spans["1"], "Finished span should not change"
+
+    assert annotated_span_2.start_timestamp === spans["2"].start_timestamp
+    assert annotated_span_2.end_timestamp === timestamp
+    assert length(annotated_span_2.annotations) === 1
+    assert expected_annotation in annotated_span_2.annotations
+
+    assert annotated_span_3.start_timestamp === spans["3"].start_timestamp
+    assert annotated_span_3.end_timestamp === timestamp
+    assert length(annotated_span_3.annotations) === 2
+    assert expected_annotation in annotated_span_3.annotations
+    assert hd(spans["3"].annotations) in annotated_span_3.annotations
   end
 
 end
