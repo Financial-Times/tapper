@@ -11,6 +11,9 @@ defmodule Tapper.Id do
     sampled: false           # i.e. sample || debug
   ]
 
+  alias Tapper.TraceId
+  alias Tapper.SpanId
+
   @type t :: %__MODULE__{trace_id: Tapper.TraceId.t, span_id: Tapper.SpanId.t, parent_ids: [Tapper.SpanId.t], sampled: boolean(), origin_parent_id: Tapper.SpanId.t | :root, sample: boolean(), debug: boolean()} | :ignore
 
   @doc "Push the current span id onto the parent stack, and set new span id, returning updated Tapper Id"
@@ -27,11 +30,14 @@ defmodule Tapper.Id do
   end
 
   @doc "Destructure the id, for trace propagation purposes."
+  def destructure(%Tapper.Id{trace_id: trace_id, span_id: span_id, origin_parent_id: :root, parent_ids: [], sample: sample, debug: debug}) do
+    {TraceId.to_hex(trace_id), SpanId.to_hex(span_id), "", sample, debug}
+  end
   def destructure(%Tapper.Id{trace_id: trace_id, span_id: span_id, origin_parent_id: origin_parent_id, parent_ids: [], sample: sample, debug: debug}) do
-    {trace_id, span_id, origin_parent_id, sample, debug}
+    {TraceId.to_hex(trace_id), SpanId.to_hex(span_id), SpanId.to_hex(origin_parent_id), sample, debug}
   end
   def destructure(%Tapper.Id{trace_id: trace_id, span_id: span_id, origin_parent_id: _origin_parent_id, parent_ids: [parent_id | _rest], sample: sample, debug: debug}) do
-    {trace_id, span_id, parent_id, sample, debug}
+    {TraceId.to_hex(trace_id), SpanId.to_hex(span_id), SpanId.to_hex(parent_id), sample, debug}
   end
 
   defimpl Inspect do

@@ -51,150 +51,154 @@ end
 defmodule TapperIdTest do
   use ExUnit.Case
 
-  test "push span when empty" do
-    id = %Tapper.Id{
-      trace_id: Tapper.TraceId.generate(),
-      span_id: Tapper.SpanId.generate(),
-      parent_ids: []
-    }
+  describe "pop/1 and push/2" do
 
-    span_id = Tapper.SpanId.generate()
+    test "push span when empty" do
+      id = %Tapper.Id{
+        trace_id: Tapper.TraceId.generate(),
+        span_id: Tapper.SpanId.generate(),
+        parent_ids: []
+      }
 
-    updated_id = Tapper.Id.push(id, span_id)
+      span_id = Tapper.SpanId.generate()
 
-    assert updated_id.parent_ids == [id.span_id]
-    assert updated_id.span_id == span_id
-  end
+      updated_id = Tapper.Id.push(id, span_id)
 
-  test "push span when has parents" do
-    parent_span_id = Tapper.SpanId.generate()
-
-    id = %Tapper.Id{
-      trace_id: Tapper.TraceId.generate(),
-      span_id: Tapper.SpanId.generate(),
-      parent_ids: [parent_span_id]
-    }
-
-    span_id = Tapper.SpanId.generate()
-
-    updated_id = Tapper.Id.push(id, span_id)
-
-    assert updated_id.parent_ids == [id.span_id, parent_span_id]
-    assert updated_id.span_id == span_id
-  end
-
-  test "pop span, one parent" do
-    parent_span_id = Tapper.SpanId.generate()
-
-    id = %Tapper.Id{
-      trace_id: Tapper.TraceId.generate(),
-      span_id: Tapper.SpanId.generate(),
-      parent_ids: [parent_span_id]
-    }
-
-    updated_id = Tapper.Id.pop(id)
-
-    assert updated_id.span_id == parent_span_id
-    assert updated_id.parent_ids == []
-  end
-
-  test "pop span, more than one parent" do
-    parent1_span_id = Tapper.SpanId.generate()
-    parent2_span_id = Tapper.SpanId.generate()
-
-    id = %Tapper.Id{
-      trace_id: Tapper.TraceId.generate(),
-      span_id: Tapper.SpanId.generate(),
-      parent_ids: [parent1_span_id, parent2_span_id]
-    }
-
-    updated_id = Tapper.Id.pop(id)
-
-    assert updated_id.span_id == parent1_span_id
-    assert updated_id.parent_ids == [parent2_span_id]
-  end
-
-  test "pop span, no parents is no-op" do
-    id = %Tapper.Id{
-      trace_id: Tapper.TraceId.generate(),
-      span_id: Tapper.SpanId.generate(),
-      parent_ids: []
-    }
-
-    assert Tapper.Id.pop(id) == id
-  end
-
-  test "destructure main span with origin parent span" do
-    id = %Tapper.Id{
-      trace_id: Tapper.TraceId.generate(),
-      span_id: Tapper.SpanId.generate(),
-      origin_parent_id: Tapper.SpanId.generate(),
-      parent_ids: [],
-      sample: true,
-      debug: false
-    }
-
-    {trace_id, span_id, parent_span_id, _sample, _debug} = Tapper.Id.destructure(id)
-
-    assert trace_id == id.trace_id
-    assert span_id == id.span_id
-    assert parent_span_id == id.origin_parent_id
-  end
-
-  test "destructure main span with root parent span" do
-    id = %Tapper.Id{
-      trace_id: Tapper.TraceId.generate(),
-      span_id: Tapper.SpanId.generate(),
-      origin_parent_id: :root,
-      parent_ids: [],
-      sample: true,
-      debug: false
-    }
-
-    {trace_id, span_id, parent_span_id, _sample, _debug} = Tapper.Id.destructure(id)
-
-    assert trace_id == id.trace_id
-    assert span_id == id.span_id
-    assert parent_span_id == :root
-  end
-
-  test "destructure child span" do
-    id = %Tapper.Id{
-      trace_id: Tapper.TraceId.generate(),
-      span_id: Tapper.SpanId.generate(),
-      origin_parent_id: :root,
-      parent_ids: [Tapper.SpanId.generate()],
-      sample: true,
-      debug: false
-    }
-
-    {trace_id, span_id, parent_span_id, _sample, _debug} = Tapper.Id.destructure(id)
-
-    assert trace_id == id.trace_id
-    assert span_id == id.span_id
-    assert parent_span_id == hd(id.parent_ids)
-  end
-
-  test "destructure sample and debug" do
-    h = fn(sample, debug) ->
-      {_, _, _, is_sampled, is_debug} = Tapper.Id.destructure(
-        %Tapper.Id{
-          trace_id: Tapper.TraceId.generate(),
-          span_id: Tapper.SpanId.generate(),
-          origin_parent_id: :root,
-          parent_ids: [],
-          sample: sample,
-          debug: debug
-      })
-      {is_sampled, is_debug}
+      assert updated_id.parent_ids == [id.span_id]
+      assert updated_id.span_id == span_id
     end
 
-    assert {true, true} == (h.(true, true))
-    assert {true, false} == (h.(true, false))
-    assert {false, false} == (h.(false, false))
-    assert {false, true} == (h.(false, true))
+    test "push span when has parents" do
+      parent_span_id = Tapper.SpanId.generate()
+
+      id = %Tapper.Id{
+        trace_id: Tapper.TraceId.generate(),
+        span_id: Tapper.SpanId.generate(),
+        parent_ids: [parent_span_id]
+      }
+
+      span_id = Tapper.SpanId.generate()
+
+      updated_id = Tapper.Id.push(id, span_id)
+
+      assert updated_id.parent_ids == [id.span_id, parent_span_id]
+      assert updated_id.span_id == span_id
+    end
+
+    test "pop span, one parent" do
+      parent_span_id = Tapper.SpanId.generate()
+
+      id = %Tapper.Id{
+        trace_id: Tapper.TraceId.generate(),
+        span_id: Tapper.SpanId.generate(),
+        parent_ids: [parent_span_id]
+      }
+
+      updated_id = Tapper.Id.pop(id)
+
+      assert updated_id.span_id == parent_span_id
+      assert updated_id.parent_ids == []
+    end
+
+    test "pop span, more than one parent" do
+      parent1_span_id = Tapper.SpanId.generate()
+      parent2_span_id = Tapper.SpanId.generate()
+
+      id = %Tapper.Id{
+        trace_id: Tapper.TraceId.generate(),
+        span_id: Tapper.SpanId.generate(),
+        parent_ids: [parent1_span_id, parent2_span_id]
+      }
+
+      updated_id = Tapper.Id.pop(id)
+
+      assert updated_id.span_id == parent1_span_id
+      assert updated_id.parent_ids == [parent2_span_id]
+    end
+
+    test "pop span, no parents is no-op" do
+      id = %Tapper.Id{
+        trace_id: Tapper.TraceId.generate(),
+        span_id: Tapper.SpanId.generate(),
+        parent_ids: []
+      }
+
+      assert Tapper.Id.pop(id) == id
+    end
   end
 
+  describe "destructure/1" do
+    test "destructure main span with non-root origin parent span" do
+      id = %Tapper.Id{
+        trace_id: Tapper.TraceId.generate(),
+        span_id: Tapper.SpanId.generate(),
+        origin_parent_id: Tapper.SpanId.generate(),
+        parent_ids: [],
+        sample: true,
+        debug: false
+      }
+
+      {trace_id, span_id, parent_span_id, _sample, _debug} = Tapper.Id.destructure(id)
+
+      assert trace_id == Tapper.TraceId.to_hex(id.trace_id)
+      assert span_id == Tapper.SpanId.to_hex(id.span_id)
+      assert parent_span_id == Tapper.SpanId.to_hex(id.origin_parent_id)
+    end
+
+    test "destructure main span with root parent span" do
+      id = %Tapper.Id{
+        trace_id: Tapper.TraceId.generate(),
+        span_id: Tapper.SpanId.generate(),
+        origin_parent_id: :root,
+        parent_ids: [],
+        sample: true,
+        debug: false
+      }
+
+      {trace_id, span_id, parent_span_id, _sample, _debug} = Tapper.Id.destructure(id)
+
+      assert trace_id == Tapper.TraceId.to_hex(id.trace_id)
+      assert span_id == Tapper.SpanId.to_hex(id.span_id)
+      assert parent_span_id == ""
+    end
+
+    test "destructure child span" do
+      id = %Tapper.Id{
+        trace_id: Tapper.TraceId.generate(),
+        span_id: Tapper.SpanId.generate(),
+        origin_parent_id: :root,
+        parent_ids: [Tapper.SpanId.generate()],
+        sample: true,
+        debug: false
+      }
+
+      {trace_id, span_id, parent_span_id, _sample, _debug} = Tapper.Id.destructure(id)
+
+      assert trace_id == Tapper.TraceId.to_hex(id.trace_id)
+      assert span_id == Tapper.SpanId.to_hex(id.span_id)
+      assert parent_span_id == Tapper.SpanId.to_hex(hd(id.parent_ids))
+    end
+
+    test "destructure sample and debug" do
+      h = fn(sample, debug) ->
+        {_, _, _, is_sampled, is_debug} = Tapper.Id.destructure(
+          %Tapper.Id{
+            trace_id: Tapper.TraceId.generate(),
+            span_id: Tapper.SpanId.generate(),
+            origin_parent_id: :root,
+            parent_ids: [],
+            sample: sample,
+            debug: debug
+        })
+        {is_sampled, is_debug}
+      end
+
+      assert {true, true} == (h.(true, true))
+      assert {true, false} == (h.(true, false))
+      assert {false, false} == (h.(false, false))
+      assert {false, true} == (h.(false, true))
+    end
+  end
 
   test "Inspect protocol" do
     id = %Tapper.Id{
