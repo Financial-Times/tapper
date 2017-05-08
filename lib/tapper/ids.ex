@@ -1,5 +1,9 @@
 defmodule Tapper.Id do
-  @moduledoc "The ID used with the API; tracks nested spans. **Consider opaque!**"
+  @moduledoc """
+  The ID used with the API; tracks nested spans.
+
+  > Clients should consider this ID opaque!
+  """
 
   defstruct [
     trace_id: nil,
@@ -29,7 +33,18 @@ defmodule Tapper.Id do
     %Tapper.Id{id | parent_ids: parent_ids, span_id: parent_id}
   end
 
-  @doc "Destructure the id, for trace propagation purposes."
+  @doc """
+  Destructure the id into external hex notation, for trace propagation purposes.
+
+  ## Example
+  ```
+  id = Tapper.start()
+
+  {trace_id_hex, span_id_hex, parent_span_id_hex, sampled_flag, debug_flag} =
+    Tapper.Id.destructure(id)
+  ```
+  """
+  @spec destructure(Tapper.Id.t) :: {String.t, String.t, String.t, boolean(), boolean()}
   def destructure(%Tapper.Id{trace_id: trace_id, span_id: span_id, origin_parent_id: :root, parent_ids: [], sample: sample, debug: debug}) do
     {TraceId.to_hex(trace_id), SpanId.to_hex(span_id), "", sample, debug}
   end
