@@ -218,6 +218,12 @@ defmodule Tapper.Tracer do
     id
   end
 
+  def async(id = %Tapper.Id{span_id: span_id}) do
+    timestamp = System.os_time(:microseconds)
+    GenServer.cast(via_tuple(id), {:async, span_id, timestamp})
+    id
+  end
+
   def annotate(id, type, opts \\ [])
 
   def annotate(:ignore, _type, _opts), do: :ignore

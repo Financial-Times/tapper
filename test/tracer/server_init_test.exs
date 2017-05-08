@@ -3,6 +3,8 @@ defmodule Tracer.Server.InitTest do
 
   import Test.Helper.Server
 
+  alias Tapper.Tracer.Trace
+
   test "init, no options" do
     config = config()
     trace_id = Tapper.TraceId.generate()
@@ -38,10 +40,10 @@ defmodule Tracer.Server.InitTest do
     assert is_list(annotations)
     assert length(annotations) == 1
 
-    assert hd(annotations) == %Tapper.Tracer.Trace.Annotation{
+    assert hd(annotations) == %Trace.Annotation{
         timestamp: timestamp,
         value: :cs,
-        host: Tapper.Tracer.Server.endpoint_from_config(config)
+        host: Trace.endpoint_from_config(config)
     }
 
     assert span.binary_annotations == []
@@ -67,10 +69,10 @@ defmodule Tracer.Server.InitTest do
     annotations = trace.spans[span_id].annotations
     assert length(annotations) == 1
 
-    assert hd(annotations) == %Tapper.Tracer.Trace.Annotation{
+    assert hd(annotations) == %Trace.Annotation{
         timestamp: trace.timestamp,
         value: :sr,
-        host: Tapper.Tracer.Server.endpoint_from_config(trace.config)
+        host: Trace.endpoint_from_config(trace.config)
     }
 
     assert span.binary_annotations == []
@@ -83,10 +85,10 @@ defmodule Tracer.Server.InitTest do
     annotations = span.annotations
     assert length(annotations) == 1
 
-    assert hd(annotations) == %Tapper.Tracer.Trace.Annotation{
+    assert hd(annotations) == %Trace.Annotation{
         timestamp: trace.timestamp,
         value: :cs,
-        host: Tapper.Tracer.Server.endpoint_from_config(trace.config)
+        host: Trace.endpoint_from_config(trace.config)
     }
 
     assert span.binary_annotations == []
@@ -100,15 +102,15 @@ defmodule Tracer.Server.InitTest do
     annotations = span.annotations
     assert length(annotations) == 1
 
-    assert hd(annotations) == %Tapper.Tracer.Trace.Annotation{
+    assert hd(annotations) == %Trace.Annotation{
         timestamp: trace.timestamp,
         value: :cs,
-        host: Tapper.Tracer.Server.endpoint_from_config(trace.config)
+        host: Trace.endpoint_from_config(trace.config)
     }
 
     binary_annotations = span.binary_annotations
     assert length(binary_annotations) == 1
-    assert hd(binary_annotations) == %Tapper.Tracer.Trace.BinaryAnnotation{
+    assert hd(binary_annotations) == %Trace.BinaryAnnotation{
         annotation_type: :bool,
         key: :sa,
         value: true,
@@ -124,15 +126,15 @@ defmodule Tracer.Server.InitTest do
     annotations = span.annotations
     assert length(annotations) == 1
 
-    assert hd(annotations) == %Tapper.Tracer.Trace.Annotation{
+    assert hd(annotations) == %Trace.Annotation{
         timestamp: trace.timestamp,
         value: :sr,
-        host: Tapper.Tracer.Server.endpoint_from_config(trace.config)
+        host: Trace.endpoint_from_config(trace.config)
     }
 
     binary_annotations = span.binary_annotations
     assert length(binary_annotations) == 1
-    assert hd(binary_annotations) == %Tapper.Tracer.Trace.BinaryAnnotation{
+    assert hd(binary_annotations) == %Trace.BinaryAnnotation{
         annotation_type: :bool,
         key: :ca,
         value: true,

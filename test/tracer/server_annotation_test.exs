@@ -27,7 +27,7 @@ defmodule Tracer.Server.AnnotationTest do
     assert %Trace.Annotation{
       value: value,
       timestamp: timestamp,
-      host: Tapper.Tracer.Server.endpoint_from_config(config())
+      host: Trace.endpoint_from_config(config())
     } == hd(span.annotations)
 
     assert timestamp == state.last_activity
@@ -141,7 +141,7 @@ defmodule Tracer.Server.AnnotationTest do
       annotation_type: type,
       key: key,
       value: value,
-      host: Tapper.Tracer.Server.endpoint_from_config(config())
+      host: Trace.endpoint_from_config(config())
     } == hd(span.binary_annotations)
 
     assert timestamp == state.last_activity
@@ -239,57 +239,6 @@ defmodule Tracer.Server.AnnotationTest do
 
     assert state.spans == trace.spans
     assert timestamp == state.last_activity
-  end
-
-  test "annotate timeout spans" do
-    endpoint = random_endpoint()
-    timestamp = :rand.uniform(2000)
-
-    spans = %{
-      "1" => %Trace.SpanInfo{
-        start_timestamp: timestamp,
-        end_timestamp: timestamp + 100,
-        annotations: []
-      },
-      "2" => %Trace.SpanInfo{
-        start_timestamp: timestamp + 200,
-        annotations: []
-      },
-      "3" => %Trace.SpanInfo{
-        start_timestamp: timestamp + 400,
-        annotations: [
-          %Trace.Annotation{
-            value: :cr,
-            timestamp: timestamp + 410,
-            host: endpoint
-          }
-        ]
-      }
-    }
-
-    timestamp = timestamp + 500
-    expected_annotation = %Trace.Annotation{value: :timeout, timestamp: timestamp, host: endpoint}
-
-
-    annotated_spans = Tapper.Tracer.Server.annotate_timeout_spans(spans, timestamp, endpoint)
-
-
-    assert is_map(annotated_spans)
-
-    %{"1" => annotated_span_1 = %Trace.SpanInfo{}, "2" => annotated_span_2 = %Trace.SpanInfo{}, "3" => annotated_span_3 = %Trace.SpanInfo{}} = annotated_spans
-
-    assert annotated_span_1 == spans["1"], "Finished span should not change"
-
-    assert annotated_span_2.start_timestamp === spans["2"].start_timestamp
-    assert annotated_span_2.end_timestamp === timestamp
-    assert length(annotated_span_2.annotations) === 1
-    assert expected_annotation in annotated_span_2.annotations
-
-    assert annotated_span_3.start_timestamp === spans["3"].start_timestamp
-    assert annotated_span_3.end_timestamp === timestamp
-    assert length(annotated_span_3.annotations) === 2
-    assert expected_annotation in annotated_span_3.annotations
-    assert hd(spans["3"].annotations) in annotated_span_3.annotations
   end
 
 end

@@ -16,6 +16,10 @@ defmodule Tapper.Tracer.Api do
 
     @callback finish(tapper_id :: Tapper.Id.t) :: :ok
 
+    @callback name(tapper_id :: Tapper.Id.t, name :: String.t) :: Tapper.Id.t
+
+    @callback async(tapper_id :: Tapper.Id.t) :: Tapper.Id.t
+
     @callback annotate(tapper_id :: Tapper.Id.t, type :: atom(), opts :: Keyword.t) :: Tapper.Id.t
 
     @type binary_annotation_type :: :string | :bool | :i16 | :i32 | :i64 | :double | :bytes

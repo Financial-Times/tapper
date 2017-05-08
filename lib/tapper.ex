@@ -111,32 +111,41 @@ defmodule Tapper do
   @doc "name (or rename) the current span"
   def name(id, name), do: Tapper.Tracer.name(id, name)
 
-  @doc "mark a server_receive event; see also `:server` option on `Tapper.start/1`"
+  @doc """
+  Marks the trace as asynchronous, adding an `async` annotation to the current span.
+
+  The trace will act as if `finish/2` was called with the `async: true` option.
+
+  Child spans, and the whole trace, should still be finished, as normal.
+  """
+  def async(id), do: Tapper.Tracer.async(id)
+
+  @doc "mark a server_receive event (`sr`); see also `:server` option on `Tapper.start/1`"
   def server_receive(id), do: Tapper.Tracer.annotate(id, :sr)
-  @doc "mark a server_send event"
+  @doc "mark a server_send event (`ss`)"
   def server_send(id), do: Tapper.Tracer.annotate(id, :ss)
 
-  @doc "mark a client_send event; see also `:client` option on `Tapper.start/1`"
+  @doc "mark a client_send event (`cs`); see also `:client` option on `Tapper.start/1`"
   def client_send(id), do: Tapper.Tracer.annotate(id, :cs)
-  @doc "mark a client_receive event"
+  @doc "mark a client_receive event (`cr`)"
   def client_receive(id), do: Tapper.Tracer.annotate(id, :cr)
 
-  @doc "mark a send event"
+  @doc "mark a send event (`ws`)"
   def wire_send(id), do: Tapper.Tracer.annotate(id, :ws)
-  @doc "mark a receive event"
+  @doc "mark a receive event (`wr`)"
   def wire_receive(id), do: Tapper.Tracer.annotate(id, :wr)
 
-  @doc "mark an error event"
+  @doc "mark an error event (`error`)"
   def error(id), do: Tapper.Tracer.annotate(id, :error)
 
   @doc "mark an event, general interface"
   def annotate(id, type, endpoint \\ nil), do: Tapper.Tracer.annotate(id, type, endpoint: endpoint)
 
 
-  @doc "Tag with the client's address"
+  @doc "Tag with the client's address (`ca`)"
   def client_address(id, host = %Tapper.Endpoint{}), do: Tapper.Tracer.binary_annotate(id, :bool, "ca", true, host)
 
-  @doc "Tag with the server's address"
+  @doc "Tag with the server's address (`sa`)"
   def server_address(id, host = %Tapper.Endpoint{}), do: Tapper.Tracer.binary_annotate(id, :bool, "sa", true, host)
 
   @doc "Tag with HTTP host information."

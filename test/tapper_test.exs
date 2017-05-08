@@ -1,4 +1,6 @@
 defmodule TapperTest do
+  @moduledoc "These are the integration tests, testing from the API-level using a real Tapper server."
+
   use ExUnit.Case
   doctest Tapper
 
@@ -196,6 +198,15 @@ defmodule TapperTest do
     assert child_1.duration > child_2.duration
     assert child_1.duration >= 300_000 # 300ms == 300,000µs
     assert child_2.duration >= 50_000
+
+    refute protocol_annotation_by_value(main, :timeout), "unexpected :timeout annotation on main span"
+    refute protocol_annotation_by_value(child_1, :timeout), "unexpected :timeout annotation"
+    refute protocol_annotation_by_value(child_2, :timeout), "unexpected :timeout annotation"
+
+    assert protocol_annotation_by_value(main, :async), "expected main span to have async annotation"
+
+    refute protocol_annotation_by_value(child_1, :async), "unexpected async annotation on child_1"
+    refute protocol_annotation_by_value(child_2, :async), "unexpected async annotation on child_2"
   end
 
   test "parallel spans, with asyncronous time-out add up" do
@@ -212,6 +223,7 @@ defmodule TapperTest do
     id_2 = Tapper.start_span(id, name: "child-2")
     t2 = Task.async(fn ->
         Tapper.tag(id_2, "task", 2)
+        Tapper.async(id_2)
         Process.sleep(50)
         Tapper.finish_span(id_2)
       end)
@@ -258,6 +270,9 @@ defmodule TapperTest do
 
     assert protocol_annotation_by_value(child_1, :timeout), "expected :timeout annotation on unfinished span"
     refute protocol_annotation_by_value(child_2, :timeout), "unexpected :timeout annotation"
+
+    assert protocol_annotation_by_value(main, :async), "expected main span to have async annotation"
+    assert protocol_annotation_by_value(child_2, :async), "expected child_2 span to have async annotation"
   end
 
 end

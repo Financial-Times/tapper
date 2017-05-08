@@ -6,6 +6,8 @@ defmodule Tracer.Server.SpanTest do
 
   import Test.Helper.Server
 
+  alias Tapper.Tracer.Trace
+
   require Logger
 
   test "start_span updates spans and last_activity" do
@@ -51,7 +53,7 @@ defmodule Tracer.Server.SpanTest do
 
     assert state.spans[child_span.id]
     binary_annotations = state.spans[child_span.id].binary_annotations
-    assert %Tapper.Tracer.Trace.BinaryAnnotation{annotation_type: :string, key: :lc, value: "my_function", host: Tapper.Tracer.Server.endpoint_from_config(config())} in binary_annotations
+    assert %Tapper.Tracer.Trace.BinaryAnnotation{annotation_type: :string, key: :lc, value: "my_function", host: Trace.endpoint_from_config(config())} in binary_annotations
   end
 
   test "start_span with local context option (as atom) adds lc annotation" do
@@ -65,7 +67,7 @@ defmodule Tracer.Server.SpanTest do
 
     assert state.spans[child_span.id]
     binary_annotations = state.spans[child_span.id].binary_annotations
-    assert %Tapper.Tracer.Trace.BinaryAnnotation{annotation_type: :string, key: :lc, value: MyAtom, host: Tapper.Tracer.Server.endpoint_from_config(config())} in binary_annotations
+    assert %Tapper.Tracer.Trace.BinaryAnnotation{annotation_type: :string, key: :lc, value: MyAtom, host: Trace.endpoint_from_config(config())} in binary_annotations
   end
 
   test "finish_span when no matching span is harmless (supervisor restart case)" do
@@ -133,7 +135,7 @@ defmodule Tracer.Server.SpanTest do
     assert hd(annotations) == %Tapper.Tracer.Trace.Annotation{
       value: :async,
       timestamp: timestamp,
-      host: Tapper.Tracer.Server.endpoint_from_config(config)
+      host: Trace.endpoint_from_config(config)
     }
 
     refute_received {^ref, _spans}, "Async finish should not have called reporter"

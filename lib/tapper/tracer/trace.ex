@@ -14,10 +14,12 @@ defmodule Tapper.Tracer.Trace do
     :timestamp,     # start of trace
     :end_timestamp, # end of trace
     :last_activity, # last time a span was started, ended or updated
-    :ttl            # time to live in ms, past last_activity
+    :ttl,           # time to live in ms, past last_activity
+    :async          # this trace will finish asynchronously
   ]
 
-  @type trace :: %__MODULE__{trace_id: Tapper.TraceId.t, span_id: Tapper.SpanId.t, parent_id: Tapper.SpanId.t | nil, spans: [Tapper.Traceer.SpanInfo.t]}
+  @type trace :: %__MODULE__{trace_id: Tapper.TraceId.t, span_id: Tapper.SpanId.t, parent_id: Tapper.SpanId.t | :root, spans: [Tapper.Traceer.SpanInfo.t]}
+  @type t :: trace
 
   defmodule SpanInfo do
     @moduledoc false
@@ -91,6 +93,13 @@ defmodule Tapper.Tracer.Trace do
         annotation_type: type,
       }
     end
+  end
+
+  def endpoint_from_config(%{host_info: %{ipv4: ipv4, system_id: system_id}}) do
+    %Tapper.Endpoint{
+        ipv4: ipv4,
+        service_name: system_id
+    }
   end
 
   @spec to_protocol_spans(%Tapper.Tracer.Trace{}) :: [%Tapper.Protocol.Span{}]

@@ -3,13 +3,13 @@ defmodule Tapper.Tracer.Annotations do
 
   alias Tapper.Tracer.Trace
 
-  @spec annotation(value :: atom() | String.t, timestamp :: integer(), Tapper.Endpoint.t) :: Trace.BinaryAnnotation.t | nil
+  @spec annotation(value :: atom() | String.t, timestamp :: integer(), Tapper.Endpoint.t) :: Trace.BinaryAnnotation.t
   def annotation(value, timestamp, endpoint)
   def annotation(value, timestamp, endpoint = %Tapper.Endpoint{}) when is_atom(value) and is_integer(timestamp) do
     Trace.Annotation.new(value, timestamp, endpoint)
   end
 
-  @spec binary_annotation(type :: atom(), Tapper.Endpoint.t) :: Trace.BinaryAnnotation.t | nil
+  @spec binary_annotation(type :: atom(), Tapper.Endpoint.t) :: Trace.BinaryAnnotation.t
   def binary_annotation(type, endpoint)
   def binary_annotation(:ca, endpoint = %Tapper.Endpoint{}), do: Trace.BinaryAnnotation.new(:ca, true, :bool, endpoint)
   def binary_annotation(:sa, endpoint = %Tapper.Endpoint{}), do: Trace.BinaryAnnotation.new(:sa, true, :bool, endpoint)

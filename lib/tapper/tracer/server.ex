@@ -60,7 +60,7 @@ defmodule Tapper.Tracer.Server do
     config = if(opts[:reporter], do: %{config | reporter: opts[:reporter]}, else: config)
 
     # this is the local host for `cs` or `sr`: can be overridden by an API client, e.g. if needs to be dynamically generated.
-    endpoint = %Tapper.Endpoint{} = (opts[:endpoint] || endpoint_from_config(config))
+    endpoint = %Tapper.Endpoint{} = (opts[:endpoint] || Trace.endpoint_from_config(config))
 
     # we shouldn't be stopped by the exit of the process that started the trace because async
     # processes may still be processing; we use either an explicit `finish/1` or
@@ -90,12 +90,12 @@ defmodule Tapper.Tracer.Server do
     {:ok, trace, ttl}
   end
 
+  @doc "Handles time-out: invoked if ttl expires between messages: automatically ends trace, annotating any un-finished spans."
   def handle_info(:timeout, trace) do
     Logger.debug(fn -> inspect({trace.trace_id, :timeout}) end)
     timestamp = System.os_time(:microsecond)
 
-    trace = %Trace{trace | end_timestamp: timestamp}
-    trace = %Trace{trace | spans: annotate_timeout_spans(trace.spans, timestamp, endpoint_from_config(trace.config))}
+    trace = Tapper.Tracer.Timeout.timeout_trace(trace, timestamp)
 
     report_trace(trace)
 
@@ -107,10 +107,13 @@ defmodule Tapper.Tracer.Server do
   def handle_cast(msg = {:finish, timestamp, opts}, trace) do
     Logger.debug(fn -> inspect({trace.trace_id, msg}) end)
 
-    case opts[:async] do
+    case trace.async || opts[:async] do
       true ->
         Logger.info(fn -> "Finish Trace #{Tapper.TraceId.format(trace.trace_id)} ASYNC" end)
-        {:noreply, _trace, _ttl} = handle_cast({:annotation, trace.span_id, :async, timestamp, nil}, trace)
+        trace = annotate(trace, trace.span_id, Annotations.annotation(:async, timestamp, Trace.endpoint_from_config(trace.config)))
+        trace = %Trace{trace | last_activity: timestamp, async: true}
+
+        {:noreply, trace, trace.ttl}
       _ ->
         trace = %Trace{trace | end_timestamp: timestamp}
 
@@ -127,7 +130,7 @@ defmodule Tapper.Tracer.Server do
 
     span_info = case opts[:local] do
       val when not is_nil(val) ->
-          annotation = Trace.BinaryAnnotation.new(:lc, val, :string, endpoint_from_config(trace.config))
+          annotation = Trace.BinaryAnnotation.new(:lc, val, :string, Trace.endpoint_from_config(trace.config))
           update_in(span_info.binary_annotations, &([annotation | &1]))
       _ -> span_info
     end
@@ -160,39 +163,58 @@ defmodule Tapper.Tracer.Server do
     {:noreply, trace, trace.ttl}
   end
 
-  @doc "via Tapper.Tracer.annotate"
-  def handle_cast(msg = {:annotation, span_id, value, timestamp, endpoint}, trace) do
+  @doc "via Tapper.Tracer.async/1"
+  def handle_cast(msg = {:async, span_id, timestamp}, trace) do
     Logger.debug(fn -> inspect({trace.trace_id, msg}) end)
 
-    new_annotation = Annotations.annotation(value, timestamp, endpoint || endpoint_from_config(trace.config))
-
-    trace = case new_annotation do
-      nil -> trace
-      _annotation ->
-        # trace = update_in(trace.spans[span_id].annotations, &([new_annotation | &1]))
-        trace = update_span(trace, span_id, fn(span) -> update_in(span.annotations, &([new_annotation | &1])) end)
-        %{trace | last_activity: timestamp}
-    end
+    trace = annotate(trace, span_id, Annotations.annotation(:async, timestamp, Trace.endpoint_from_config(trace.config)))
+    trace = %Trace{trace | async: true, last_activity: timestamp}
 
     {:noreply, trace, trace.ttl}
   end
 
-  @doc "via Tapper.Tracer.binary_annotate"
+  @doc "via Tapper.Tracer.annotate/3"
+  def handle_cast(msg = {:annotation, span_id, value, timestamp, endpoint}, trace) do
+    Logger.debug(fn -> inspect({trace.trace_id, msg}) end)
+
+    endpoint = endpoint || Trace.endpoint_from_config(trace.config)
+    annotation = Annotations.annotation(value, timestamp, endpoint)
+
+    trace = annotate(trace, span_id, annotation)
+    trace = %Trace{trace | last_activity: timestamp}
+
+    {:noreply, trace, trace.ttl}
+  end
+
+  @doc "via Tapper.Tracer.binary_annotate/5"
   def handle_cast(msg = {:binary_annotation, span_id, type, key, value, timestamp, endpoint}, trace) do
     Logger.debug(fn -> inspect({trace.trace_id, msg}) end)
 
-    endpoint = endpoint || endpoint_from_config(trace.config)
+    endpoint = endpoint || Trace.endpoint_from_config(trace.config)
+    annotation = Annotations.binary_annotation(type, key, value, endpoint)
 
-    new_annotation = Annotations.binary_annotation(type, key, value, endpoint)
-
-    trace = case new_annotation do
-      nil -> trace
+    trace = case annotation do
+      nil ->
+        Logger.warn(fn -> "Invalid binary annotation type #{type} for span #{Tapper.SpanId.format(span_id)}" end)
+        trace
       _ ->
-        trace = update_span(trace, span_id, fn(span) -> update_in(span.binary_annotations, &([new_annotation | &1])) end)
-        %{trace | last_activity: timestamp}
+        annotate(trace, span_id, annotation)
     end
 
+    trace = %Trace{trace | last_activity: timestamp}
+
     {:noreply, trace, trace.ttl}
+  end
+
+  @spec annotate(Trace.t, Tapper.SpanId.t, annotation :: %Trace.Annotation{} | %Trace.BinaryAnnotation{}) :: Trace.t
+  def annotate(trace, span_id, annotation)
+
+  def annotate(trace = %Trace{}, span_id, annotation = %Trace.Annotation{}) do
+    update_span(trace, span_id, fn(span) -> update_in(span.annotations, &([annotation | &1])) end)
+  end
+
+  def annotate(trace = %Trace{}, span_id, annotation = %Trace.BinaryAnnotation{}) do
+    update_span(trace, span_id, fn(span) -> update_in(span.binary_annotations, &([annotation | &1])) end)
   end
 
   @doc "update a span (identified by span id) in a trace with an updater function, taking care of case where span does not exist."
@@ -206,14 +228,6 @@ defmodule Tapper.Tracer.Server do
         update_in(trace.spans[span_id], span_updater)
     end
   end
-
-  def endpoint_from_config(%{host_info: %{ipv4: ipv4, system_id: system_id}}) do
-    %Tapper.Endpoint{
-        ipv4: ipv4,
-        service_name: system_id
-    }
-  end
-
 
   @doc "prepare the SpanInfo of the initial span in this Tracer"
   def initial_span_info(span_id, parent_id, timestamp, endpoint, opts) do
@@ -251,18 +265,6 @@ defmodule Tapper.Tracer.Server do
 
       _else -> annotations
     end
-  end
-
-  def annotate_timeout_spans(spans, timestamp, endpoint) when is_map(spans) do
-    spans
-    |> Enum.map(fn({span_id,span}) ->
-      span = case span.end_timestamp do
-        nil ->  %Trace.SpanInfo{span | annotations: [Annotations.annotation(:timeout, timestamp, endpoint) | span.annotations], end_timestamp: timestamp}
-        _set -> span
-      end
-      {span_id, span}
-    end)
-    |> Enum.into(Map.new)
   end
 
   @doc "convert trace to protocol spans, and invoke reporter."
