@@ -1,5 +1,24 @@
 defmodule Tapper.Reporter.Zipkin do
-  @moduledoc "Reporter that sends spans to Zipkin Server API"
+  @moduledoc """
+  Reporter that sends spans to Zipkin Server API.
+
+  Currently supports only JSON encoding.
+
+  ## See also
+
+  * `Tapper.Application`
+
+  ## Configuration
+
+  | key | purpose |
+  | --- | ------- |
+  | `collector_url` | Full URL of Zipkin collector endpoint |
+
+  ```
+  config :tapper, Tapper.Reporter.Zipkin,
+    collector_url: "https://my-zipkin.domain.com:9411/api/v1/spans"
+  ```
+  """
 
   require Logger
 

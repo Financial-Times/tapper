@@ -1,6 +1,6 @@
 defmodule Tapper.Tracer.Timeout do
   @moduledoc """
-  Clean up a trace after a time-out
+  Clean up a trace after a time-out.
 
   ## Synchronous Traces
   If a trace which has not been marked as `async` times out, this is an error.

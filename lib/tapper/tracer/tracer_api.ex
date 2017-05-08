@@ -9,7 +9,6 @@ defmodule Tapper.Tracer.Api do
       parent_id :: Tapper.SpanId.t | :root,
       sample :: boolean(), debug :: boolean(),
       opts :: Keyword.t) :: Tapper.Id.t
-    @callback join(trace_init(), opts :: Keyword.t) :: Tapper.Id.t
 
     @callback start_span(tapper_id :: Tapper.Id.t, opts :: Keyword.t) :: Tapper.Id.t
     @callback finish_span(tapper_id :: Tapper.Id.t) :: Tapper.Id.t

@@ -2,12 +2,14 @@ defmodule Tapper do
   @moduledoc """
   Client API for Tapper.
 
+  ## Example
   ```
-  id = Tapper.start(name: "name, type: :client, debug: true) # start new trace (and span)
-  # or join an existing one
-  id = Trapper.join(trace_id, span_id, parent_id, sample, debug, name: "name")
+  id = Tapper.start(name: "main", type: :client, debug: true) # start new trace (and span)
 
-  id = Tapper.start_span(id, type: :cr) # start child span
+  # or join an existing one
+  # id = Trapper.join(trace_id, span_id, parent_id, sample, debug, name: "main")
+
+  id = Tapper.start_span(id, name: "call-out") # start child span
 
   # tag current span with metadata
   id
@@ -21,8 +23,24 @@ defmodule Tapper do
   ```
   """
 
+  @behaviour Tapper.Tracer.Api
+
+
   defmodule Endpoint do
-    @moduledoc "endpoint description struct"
+    @moduledoc """
+    Endpoint description struct; used everywhere an endpoint is required.
+
+    ## Example
+    ```
+    endpoint = %Endpoint{
+      ipv4: {192, 168, 10, 100},
+      service_name: "my-service",
+      port: 8080
+    }
+
+    Tapper.server_address(id, endpoint)
+    ```
+    """
 
     defstruct [
       :ipv4,
@@ -38,141 +56,160 @@ defmodule Tapper do
   end
 
   @doc """
-    start a new root trace, e.g. on originating a request, e.g.:
+  start a new root trace, e.g. on originating a request, e.g.:
 
-    ```
-    id = Tapper.Tracer.start(name: "request resource", type: :client, remote: remote_endpoint)
-    ```
+  ```
+  id = Tapper.Tracer.start(name: "request resource", type: :client, remote: remote_endpoint)
+  ```
 
-    Options:
+  Options:
 
-        * `name` - the name of the span.
-        * `sample` - boolean, whether to sample this trace or not.
-        * `debug` - boolean, enabled debug.
-        * `type` - the type of the span, i.e.. `:client`, `:server`; defaults to `:client`.
-        * `remote` (%Tapper.Endpoint{}) - the remote Endpoint: automatically creates a "sa" (client) or "ca" (server) binary annotation on this span.
-        * `ttl` - how long this span should live before automatically finishing it
-            (useful for long-running async operations); milliseconds (default 30,000 ms)
-        * `endpoint` - sets the endpoint for the initial `cr` or `sr` annotation, defaults to one derived from Tapper configuration (see `Tapper.Application.start/2`).
-        * `reporter` - override the configured reporter for this trace; useful for testing.
+  * `name` - the name of the span.
+  * `sample` - boolean, whether to sample this trace or not.
+  * `debug` - boolean, enabled debug.
+  * `type` - the type of the span, i.e.. `:client`, `:server`; defaults to `:client`.
+  * `remote` ([`%Tapper.Endpoint{}`](Tapper.Endpoint.html)) - the remote Endpoint: automatically creates a "sa" (client) or "ca" (server) binary annotation on this span.
+  * `ttl` - how long this span should live before automatically finishing it
+      (useful for long-running async operations); milliseconds (default 30,000 ms)
+  * `endpoint` - sets the endpoint for the initial `cr` or `sr` annotation, defaults to one derived from Tapper configuration (see `Tapper.Application.start/2`).
+  * `reporter` - override the configured reporter for this trace; useful for testing.
 
-    NB if neither `sample` nor `debug` are set, all operations on this trace become a no-op.
+  NB if neither `sample` nor `debug` are set, all operations on this trace become a no-op.
   """
   def start(opts \\ []), do: Tapper.Tracer.start(opts)
 
   @doc """
-    join an existing trace, e.g. server recieving an annotated request.
-    ```
-    id = Tapper.Tracer.join(trace_id, span_id, parent_id, sampled, debug, name: "receive request")
-    ```
-    NB The id could be generated at the top level, and annotations, name etc. set
-    deeper in the service code, so the name is optional here, see also `name/2`.
+  join an existing trace, e.g. server recieving an annotated request.
+  ```
+  id = Tapper.Tracer.join(trace_id, span_id, parent_id, sampled, debug, name: "receive request")
+  ```
+  NB Probably called by an integration (e.g. [`tapper_plug`](https://github.com/Financial-Times/tapper_plug), name, annotations etc.
+  added in the service code, so the name is optional here, see `name/2`.
 
-    ### Arguments
+  ### Arguments
 
-        * `trace_id` - the trace id, as `Tapper.TraceId.t`.
-        * `span_id` - the current span id, as `Tapper.SpanId.t`.
-        * `parent_span_id` - the parent span id, as `Tapper.SpanId.t` or `:root` if root trace.
-        * `sample` is the incoming sampling status; `true` implies trace has been sampled, and
-          down-stream spans should be sampled also, `false` that it will not be sampled,
-          and down-stream spans should not be sampled either.
-        * `debug` is the debugging flag, if `true` this turns sampling for this trace on, regardless of
-          the value of `sampled`.
+  * `trace_id` - the trace id, as `Tapper.TraceId.t`.
+  * `span_id` - the current span id, as `Tapper.SpanId.t`.
+  * `parent_span_id` - the parent span id, as `Tapper.SpanId.t` or `:root` if root trace.
+  * `sample` is the incoming sampling status; `true` implies trace has been sampled, and
+      down-stream spans should be sampled also, `false` that it will not be sampled,
+      and down-stream spans should not be sampled either.
+  * `debug` is the debugging flag, if `true` this turns sampling for this trace on, regardless of
+      the value of `sampled`.
 
-    ### Options
-        * `name` (String) - name of span
-        * `type` (atom) - the type of the span, i.e.. :client, :server; defaults to `:server`.
-        * `remote` (%Tapper.Endpoint{}) - the remote Endpoint: automatically creates a "sa" (client) or "ca" (server) binary annotation on this span.
-        * `ttl` (integer) - how long this span should live before automatically finishing it (useful for long-running async operations);
-            milliseconds, defaults to 30,000 ms.
-        * `endpoint` - sets the endpoint for the initial `cr` or `sr` annotation, defaults to one derived from Tapper configuration (see `Tapper.Application.start/2`).
-        * `reporter` - override the configured reporter for this trace; useful for testing.
+  ### Options
+  * `name` (String) - name of span
+  * `type` (atom) - the type of the span, i.e.. :client, :server; defaults to `:server`.
+  * `remote` (`Tapper.Endpoint`) - the remote endpoint: automatically creates a "sa" (`:client`) or "ca" (`:server`) binary annotation on this span.
+  * `ttl` (integer) - how long this span should live between operations before automatically finishing it (useful for long-running async operations);
+      milliseconds, defaults to 30,000 ms.
+  * `endpoint` - sets the endpoint for the initial `cr` or `sr` annotation, defaults to one derived from Tapper configuration (see `Tapper.Application.start/2`).
+  * `reporter` - override the configured reporter for this trace; useful for testing.
 
-    NB if neither `sample` nor `debug` are set, all operations on this trace become a no-op.
+  NB if neither `sample` nor `debug` are `true`, all operations on this trace become a no-op.
   """
   def join(trace_id, span_id, parent_id, sample, debug, opts \\ []), do: Tapper.Tracer.join(trace_id, span_id, parent_id, sample, debug, opts)
 
-  @doc "finish a trace for this request."
+  @doc """
+  Finishes the trace.
+
+  For `async` processes (where spans persist in another process), call
+  `finish/2` when done with the main span, passing the `async` option, and finish
+  child spans as normal using `finish_span/1`. When the trace times out, spans will
+  be sent to the server, marking any unfinished spans with a `timeout` annotation.
+
+  ## Options
+  * `async` - mark the trace as asynchronous, allowing child spans to finish within the TTL.
+
+  ## See also
+  * `Tapper.Tracer.Timeout`
+  """
   def finish(id, opts \\ []), do: Tapper.Tracer.finish(id, opts)
 
   @doc """
-  start a nested span.
+  Starts a child span.
 
-  ### Arguments
-      * `id` - Tapper id
-  ### Options
-      * `local` (string) - provide a local span context name (via a "lc"" binary annotation)
+  ## Arguments
+  * `id` - Tapper id.
+
+  ## Options
+  * `local` (string) - provide a local span context name (via a `lc` binary annotation).
   """
   def start_span(id, opts \\ []), do: Tapper.Tracer.start_span(id, opts)
 
   @doc "finish a nested span."
   def finish_span(id), do: Tapper.Tracer.finish_span(id)
 
-  @doc "name (or rename) the current span"
+  @doc "name (or rename) the current span."
   def name(id, name), do: Tapper.Tracer.name(id, name)
 
   @doc """
-  Marks the trace as asynchronous, adding an `async` annotation to the current span.
+  Marks the span as asynchronous, adding an `async` annotation.
 
-  The trace will act as if `finish/2` was called with the `async: true` option.
+  This is semantically equivalent to calling `finish/2` with the `async` option, and engages
+  has the same time-out behaviour, but annotates individual spans as being asynchronous.
+  You can call this for every asynchronous span.
 
-  Child spans, and the whole trace, should still be finished, as normal.
+  Ensure that child spans, and the whole trace, are finished as normal.
+
+  ## See also
+  * `Tapper.Tracer.Timeout`
   """
   def async(id), do: Tapper.Tracer.async(id)
 
-  @doc "mark a server_receive event (`sr`); see also `:server` option on `Tapper.start/1`"
+  @doc "mark a server_receive event (`sr`); see also `:server` option on `Tapper.start/1`."
   def server_receive(id), do: Tapper.Tracer.annotate(id, :sr)
-  @doc "mark a server_send event (`ss`)"
+  @doc "mark a server_send event (`ss`)."
   def server_send(id), do: Tapper.Tracer.annotate(id, :ss)
 
-  @doc "mark a client_send event (`cs`); see also `:client` option on `Tapper.start/1`"
+  @doc "mark a client_send event (`cs`); see also `:client` option on `Tapper.start/1`."
   def client_send(id), do: Tapper.Tracer.annotate(id, :cs)
-  @doc "mark a client_receive event (`cr`)"
+  @doc "mark a client_receive event (`cr`)."
   def client_receive(id), do: Tapper.Tracer.annotate(id, :cr)
 
-  @doc "mark a send event (`ws`)"
+  @doc "mark a send event (`ws`)."
   def wire_send(id), do: Tapper.Tracer.annotate(id, :ws)
-  @doc "mark a receive event (`wr`)"
+  @doc "mark a receive event (`wr`)."
   def wire_receive(id), do: Tapper.Tracer.annotate(id, :wr)
 
-  @doc "mark an error event (`error`)"
+  @doc "mark an error event (`error`)."
   def error(id), do: Tapper.Tracer.annotate(id, :error)
 
-  @doc "mark an event, general interface"
+  @doc "mark an event, general interface."
   def annotate(id, type, endpoint \\ nil), do: Tapper.Tracer.annotate(id, type, endpoint: endpoint)
 
 
-  @doc "Tag with the client's address (`ca`)"
+  @doc "Tag with the client's address (`ca`)."
   def client_address(id, host = %Tapper.Endpoint{}), do: Tapper.Tracer.binary_annotate(id, :bool, "ca", true, host)
 
-  @doc "Tag with the server's address (`sa`)"
+  @doc "Tag with the server's address (`sa`)."
   def server_address(id, host = %Tapper.Endpoint{}), do: Tapper.Tracer.binary_annotate(id, :bool, "sa", true, host)
 
-  @doc "Tag with HTTP host information."
+  @doc "Tag with HTTP host information (`http.host`)."
   def http_host(id, hostname) when is_binary(hostname), do: Tapper.Tracer.binary_annotate(id, :string, "http.host", hostname)
 
-  @doc "Tag with HTTP method information."
+  @doc "Tag with HTTP method information (`http.method`)."
   def http_method(id, method) when is_binary(method), do: Tapper.Tracer.binary_annotate(id, :string, "http.method", method)
 
-  @doc "Tag with HTTP path information (should be without query parameters)"
+  @doc "Tag with HTTP path information: should be without query parameters (`http.path`)"
   def http_path(id, path) when is_binary(path), do: Tapper.Tracer.binary_annotate(id, :string, "http.path", path)
 
-  @doc "Tag with HTTP URL information"
+  @doc "Tag with full HTTP URL information (`http.url`)"
   def http_url(id, url) when is_binary(url), do: Tapper.Tracer.binary_annotate(id, :string, "http.url", url)
 
-  @doc "Tag with an HTTP status code"
+  @doc "Tag with an HTTP status code (`http.status_code`)"
   def http_status_code(id, code) when is_integer(code), do: Tapper.Tracer.binary_annotate(id, :i16, "http.status_code", code)
 
-  @doc "Tag with an HTTP request size"
+  @doc "Tag with an HTTP request size (`http.request.size`)"
   def http_request_size(id, size) when is_integer(size), do: Tapper.Tracer.binary_annotate(id, :i64, "http.request.size", size)
 
-  @doc "Tag with an HTTP reponse size"
+  @doc "Tag with an HTTP reponse size (`http.response.size`)"
   def http_response_size(id, size) when is_integer(size), do: Tapper.Tracer.binary_annotate(id, :i64, "http.response.size", size)
 
-  @doc "Tag with a database query"
+  @doc "Tag with a database query (`sql.querl`)"
   def sql_query(id, query) when is_binary(query), do: Tapper.Tracer.binary_annotate(id, :string, "sql.query", query)
 
-  @doc "Tag with an error message"
+  @doc "Tag with an error message (`error`)"
   def error(id, message) when is_binary(message), do: Tapper.Tracer.binary_annotate(id, :string, :error, message)
 
   @doc "Tag with a general (key,value,host) binary annotation, determining type of annotation automatically"

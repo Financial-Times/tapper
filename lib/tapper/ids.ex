@@ -1,5 +1,5 @@
 defmodule Tapper.Id do
-  @moduledoc "The ID used with the API; tracks nested spans. Consider opaque!"
+  @moduledoc "The ID used with the API; tracks nested spans. **Consider opaque!**"
 
   defstruct [
     trace_id: nil,

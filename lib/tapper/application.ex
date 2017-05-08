@@ -1,7 +1,41 @@
 defmodule Tapper.Application do
-  # See http://elixir-lang.org/docs/stable/elixir/Application.html
-  # for more information on OTP Applications
-  @moduledoc false
+  @moduledoc """
+  Tapper main application; configures and starts application supervisor.
+
+  Add `:tapper` to your application's `mix.exs`:
+
+  ```
+  # Configuration for the OTP application.
+  #
+  # Type `mix help compile.app` for more information.
+  def application do
+    [mod: {MyApp, []},
+     applications: [
+       :tapper
+       # other applications
+      ]]
+  end
+  ```
+
+  ## Configuration
+
+  Looks for configuration under `:tapper` key.
+
+  | key | purpose |
+  | -- | -- |
+  | `system_id` | This application's id; used for `service_name` in default [`Endpoint`](Tapper.Endpoint.html) used in annotations. |
+  | `ipv4` | This application's principle IPV4 address, as 4-tuple of ints; defaults to IP of first non-loopback interface, or `{127.0.0.1}` if none. |
+  | `reporter` | Module implementing `Tapper.Reporter.Api` to use for reporting spans, defaults to `Tapper.Reporter.Console`. |
+
+  ## Example
+  In `config.exs` etc.:
+
+  ```
+  config :tapper,
+    system_id: "my-cool-svc",
+    reporter: Tapper.Reporter.Zipkin
+  ```
+  """
 
   use Application
   require Logger

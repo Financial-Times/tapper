@@ -8,6 +8,8 @@ defmodule Tapper.Mixfile do
      elixirc_paths: elixirc_paths(Mix.env),
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
+     package: package(),
+     docs: docs(),
      deps: deps()]
   end
 
@@ -18,6 +20,17 @@ defmodule Tapper.Mixfile do
     # Specify extra applications you'll use from Erlang/Elixir
     [extra_applications: [:logger],
      mod: {Tapper.Application, []}]
+  end
+
+  def package do
+    [ maintainers: ["Ellis Pritchard"],
+      licenses: ["MIT"],
+      links: %{"Github" => "https://github.com/Financial-Times/tapper"} ]
+  end
+
+  def docs do
+    [main: "README",
+     extras: ["README.md"]]
   end
 
   # Specifies which paths to compile per environment.

@@ -91,7 +91,7 @@ When a trace is terminated with `Tapper.finish/1`, the server sends the trace to
 
 If a trace is not terminated by an API call, Tapper will time-out after a pre-determined time since the last API operation (`ttl` option on trace creation, default 30s), and terminate the trace as if `Tapper.finish/1` was called, annotating the unfinished spans with a `timeout` annotation. Timeout will will also happen if the client process exits before finishing the trace.
 
-If the API client starts spans in, or around, asynchronous processes, and exits before they have finished, it should call `Tapper.finish/2` passing the `async: true` option; async spans should be closed as normal by `Tapper.finish_span/1`, otherwise they will eventually be terminated by the TTL behaviour.
+If the API client starts spans in, or around, asynchronous processes, and exits before they have finished, it should call `Tapper.async/1` on a span, or `Tapper.finish/2` passing the `async: true` option; async spans should be closed as normal by `Tapper.finish_span/1`, otherwise they will eventually be terminated by the TTL behaviour.
 
 The API client is not effected by the termination, normally or otherwise, of a trace-server, and the trace-server is likewise isolated from the API client, i.e. there is a separate supervision tree. Thus if the API client crashes, then the span can still be reported. The trace-server monitors the API client process for abnormal termination, and annotates the trace with an error (TODO). If the trace-server crashes, any child spans and annotations registered with the server will be lost, but subsequent spans and the trace itself will be reported, since the supervisor will re-start the trace-server using the initial data from `Tapper.start/1` or `Tapper.join/6`.
 
@@ -143,8 +143,7 @@ Tapper looks for the following application configuration settings under the `:ta
 | `:system_id` | code for the hosting application, for tagging spans |
 | `:reporter` | module of reporter `ingest/1` function |
 
-Additionally the Zipkin reporter has its own configuraton:
-
+Additionally the Zipkin reporter (`Tapper.Reporter.Zipkin`) has its own configuraton:
 
 | attribute | description |
 | --------- | ----------- |

@@ -1,12 +1,21 @@
 defmodule Tapper.Protocol do
   @moduledoc """
-    Defines the intermediate data structures used between the Tracer, and Reporters,
-    containing only de-normalised fields relevant to the data transfer to trace collectors
-    (e.g. Zipkin server), de-coupling from internal Tracer server state.
+  Defines the intermediate data structures used between the Tracer, and Reporters,
+  containing only de-normalised fields relevant to the data transfer to trace collectors
+  (e.g. Zipkin server), de-coupling from internal Tracer server state. In particular,
+  protocol spans have a `duration`, rather than an `end_timestamp`.
+
+  ## See also
+
+  * `Tapper.Protocol.Span`
+  * `Tapper.Protocol.Annotation`
+  * `Tapper.Protocol.BinaryAnnotation`
+  * `Tapper.Protocol.Endpoint`
+  * `Tapper.Reporter.Api` - consumes protocol spans.
   """
 
   defmodule Span do
-    @moduledoc false
+    @moduledoc "A span, with hierarchy, start time, duration and annotations."
 
     defstruct [
       :trace_id,
@@ -26,11 +35,14 @@ defmodule Tapper.Protocol do
     @type timestamp :: integer()
     @type duration :: integer()
 
+    alias Tapper.Protocol.Annotation
+    alias Tapper.Protocol.BinaryAnnotation
+
     @type t :: %__MODULE__{trace_id: trace_id(), id: span_id(), parent_id: span_id(), annotations: [Annotation.t], binary_annotations: [BinaryAnnotation.t], debug: boolean, timestamp: timestamp(), duration: duration()}
   end
 
   defmodule Annotation do
-    @moduledoc false
+    @moduledoc "Annotation, with endpoint and timestamp."
 
     defstruct [
       :timestamp,
@@ -38,14 +50,15 @@ defmodule Tapper.Protocol do
       :host
     ]
 
-    @type timestamp :: Tapper.Span.timestamp()
+    alias Tapper.Protocol.Endpoint
 
+    @type timestamp :: Tapper.Span.timestamp()
 
     @type t :: %__MODULE__{timestamp: timestamp(), value: String.t | atom(), host: Endpoint.t}
   end
 
   defmodule Endpoint do
-    @moduledoc false
+    @moduledoc "Endpoint, with service name."
 
     defstruct [
       :ipv4,
@@ -61,7 +74,7 @@ defmodule Tapper.Protocol do
   end
 
   defmodule BinaryAnnotation do
-    @moduledoc false
+    @moduledoc "Binary annotation with type, key, value, and endpoint."
 
     defstruct [
       :key,
@@ -70,7 +83,9 @@ defmodule Tapper.Protocol do
       :host
     ]
 
-    @type t :: %__MODULE__{}
+    alias Tapper.Protocol.Endpoint
+
+    @type t :: %__MODULE__{key: String.t | atom(), annotation_type: atom(), value: term(), host: Endpoint.t}
   end
 
 end

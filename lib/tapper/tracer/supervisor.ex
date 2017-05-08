@@ -1,5 +1,5 @@
 defmodule Tapper.Tracer.Supervisor do
-  @moduledoc false
+  @moduledoc "Supervises `Tapper.Tracer.Server` instances."
 
   use Supervisor
   require Logger

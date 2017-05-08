@@ -1,6 +1,11 @@
 defmodule Tapper.Tracer do
   @moduledoc """
-  Low-level client API, interfaces between Tapper client and Tapper Tracer GenServer.
+  Low-level client API, interfaces between a Tapper client and a `Tapper.Tracer.Server`.
+
+  ## See also
+
+  * `Tapper` - high-level client API.
+
   """
 
   @behaviour Tapper.Tracer.Api
@@ -13,23 +18,23 @@ defmodule Tapper.Tracer do
   alias Tapper.Tracer.Trace
 
   @doc """
-    start a new root trace, e.g. on originating a request, e.g.:
+  start a new root trace, e.g. on originating a request, e.g.:
 
-    ```
-    id = Tapper.Tracer.start(name: "request resource", type: :client, remote: remote_endpoint)
-    ```
+  ```
+  id = Tapper.Tracer.start(name: "request resource", type: :client, remote: remote_endpoint)
+  ```
 
-    ### Options
+  ### Options
 
-        * `name` - the name of the span.
-        * `sample` - boolean, whether to sample this trace or not.
-        * `debug` - boolean, enabled debug.
-        * `type` - the type of the span, i.e.. `:client`, `:server`; defaults to `:client`.
-        * `remote` - the remote Endpoint: automatically creates a "sa" (client) or "ca" (server) binary annotation on this span.
-        * `ttl` - how long this span should live before automatically finishing it
-          (useful for long-running async operations); milliseconds.
+  * `name` - the name of the span.
+  * `sample` - boolean, whether to sample this trace or not.
+  * `debug` - boolean, enabled debug.
+  * `type` - the type of the span, i.e.. `:client`, `:server`; defaults to `:client`.
+  * `remote` - the remote Endpoint: automatically creates a "sa" (client) or "ca" (server) binary annotation on this span.
+  * `ttl` - how long this span should live before automatically finishing it
+    (useful for long-running async operations); milliseconds.
 
-    NB if neither `sample` nor `debug` are set, all operations on this trace become a no-op.
+  NB if neither `sample` nor `debug` are set, all operations on this trace become a no-op.
   """
   def start(opts \\ []) when is_list(opts) do
     trace_id = Tapper.TraceId.generate()
@@ -68,29 +73,32 @@ defmodule Tapper.Tracer do
   end
 
   @doc """
-    join an existing trace, e.g. server recieving an annotated request.
-    ```
-    id = Tapper.Tracer.join(trace_id, span_id, parent_id, sampled, debug, name: "receive request")
-    ```
-    NB The id could be generated at the top level, and annotations, name etc. set
-    deeper in the service code, so the name is optional here.
+  join an existing trace, e.g. server recieving an annotated request, returning a `Tapper.Id` for subsequent operations:
+  ```
+  id = Tapper.Tracer.join(trace_id, span_id, parent_id, sampled, debug, name: "receive request")
+  ```
 
-    ### Arguments
+  NB Probably called by an integration (e.g. [`tapper_plug`](https://github.com/Financial-Times/tapper_plug), name, annotations etc.
+  added in the service code, so the name is optional here, see `name/2`.
 
-        * `sampled` is the incoming sampling status; `true` implies trace has been sampled, and
-        down-stream spans should be sampled also, `false` that it will not be sampled,
-        and down-stream spans should not be sampled either.
-        * `debug` is the debugging flag, if `true` this turns sampling for this trace on, regardless of
-        the value of `sampled`.
+  ## Arguments
 
-    ### Options
-        * `name` name of span
-        * `type` - the type of the span, i.e.. :client, :server; defaults to `:server`.
-        * `remote` - the remote Endpoint: automatically creates a "sa" (client) or "ca" (server) binary annotation on this span.
-        * `ttl` - how long this span should live before automatically finishing it
-          (useful for long-running async operations); milliseconds.
+  * `sampled` is the incoming sampling status; `true` implies trace has been sampled, and
+  down-stream spans should be sampled also, `false` that it will not be sampled,
+  and down-stream spans should not be sampled either.
+  * `debug` is the debugging flag, if `true` this turns sampling for this trace on, regardless of
+  the value of `sampled`.
 
-    NB if neither `sample` nor `debug` are set, all operations on this trace become a no-op.
+
+  ## Options
+  * `name` name of span, see also `name/2`.
+  * `type` - the type of the span, i.e.. `:client`, `:server`; defaults to `:server`; determines which of `sr` (`:server`) or `cs`
+    (`:client`) annotations is added. Defaults to `:server`.
+  * `remote` - the remote Endpoint: automatically creates a "sa" (`:client`) or "ca" (`:server`) binary annotation on this span.
+  * `ttl` - how long this span should live between operations, before automatically finishing it
+    (useful for long-running async operations); milliseconds.
+
+  NB if neither `sample` nor `debug` are `true`, all operations on this trace become a no-op.
   """
   def join(trace_id, span_id, parent_id, sample, debug, opts \\ []), do: join({trace_id, span_id, parent_id, sample, debug}, opts)
   def join(trace_init = {trace_id, span_id, parent_id, sample, debug}, opts \\ []) when is_list(opts) do
@@ -142,11 +150,18 @@ defmodule Tapper.Tracer do
   end
 
   @doc """
-    Finishes the trace.
+  Finishes the trace.
 
-    NB there is no `flush`, because we'll always send any spans we have started,
-    even if the process that spawned them dies. For async processes, just call
-    `finish/2` when done, possibly setting a more generous TTL.
+  For `async` processes (where spans persist in another process), just call
+  `finish/2` when done with the main span, passing the `async` option, and finish
+  child spans as normal using `finish_span/1`. When the trace times out, spans will
+  be sent to the server, marking any unfinished spans with a `timeout` annotation.
+
+  ## See also
+  * `Tapper.Tracer.Timeout` - the time-out logic.
+
+  ## Options
+  * `async` - mark the trace as asynchronous, allowing child spans to finish within the TTL.
   """
   def finish(id, opts \\ [])
   def finish(%Tapper.Id{sampled: false}, _opts), do: :ok
@@ -158,11 +173,14 @@ defmodule Tapper.Tracer do
 
 
   @doc """
-    Starts a child span.
+  Starts a child span.
 
-    Options:
-        * `name` - name of span
-        * `local` - local component namespace (if not an RPC)
+  ## Arguments
+  * `id` - Tapper id.
+
+  ## Options
+  * `name` (string) - name of span.
+  * `local` (string) - provide a local span context name (via a `lc` binary annotation).
   """
   def start_span(id, opts \\ [])
 

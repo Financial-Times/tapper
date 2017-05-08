@@ -1,5 +1,9 @@
 defmodule Tapper.Tracer.Server do
-  @moduledoc "The Trace server. There is one server per trace, which persists until the trace is finished, at which point it sends its spans to a reporter."
+  @moduledoc """
+  The Trace server.
+
+  There is one server per trace, which persists until the trace is finished, at which point it sends its spans to a reporter.
+  """
 
   use GenServer
 
@@ -9,16 +13,19 @@ defmodule Tapper.Tracer.Server do
   alias Tapper.Tracer.Annotations
 
   @doc """
-  Starts a Tracer, registering a name derived from the Tapper `trace_id`.
+  Starts a Tracer, registering a name derived from the `Tapper.Id`.
 
   ## Arguments
-      * config - worker config from Tapper.Tracer.Supervisor's worker spec.
-      * trace_init - trace parameters (trace_id, span_id, etc.)
-      * pid - pid of process that called `start/1` or `join/6` in API.
-      * timestamp - microsecond timestamp of trace receive/start event.
-      * opts - options which were passed to start or join, see `Tapper.Server.init/1`.
+  * `config` - worker config from `Tapper.Tracer.Supervisor` worker spec.
+  * `trace_init` - trace parameters (trace_id, span_id, etc.)
+  * `pid` - pid of process that called `Tapper.start/1` or `Tapper.join/6`.
+  * `timestamp` - microsecond timestamp of trace receive/start event.
+  * `opts` - options which were passed to start or join, see `Tapper.Tracer.Server.init/1`.
 
   NB called by `Tapper.Tracer.Supervisor` when starting a trace with `start_tracer/2`.
+
+  ## See also
+  * `init/1`.
   """
   def start_link(config, trace_init = {trace_id, _, _, _, _}, pid, timestamp, opts) do
     Logger.debug(fn -> inspect {"Tracer: start_link", trace_init} end)
@@ -26,6 +33,7 @@ defmodule Tapper.Tracer.Server do
     GenServer.start_link(Tapper.Tracer.Server, [config, trace_init, pid, timestamp, opts], name: via_tuple(trace_id)) # calls Tapper.Tracer.Server.init/1
   end
 
+  @doc "locate the server via the `Tapper.Id`."
   def via_tuple(%Tapper.Id{trace_id: trace_id}), do: via_tuple(trace_id)
   def via_tuple(trace_id) do
     {:via, Registry, {Tapper.Tracers, trace_id}}
@@ -35,19 +43,19 @@ defmodule Tapper.Tracer.Server do
   Initializes the Tracer's state.
 
   ## Arguments (as list)
-      * config - worker config from Tapper.Tracer.Supervisor's worker spec.
-      * trace_init - trace parameters i.e. `{trace_id, span_id, parent_span_id, sample, debug}`
-      * pid - pid of process that called `start/1` or `join/6` in API.
-      * timestamp - microsecond timestamp of trace receive/start event.
-      * opts - options passed to start or join, see below.
+  * `config` - worker config from Tapper.Tracer.Supervisor's worker spec.
+  * `trace_init` - trace parameters i.e. `{trace_id, span_id, parent_span_id, sample, debug}`
+  * `pid` - pid of process that called `Tapper.start/1` or `Tapper.join/6`.
+  * `timestamp` - microsecond timestamp of trace receive/start event.
+  * `opts` - options passed to start or join, see below.
 
   ## Options
-      * `type` (`:client` or `:server`) - determines whether the first annotation should be `cs` (`:client`) or `sr` (`:server`).
-      * `name` (String) - name of the span.
-      * `endpoint` - sets the endpoint for the initial `cr` or `sr` annotation, defaults to one derived from Tapper configuration (see `Tapper.Application.start/2`).
-      * `remote` - an endpoint to set as the `sa` (:client) or `ca` (:server) binary annotation.
-      * `ttl` - set the no-activity time-out for this trace in milliseconds; defaults to 30000 ms.
-      * `reporter` - override the configured reporter for this trace; useful for testing.
+  * `type` (`:client` or `:server`) - determines whether the first annotation should be `cs` (`:client`) or `sr` (`:server`).
+  * `name` (`String`) - name of the span.
+  * `endpoint` (`Tapper.Endpoint`) - sets the endpoint for the initial `cr` or `sr` annotation, defaults to one derived from Tapper configuration (see `Tapper.Application`).
+  * `remote` (`Tapper.Endpoint`) - an endpoint to set as the `sa` (:client) or `ca` (:server) binary annotation.
+  * `ttl` (integer, ms) - set the no-activity time-out for this trace in milliseconds; defaults to 30,000 ms.
+  * `reporter` (module atom or function) - override the configured reporter for this trace; useful for testing.
 
   NB passed the list of arguments supplied by `Tapper.Tracer.Server.start_link/5` via `Tapper.Tracer.Supervisor.start_tracer/3`.
   """
@@ -90,7 +98,16 @@ defmodule Tapper.Tracer.Server do
     {:ok, trace, ttl}
   end
 
-  @doc "Handles time-out: invoked if ttl expires between messages: automatically ends trace, annotating any un-finished spans."
+  @doc """
+  Handles time-out.
+
+  Invoked if ttl expires between messages: automatically ends trace, annotating any un-finished spans.
+
+  ## See also
+  * `Tapper.start/1` and `Tapper.join/6` - setting the TTL for a trace using the `ttl` option.
+  * `Tapper.finish/2` and `Tapper.async/1` - declaring a trace or span asynchronous.
+  * `Tapper.Tracer.Timeout` - timeout behaviour.
+  """
   def handle_info(:timeout, trace) do
     Logger.debug(fn -> inspect({trace.trace_id, :timeout}) end)
     timestamp = System.os_time(:microsecond)
@@ -124,7 +141,7 @@ defmodule Tapper.Tracer.Server do
     end
   end
 
-  @doc "via start_span()"
+  @doc "via start_span/1"
   def handle_cast(msg = {:start_span, span_info, opts}, trace) do
     Logger.debug(fn -> inspect({Tapper.TraceId.format(trace.trace_id), msg}) end)
 
@@ -255,6 +272,7 @@ defmodule Tapper.Tracer.Server do
     }
   end
 
+  @doc false
   def add_remote_address_annotation(annotations, span_type, opts) do
     case {span_type, opts[:remote]} do
       {:sr, client_endpoint = %Tapper.Endpoint{}} ->
@@ -267,7 +285,7 @@ defmodule Tapper.Tracer.Server do
     end
   end
 
-  @doc "convert trace to protocol spans, and invoke reporter."
+  @doc "convert trace to protocol spans, and invoke reporter module or function."
   def report_trace(trace = %Trace{}) do
     Logger.debug(fn -> "Sending trace #{inspect trace}" end)
 
