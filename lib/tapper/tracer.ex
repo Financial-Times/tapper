@@ -41,31 +41,21 @@ defmodule Tapper.Tracer do
     span_id = elem(trace_id, 0) &&& 0xFFFFFFFFFFFFFFFF # lower 64 bits
     timestamp = System.os_time(:microseconds)
 
-    # check tyoe, and default to :client
+    # check type, and default to :client
     opts = default_type_opts(opts, :client) # if we're starting a trace, we're a client
     :ok = check_endpoint_opt(opts[:remote]) # if we're sending a remote endpoint, check it's an %Tapper.Endpoint{}
 
     sample = Keyword.get(opts, :sample, false) === true
     debug = Keyword.get(opts, :debug, false) === true
 
-    sampled = sample || debug
+    id = Tapper.Id.init(trace_id, span_id, :root, sample, debug)
 
     # don't even start tracer if sampled is false
-    if sampled do
+    if id.sampled do
       trace_init = {trace_id, span_id, :root, sample, debug}
 
       {:ok, _pid} = Tapper.Tracer.Supervisor.start_tracer(trace_init, timestamp, opts)
     end
-
-    id = %Tapper.Id{
-      trace_id: trace_id,
-      span_id: span_id,
-      origin_parent_id: :root,
-      parent_ids: [],
-      sample: sample,
-      debug: debug,
-      sampled: sampled
-    }
 
     Logger.metadata(tapper_id: id)
 
@@ -109,21 +99,11 @@ defmodule Tapper.Tracer do
     opts = default_type_opts(opts, :server)
     :ok = check_endpoint_opt(opts[:remote])
 
-    sampled = sample || debug
+    id = Tapper.Id.init(trace_id, span_id, parent_id, sample, debug)
 
-    if sampled do
+    if id.sampled do
       {:ok, _pid} = Tapper.Tracer.Supervisor.start_tracer(trace_init, timestamp, opts)
     end
-
-    id = %Tapper.Id{
-      trace_id: trace_id,
-      span_id: span_id,
-      origin_parent_id: parent_id,
-      parent_ids: [],
-      sample: sample,
-      debug: debug,
-      sampled: sampled,
-    }
 
     Logger.metadata(tapper_id: id)
 
@@ -280,6 +260,7 @@ defmodule Tapper.Tracer do
   def check_endpoint(nil), do: nil
   def check_endpoint(endpoint = %Tapper.Endpoint{}), do: endpoint
 
+  @doc "Some aliases for annotation type"
   def map_annotation_type(type) when is_atom(type) do
     case type do
       :client_send -> :cs

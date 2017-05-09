@@ -51,6 +51,68 @@ end
 defmodule TapperIdTest do
   use ExUnit.Case
 
+  describe "init/5" do
+    test "init with parent_span_id become origin_parent_id" do
+      trace_id = Tapper.TraceId.generate()
+      span_id = Tapper.SpanId.generate()
+      parent_span_id = Tapper.SpanId.generate()
+
+      id = Tapper.Id.init(trace_id, span_id, parent_span_id, true, false)
+
+      assert %Tapper.Id{
+        trace_id: ^trace_id,
+        span_id: ^span_id,
+        origin_parent_id: ^parent_span_id,
+        sample: true,
+        debug: false,
+        sampled: true,
+        parent_ids: []
+      } = id
+    end
+
+    test "init with :root becomes origin_parent_id" do
+      trace_id = Tapper.TraceId.generate()
+      span_id = Tapper.SpanId.generate()
+      parent_span_id = :root
+
+      id = Tapper.Id.init(trace_id, span_id, parent_span_id, true, false)
+
+      assert %Tapper.Id{
+        trace_id: ^trace_id,
+        span_id: ^span_id,
+        origin_parent_id: ^parent_span_id,
+        sample: true,
+        debug: false,
+        sampled: true,
+        parent_ids: []
+      } = id
+    end
+
+    test "sample and debug" do
+      trace_id = Tapper.TraceId.generate()
+      span_id = Tapper.SpanId.generate()
+      parent_span_id = :root
+
+      assert %Tapper.Id{sample: true, debug: false, sampled: true} = Tapper.Id.init(trace_id, span_id, parent_span_id, true, false)
+      assert %Tapper.Id{sample: false, debug: true, sampled: true} = Tapper.Id.init(trace_id, span_id, parent_span_id, false, true)
+      assert %Tapper.Id{sample: false, debug: false, sampled: false} = Tapper.Id.init(trace_id, span_id, parent_span_id, false, false)
+      assert %Tapper.Id{sample: true, debug: true, sampled: true} = Tapper.Id.init(trace_id, span_id, parent_span_id, true, true)
+
+      assert Tapper.Id.sampled?(Tapper.Id.init(trace_id, span_id, parent_span_id, true, false))
+      assert Tapper.Id.sampled?(Tapper.Id.init(trace_id, span_id, parent_span_id, false, true))
+      refute Tapper.Id.sampled?(Tapper.Id.init(trace_id, span_id, parent_span_id, false, false))
+    end
+  end
+
+  test "test_id/1" do
+    id = Tapper.Id.test_id()
+    assert id.origin_parent_id == :root
+
+    parent_span_id = Tapper.SpanId.generate()
+    id = Tapper.Id.test_id(parent_span_id)
+    assert id.origin_parent_id == parent_span_id
+  end
+
   describe "pop/1 and push/2" do
 
     test "push span when empty" do
