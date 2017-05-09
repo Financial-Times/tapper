@@ -27,7 +27,7 @@ defmodule Tapper.Reporter.Zipkin do
 
   @behaviour Tapper.Reporter.Api
 
-  @options hackney: [pool: :tapper]
+  @options hackney: [ssl: [{:versions, [:'tlsv1.2']}], recv_timeout: 5000, hackney: [pool: :tapper]]
 
   def ingest(spans) when is_list(spans) do
     Logger.debug(fn -> "Sending #{length(spans)} spans to Zipkin" end)
