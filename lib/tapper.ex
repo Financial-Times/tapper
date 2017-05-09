@@ -25,35 +25,7 @@ defmodule Tapper do
 
   @behaviour Tapper.Tracer.Api
 
-
-  defmodule Endpoint do
-    @moduledoc """
-    Endpoint description struct; used everywhere an endpoint is required.
-
-    ## Example
-    ```
-    endpoint = %Endpoint{
-      ipv4: {192, 168, 10, 100},
-      service_name: "my-service",
-      port: 8080
-    }
-
-    Tapper.server_address(id, endpoint)
-    ```
-    """
-
-    defstruct [
-      :ipv4,
-      :port,
-      :service_name,
-      :ipv6
-    ]
-
-    @type ipv4 :: {integer(), integer(), integer(), integer()}
-    @type ipv6 :: binary()
-
-    @type t :: %__MODULE__{ipv4: ipv4(), port: integer(), service_name: String.t, ipv6: ipv6() | nil}
-  end
+  alias Tapper.Tracer
 
   @doc """
   start a new root trace, e.g. on originating a request, e.g.:
@@ -76,7 +48,7 @@ defmodule Tapper do
 
   NB if neither `sample` nor `debug` are set, all operations on this trace become a no-op.
   """
-  def start(opts \\ []), do: Tapper.Tracer.start(opts)
+  def start(opts \\ []), do: Tracer.start(opts)
 
   @doc """
   join an existing trace, e.g. server recieving an annotated request.
@@ -108,7 +80,7 @@ defmodule Tapper do
 
   NB if neither `sample` nor `debug` are `true`, all operations on this trace become a no-op.
   """
-  def join(trace_id, span_id, parent_id, sample, debug, opts \\ []), do: Tapper.Tracer.join(trace_id, span_id, parent_id, sample, debug, opts)
+  def join(trace_id, span_id, parent_id, sample, debug, opts \\ []), do: Tracer.join(trace_id, span_id, parent_id, sample, debug, opts)
 
   @doc """
   Finishes the trace.
@@ -124,7 +96,7 @@ defmodule Tapper do
   ## See also
   * `Tapper.Tracer.Timeout`
   """
-  def finish(id, opts \\ []), do: Tapper.Tracer.finish(id, opts)
+  def finish(id, opts \\ []), do: Tracer.finish(id, opts)
 
   @doc """
   Starts a child span.
@@ -135,13 +107,13 @@ defmodule Tapper do
   ## Options
   * `local` (string) - provide a local span context name (via a `lc` binary annotation).
   """
-  def start_span(id, opts \\ []), do: Tapper.Tracer.start_span(id, opts)
+  def start_span(id, opts \\ []), do: Tracer.start_span(id, opts)
 
   @doc "finish a nested span."
-  def finish_span(id), do: Tapper.Tracer.finish_span(id)
+  def finish_span(id), do: Tracer.finish_span(id)
 
   @doc "name (or rename) the current span."
-  def name(id, name), do: Tapper.Tracer.name(id, name)
+  def name(id, name), do: Tracer.name(id, name)
 
   @doc """
   Marks the span as asynchronous, adding an `async` annotation.
@@ -155,70 +127,70 @@ defmodule Tapper do
   ## See also
   * `Tapper.Tracer.Timeout`
   """
-  def async(id), do: Tapper.Tracer.async(id)
+  def async(id), do: Tracer.async(id)
 
   @doc "mark a server_receive event (`sr`); see also `:server` option on `Tapper.start/1`."
-  def server_receive(id), do: Tapper.Tracer.annotate(id, :sr)
+  def server_receive(id), do: Tracer.annotate(id, :sr)
   @doc "mark a server_send event (`ss`)."
-  def server_send(id), do: Tapper.Tracer.annotate(id, :ss)
+  def server_send(id), do: Tracer.annotate(id, :ss)
 
   @doc "mark a client_send event (`cs`); see also `:client` option on `Tapper.start/1`."
-  def client_send(id), do: Tapper.Tracer.annotate(id, :cs)
+  def client_send(id), do: Tracer.annotate(id, :cs)
   @doc "mark a client_receive event (`cr`)."
-  def client_receive(id), do: Tapper.Tracer.annotate(id, :cr)
+  def client_receive(id), do: Tracer.annotate(id, :cr)
 
   @doc "mark a send event (`ws`)."
-  def wire_send(id), do: Tapper.Tracer.annotate(id, :ws)
+  def wire_send(id), do: Tracer.annotate(id, :ws)
   @doc "mark a receive event (`wr`)."
-  def wire_receive(id), do: Tapper.Tracer.annotate(id, :wr)
+  def wire_receive(id), do: Tracer.annotate(id, :wr)
 
   @doc "mark an error event (`error`)."
-  def error(id), do: Tapper.Tracer.annotate(id, :error)
+  def error(id), do: Tracer.annotate(id, :error)
 
   @doc "mark an event, general interface."
-  def annotate(id, type, endpoint \\ nil), do: Tapper.Tracer.annotate(id, type, endpoint: endpoint)
+  def annotate(id, type, endpoint \\ nil), do: Tracer.annotate(id, type, endpoint: endpoint)
 
 
   @doc "Tag with the client's address (`ca`)."
-  def client_address(id, host = %Tapper.Endpoint{}), do: Tapper.Tracer.binary_annotate(id, :bool, "ca", true, host)
+  def client_address(id, host = %Tapper.Endpoint{}), do: Tracer.binary_annotate(id, :bool, "ca", true, host)
 
   @doc "Tag with the server's address (`sa`)."
-  def server_address(id, host = %Tapper.Endpoint{}), do: Tapper.Tracer.binary_annotate(id, :bool, "sa", true, host)
+  def server_address(id, host = %Tapper.Endpoint{}), do: Tracer.binary_annotate(id, :bool, "sa", true, host)
 
   @doc "Tag with HTTP host information (`http.host`)."
-  def http_host(id, hostname) when is_binary(hostname), do: Tapper.Tracer.binary_annotate(id, :string, "http.host", hostname)
+  def http_host(id, hostname) when is_binary(hostname), do: Tracer.binary_annotate(id, :string, "http.host", hostname)
 
   @doc "Tag with HTTP method information (`http.method`)."
-  def http_method(id, method) when is_binary(method), do: Tapper.Tracer.binary_annotate(id, :string, "http.method", method)
+  def http_method(id, method) when is_binary(method), do: Tracer.binary_annotate(id, :string, "http.method", method)
 
   @doc "Tag with HTTP path information: should be without query parameters (`http.path`)"
-  def http_path(id, path) when is_binary(path), do: Tapper.Tracer.binary_annotate(id, :string, "http.path", path)
+  def http_path(id, path) when is_binary(path), do: Tracer.binary_annotate(id, :string, "http.path", path)
 
   @doc "Tag with full HTTP URL information (`http.url`)"
-  def http_url(id, url) when is_binary(url), do: Tapper.Tracer.binary_annotate(id, :string, "http.url", url)
+  def http_url(id, url) when is_binary(url), do: Tracer.binary_annotate(id, :string, "http.url", url)
 
   @doc "Tag with an HTTP status code (`http.status_code`)"
-  def http_status_code(id, code) when is_integer(code), do: Tapper.Tracer.binary_annotate(id, :i16, "http.status_code", code)
+  def http_status_code(id, code) when is_integer(code), do: Tracer.binary_annotate(id, :i16, "http.status_code", code)
 
   @doc "Tag with an HTTP request size (`http.request.size`)"
-  def http_request_size(id, size) when is_integer(size), do: Tapper.Tracer.binary_annotate(id, :i64, "http.request.size", size)
+  def http_request_size(id, size) when is_integer(size), do: Tracer.binary_annotate(id, :i64, "http.request.size", size)
 
   @doc "Tag with an HTTP reponse size (`http.response.size`)"
-  def http_response_size(id, size) when is_integer(size), do: Tapper.Tracer.binary_annotate(id, :i64, "http.response.size", size)
+  def http_response_size(id, size) when is_integer(size), do: Tracer.binary_annotate(id, :i64, "http.response.size", size)
 
   @doc "Tag with a database query (`sql.querl`)"
-  def sql_query(id, query) when is_binary(query), do: Tapper.Tracer.binary_annotate(id, :string, "sql.query", query)
+  def sql_query(id, query) when is_binary(query), do: Tracer.binary_annotate(id, :string, "sql.query", query)
 
   @doc "Tag with an error message (`error`)"
-  def error(id, message) when is_binary(message), do: Tapper.Tracer.binary_annotate(id, :string, :error, message)
+  def error(id, message) when is_binary(message), do: Tracer.binary_annotate(id, :string, :error, message)
 
   @doc "Tag with a general (key,value,host) binary annotation, determining type of annotation automatically"
   def tag(id, key, value, endpoint \\ nil)
 
-  def tag(id, key, value, endpoint) when is_binary(key) and is_binary(value), do: Tapper.Tracer.binary_annotate(id, :string, key, value, endpoint)
-  def tag(id, key, value, endpoint) when is_binary(key) and is_integer(value), do: Tapper.Tracer.binary_annotate(id, :i64, key, value, endpoint)
-  def tag(id, key, value, endpoint) when is_binary(key) and is_float(value), do: Tapper.Tracer.binary_annotate(id, :double, key, value, endpoint)
-  def tag(id, key, value, endpoint) when is_binary(key), do: Tapper.Tracer.binary_annotate(id, :string, key, inspect(value), endpoint)
+  def tag(id, key, value, endpoint) when is_binary(key) and is_binary(value), do: Tracer.binary_annotate(id, :string, key, value, endpoint)
+  def tag(id, key, value, endpoint) when is_binary(key) and is_integer(value), do: Tracer.binary_annotate(id, :i64, key, value, endpoint)
+  def tag(id, key, value, endpoint) when is_binary(key) and is_float(value), do: Tracer.binary_annotate(id, :double, key, value, endpoint)
+  def tag(id, key, value, endpoint) when is_binary(key), do: Tracer.binary_annotate(id, :string, key, inspect(value), endpoint)
 
 
   @binary_annotation_types [:string, :bool, :i16, :i32, :i64, :double, :bytes]
@@ -232,6 +204,6 @@ defmodule Tapper do
   """
   def binary_annotate(id, type, key, value, endpoint \\ nil)
 
-  def binary_annotate(id, type, key, value, endpoint) when type in @binary_annotation_types, do: Tapper.Tracer.binary_annotate(id, type, key, value, endpoint)
+  def binary_annotate(id, type, key, value, endpoint) when type in @binary_annotation_types, do: Tracer.binary_annotate(id, type, key, value, endpoint)
 
 end

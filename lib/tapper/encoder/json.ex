@@ -91,21 +91,25 @@ defmodule Tapper.Encoder.Json do
       put_in(annotation[:type], String.upcase(Atom.to_string(type)))
     end
 
-    def encode_endpoint(%Tapper.Protocol.Endpoint{ipv4: ipv4, port: port, service_name: service_name}) do
+    def encode_endpoint(%Tapper.Protocol.Endpoint{ipv4: ipv4, ipv6: ipv6, port: port, service_name: service_name}) do
       %{
         serviceName: service_name || "unknown"
       }
       |> add_port(port)
       |> add_ipv4(ipv4)
-      # TODO ipv6
+      |> add_ipv6(ipv6)
     end
 
     def add_port(map, port) when is_nil(port), do: map
     def add_port(map, port) when is_integer(port), do: put_in(map, [:port], port)
 
     def add_ipv4(map, ipv4) when is_nil(ipv4), do: map
-    def add_ipv4(map, {a, b, c, d}) do
-      put_in(map, [:ipv4], "#{a}.#{b}.#{c}.#{d}")
+    def add_ipv4(map, ipv4 = {_, _, _, _}) do
+      put_in(map, [:ipv4], List.to_string(:inet_parse.ntoa(ipv4)))
     end
 
+    def add_ipv6(map, ipv6) when is_nil(ipv6), do: map
+    def add_ipv6(map, ipv6 = {_, _, _, _, _, _, _, _}) do
+      put_in(map, [:ipv6], List.to_string(:inet_parse.ntoa(ipv6)))
+    end
   end

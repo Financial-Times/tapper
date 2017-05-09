@@ -29,7 +29,7 @@ defmodule TapperTest do
 
     id
     |> Tapper.annotate(:ws)
-    |> Tapper.annotate(:wr, %Tapper.Endpoint{service_name: "proto", ipv4: {1, 2, 3, 4}})
+    |> Tapper.annotate(:wr, %Tapper.Endpoint{service_name: "proto", ip: {1, 2, 3, 4}})
     |> Tapper.binary_annotate(:i16, "units", 233)
 
     id = Tapper.finish_span(id)

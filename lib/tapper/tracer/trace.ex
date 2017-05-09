@@ -1,6 +1,8 @@
 defmodule Tapper.Tracer.Trace do
   @moduledoc "Tracer internal state, and functions to convert this to protocol spans (Tapper.Protocol)"
 
+  alias Tapper.Protocol
+
   @doc "Tracer state: the state of a single trace session."
   defstruct [
     :config,        # configuration from supervisor
@@ -109,15 +111,15 @@ defmodule Tapper.Tracer.Trace do
   end
 
   @spec endpoint_from_config(map()) :: Tapper.Endpoint.t
-  def endpoint_from_config(%{host_info: %{ipv4: ipv4, system_id: system_id}}) do
+  def endpoint_from_config(%{host_info: %{ip: ip, system_id: system_id}}) do
     %Tapper.Endpoint{
         service_name: system_id,
-        ipv4: ipv4,
+        ip: ip,
         port: 0
     }
   end
 
-  @spec to_protocol_spans(%Tapper.Tracer.Trace{}) :: [%Tapper.Protocol.Span{}]
+  @spec to_protocol_spans(__MODULE__.t) :: [%Protocol.Span{}]
   def to_protocol_spans(%__MODULE__{trace_id: trace_id, debug: debug, spans: spans, end_timestamp: end_timestamp}) do
 
     {trace_id, _} = trace_id
@@ -128,7 +130,7 @@ defmodule Tapper.Tracer.Trace do
 
       duration = if(is_nil(span.end_timestamp), do: end_timestamp - span.start_timestamp, else: span.end_timestamp - span.start_timestamp)
 
-      %Tapper.Protocol.Span{
+      %Protocol.Span{
         trace_id: trace_id,
         name: span.name,
         id: span.id,
@@ -153,7 +155,7 @@ defmodule Tapper.Tracer.Trace do
   end
 
   def to_protocol_annotation(annotation = %__MODULE__.Annotation{}) do
-    %Tapper.Protocol.Annotation{
+    %Protocol.Annotation{
       timestamp: annotation.timestamp,
       value: annotation.value,
       host: to_protocol_endpoint(annotation.host)
@@ -161,7 +163,7 @@ defmodule Tapper.Tracer.Trace do
   end
 
   def to_protocol_binary_annotation(annotation = %__MODULE__.BinaryAnnotation{}) do
-    %Tapper.Protocol.BinaryAnnotation{
+    %Protocol.BinaryAnnotation{
       key: annotation.key,
       value: annotation.value,
       annotation_type: annotation.annotation_type,
@@ -171,11 +173,15 @@ defmodule Tapper.Tracer.Trace do
 
   def to_protocol_endpoint(nil), do: nil
   def to_protocol_endpoint(host = %Tapper.Endpoint{}) do
-
-    %Tapper.Protocol.Endpoint{
-      ipv4: host.ipv4,
-      port: host.port,
-      service_name: host.service_name
+    endpoint = %Protocol.Endpoint{
+      port: host.port || 0,
+      service_name: host.service_name || "unknown"
     }
+
+    case host.ip do
+      {_, _, _, _} -> %{endpoint | ipv4: host.ip}
+      {_, _, _, _, _, _, _, _} -> %{endpoint | ipv6: host.ip}
+    end
+
   end
 end

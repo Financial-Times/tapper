@@ -68,7 +68,7 @@ defmodule Tapper.Protocol do
     ]
 
     @type ipv4 :: {integer(), integer(), integer(), integer()}
-    @type ipv6 :: binary()
+    @type ipv6 :: {integer(), integer(), integer(), integer(), integer(), integer(), integer(), integer()}
 
     @type t :: %__MODULE__{ipv4: ipv4(), port: integer(), service_name: String.t, ipv6: ipv6() | nil}
   end

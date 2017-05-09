@@ -86,7 +86,7 @@ defmodule JsonTest do
           key: "sa",
           value: true,
           host: %Tapper.Protocol.Endpoint{
-            ipv4: {192,168,10,10},
+            ipv6: {1, 0, 0, 4, 5, 6, 7, 8},
             service_name: "my-service",
             port: 8443
           }
@@ -119,6 +119,7 @@ defmodule JsonTest do
     assert hd(json_annotations)["value"] == "cs"
     assert hd(tl(json_annotations))["value"] == "cr"
     assert hd(tl(json_annotations))["endpoint"]["ipv4"] == "10.1.1.100"
+    assert hd(tl(json_annotations))["endpoint"]["ipv6"] == nil
 
     json_binary_annotations = hd(json)["binaryAnnotations"]
     assert json_binary_annotations
@@ -128,6 +129,8 @@ defmodule JsonTest do
     assert hd(json_binary_annotations)["key"] == "sa"
     assert hd(json_binary_annotations)["value"] == true
     assert hd(json_binary_annotations)["endpoint"]["serviceName"] == "my-service"
+    assert hd(json_binary_annotations)["endpoint"]["ipv4"] == nil
+    assert hd(json_binary_annotations)["endpoint"]["ipv6"] == "1::4:5:6:7:8"
 
     assert hd(tl(json_binary_annotations))["type"] == nil
     assert hd(tl(json_binary_annotations))["key"] == "http.path"

@@ -4,7 +4,7 @@ defmodule Test.Helper.Server do
   def config() do
     %{
       host_info: %{
-        ipv4: {2,1,1,2},
+        ip: {2,1,1,2},
         system_id: "default-host"
       }
     }
@@ -15,7 +15,7 @@ defmodule Test.Helper.Server do
     n = :rand.uniform(254)
     p = :rand.uniform(9999)
     %Tapper.Endpoint{
-      ipv4: {n,n,n,n+1},
+      ip: if(p < 5000, do: {n, n, n, n + 1}, else: {n, n, n, n, n, n, n, n + 1}),
       port: p,
       service_name: Integer.to_string(n) <> ":" <> Integer.to_string(p)
     }

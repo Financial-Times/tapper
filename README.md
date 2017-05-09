@@ -50,7 +50,7 @@ id = Tapper.join(trace_id, span_id, parent_span_id, sample, debug)
 
 # add some detail
 id
-|> Tapper.client_address(%Tapper.Endpoint{ipv4: conn.remote_ip}) # we could also have used remote option on join
+|> Tapper.client_address(%Tapper.Endpoint{ip: conn.remote_ip}) # we could also have used remote option on join
 |> Tapper.http_path(conn.request_path)
 
 # call another service
