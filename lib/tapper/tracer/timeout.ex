@@ -37,9 +37,9 @@ defmodule Tapper.Tracer.Timeout do
   @spec timeout_trace(trace :: Trace.t, timestamp :: integer()) :: Trace.t
   def timeout_trace(trace, timestamp)
 
-  def timeout_trace(trace = %Trace{async: async}, timestamp) when is_nil(async) or async == false do
+  def timeout_trace(trace = %Trace{async: nil}, timestamp) do
     # a timeout on an non-async trace is an error; add timeout annotation to all spans
-    %{trace |
+    %Trace{trace |
       spans: annotate_timeout_spans(trace.spans, timestamp, Trace.endpoint_from_config(trace.config)),
       end_timestamp: timestamp
     }
@@ -55,7 +55,7 @@ defmodule Tapper.Tracer.Timeout do
       [] ->
         # main span only, not an error; just set the `end_timestamp` to the last activity time
         trace = put_in(trace.spans[main_span_id].end_timestamp, trace.last_activity)
-        %{trace | end_timestamp: trace.last_activity}
+        %Trace{trace | end_timestamp: trace.last_activity}
 
       child_spans ->
         # one or more child spans exist; are they all finished?
@@ -65,12 +65,12 @@ defmodule Tapper.Tracer.Timeout do
             # with most latent child end_timestamp
             end_timestamp = latest_timeout(child_spans) || timestamp
             trace = put_in(trace.spans[main_span_id].end_timestamp, end_timestamp)
-            %{trace | end_timestamp: end_timestamp}
+            %Trace{trace | end_timestamp: end_timestamp}
 
           false ->
             # no; this is a timeout error: annotate all unfinished spans with a `:timeout`
             # and set their `end_timestamp`, and the trace's `end_timeout` to timeout time
-            %{trace |
+            %Trace{trace |
               spans: annotate_timeout_spans(trace.spans, timestamp, Trace.endpoint_from_config(trace.config)),
               end_timestamp: timestamp
             }
@@ -115,6 +115,7 @@ defmodule Tapper.Tracer.Timeout do
   def span_finished?(%Trace.SpanInfo{}), do: true
 
   @doc false
+  @spec annotate_timeout_spans(spans :: %{required(Span.Id.t) => Trace.SpanInfo.t}, integer(), Tapper.Endpoint.t) :: %{required(Span.Id.t) => Trace.SpanInfo.t}
   def annotate_timeout_spans(spans, timestamp, endpoint) when is_map(spans) do
     spans
     |> Stream.map(fn({span_id,span}) ->

@@ -108,13 +108,13 @@ defmodule Tapper.Tracer.Server do
   * `Tapper.finish/2` and `Tapper.async/1` - declaring a trace or span asynchronous.
   * `Tapper.Tracer.Timeout` - timeout behaviour.
   """
-  def handle_info(:timeout, trace) do
+  def handle_info(:timeout, trace = %Trace{}) do
     Logger.debug(fn -> inspect({trace.trace_id, :timeout}) end)
     timestamp = System.os_time(:microsecond)
 
     trace = Tapper.Tracer.Timeout.timeout_trace(trace, timestamp)
 
-    report_trace(trace)
+    :ok = report_trace(trace)
 
     Logger.info(fn -> "End Trace #{Tapper.TraceId.format(trace.trace_id)} (timeout)" end)
     {:stop, :normal, []}
@@ -134,7 +134,7 @@ defmodule Tapper.Tracer.Server do
       _ ->
         trace = %Trace{trace | end_timestamp: timestamp}
 
-        report_trace(trace)
+        :ok = report_trace(trace)
 
         Logger.info(fn -> "Finish Trace #{Tapper.TraceId.format(trace.trace_id)}" end)
         {:stop, :normal, []}
@@ -295,6 +295,8 @@ defmodule Tapper.Tracer.Server do
       fun when is_function(fun, 1) -> fun.(spans)
       mod when is_atom(mod) -> apply(mod, :ingest, [spans])
     end
+
+    :ok
   end
 
 end

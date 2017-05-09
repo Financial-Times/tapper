@@ -18,7 +18,20 @@ defmodule Tapper.Tracer.Trace do
     :async          # this trace will finish asynchronously
   ]
 
-  @type trace :: %__MODULE__{trace_id: Tapper.TraceId.t, span_id: Tapper.SpanId.t, parent_id: Tapper.SpanId.t | :root, spans: [Tapper.Traceer.SpanInfo.t]}
+  @type trace :: %__MODULE__{
+    trace_id: Tapper.TraceId.t,
+    span_id: Tapper.SpanId.t,
+    parent_id: Tapper.SpanId.t | :root,
+    spans: %{required(Tapper.SpanId.t) => Tapper.Traceer.SpanInfo.t},
+    config: map(),
+    sample: boolean(),
+    debug: boolean(),
+    timestamp: integer(),
+    end_timestamp: integer(),
+    last_activity: integer(),
+    ttl: integer(),
+    async: nil | true
+  }
   @type t :: trace
 
   defmodule SpanInfo do
@@ -46,7 +59,7 @@ defmodule Tapper.Tracer.Trace do
       :host
     ]
 
-    @type t :: %__MODULE__{}
+    @type t :: %__MODULE__{timestamp: integer(), value: atom() | String.t, host: Tapper.Endpoint.t | nil}
 
     def new(value, timestamp, endpoint = %Tapper.Endpoint{}) when is_integer(timestamp) do
       %__MODULE__{
@@ -73,7 +86,7 @@ defmodule Tapper.Tracer.Trace do
       :host # optional
     ]
 
-    @type t :: %__MODULE__{}
+    @type t :: %__MODULE__{key: atom() | String.t, value: any(), annotation_type: atom(), host: Tapper.Endpoint.t | nil}
 
     @types [:string, :bool, :i16, :i32, :i64, :double, :bytes]
 
@@ -95,10 +108,12 @@ defmodule Tapper.Tracer.Trace do
     end
   end
 
+  @spec endpoint_from_config(map()) :: Tapper.Endpoint.t
   def endpoint_from_config(%{host_info: %{ipv4: ipv4, system_id: system_id}}) do
     %Tapper.Endpoint{
+        service_name: system_id,
         ipv4: ipv4,
-        service_name: system_id
+        port: 0
     }
   end
 

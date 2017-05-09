@@ -22,9 +22,6 @@ defmodule Tapper.Reporter.Zipkin do
 
   require Logger
 
-  # NB dialyzer hates HTTPPoison.Base
-  use HTTPoison.Base
-
   @behaviour Tapper.Reporter.Api
 
   @options hackney: [ssl: [{:versions, [:'tlsv1.2']}], recv_timeout: 5000, hackney: [pool: :tapper]]
@@ -32,10 +29,13 @@ defmodule Tapper.Reporter.Zipkin do
   def ingest(spans) when is_list(spans) do
     Logger.debug(fn -> "Sending #{length(spans)} spans to Zipkin" end)
 
+    # we did use HTTPoison.Base unfortunately, plays badly with Dialyzer & ExDoc
     url = url()
+    data = process_request_body(spans)
+    headers = process_request_headers([])
+    options = process_request_options([])
 
-    # result = HTTPoison.post!(url, data, [{"Content-Type", "application/json"}], @options)
-    result = post!(url, spans)
+    result = HTTPoison.post(url, data, headers, options)
 
     Logger.debug(fn -> inspect(result) end)
 
@@ -46,17 +46,14 @@ defmodule Tapper.Reporter.Zipkin do
     env(config()[:collector_url]) || raise ArgumentError, "#{__MODULE__} reporter needs collector_url configuration"
   end
 
-  @doc "HTTPPoison.Base callback"
   def process_request_body(spans) do
       Tapper.Encoder.Json.encode!(spans)
   end
 
-  @doc "HTTPPoison.Base callback"
   def process_request_headers(headers) do
     [{"Content-Type", "application/json"} | headers]
   end
 
-  @doc "HTTPPoison.Base callback"
   def process_request_options(options) do
     [@options | options]
   end
