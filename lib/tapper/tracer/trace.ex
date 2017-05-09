@@ -181,6 +181,7 @@ defmodule Tapper.Tracer.Trace do
     case host.ip do
       {_, _, _, _} -> %{endpoint | ipv4: host.ip}
       {_, _, _, _, _, _, _, _} -> %{endpoint | ipv6: host.ip}
+      _ -> endpoint
     end
 
   end
