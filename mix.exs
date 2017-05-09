@@ -8,6 +8,7 @@ defmodule Tapper.Mixfile do
      elixirc_paths: elixirc_paths(Mix.env),
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
+     source_url: "https://github.com/Financial-Times/tapper",
      package: package(),
      docs: docs(),
      deps: deps()]
@@ -23,7 +24,8 @@ defmodule Tapper.Mixfile do
   end
 
   def package do
-    [ maintainers: ["Ellis Pritchard"],
+    [ files: ["lib", "mix.exs", "README.md"],
+      maintainers: ["Ellis Pritchard"],
       licenses: ["MIT"],
       links: %{"Github" => "https://github.com/Financial-Times/tapper"} ]
   end
