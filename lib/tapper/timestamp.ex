@@ -22,8 +22,10 @@ defmodule Tapper.Timestamp do
     System.convert_time_unit(timestamp2 - timestamp1, :native, :microseconds)
   end
 
-  @spec incr(t, integer(), System.time_unit) :: t
-  def incr({timestamp, offset}, increment, units \\ :native) do
+  @spec incr(t, increment :: integer(), units :: System.time_unit | :native) :: t
+  def incr(timestamp, increment, units \\ :native)
+
+  def incr({timestamp, offset}, increment, units) do
     {timestamp + System.convert_time_unit(increment, units, :native), offset}
   end
 
