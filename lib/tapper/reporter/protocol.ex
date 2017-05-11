@@ -14,8 +14,16 @@ defmodule Tapper.Protocol do
   * `Tapper.Reporter.Api` - consumes protocol spans.
   """
 
+  @type microseconds :: integer()
+  @type timestamp :: microseconds()
+  @type duration :: microseconds()
+
   defmodule Span do
     @moduledoc "A span, with hierarchy, start time, duration and annotations."
+
+    alias Tapper.Protocol.Annotation
+    alias Tapper.Protocol.BinaryAnnotation
+    alias Tapper.Protocol
 
     defstruct [
       :trace_id,
@@ -32,13 +40,16 @@ defmodule Tapper.Protocol do
     @type trace_id :: integer()
     @type span_id :: integer()
 
-    @type timestamp :: integer()
-    @type duration :: integer()
-
-    alias Tapper.Protocol.Annotation
-    alias Tapper.Protocol.BinaryAnnotation
-
-    @type t :: %__MODULE__{trace_id: trace_id(), id: span_id(), parent_id: span_id(), annotations: [Annotation.t], binary_annotations: [BinaryAnnotation.t], debug: boolean, timestamp: timestamp(), duration: duration()}
+    @type t :: %__MODULE__{
+      trace_id: trace_id(),
+      id: span_id(),
+      parent_id: span_id(),
+      annotations: [Annotation.t],
+      binary_annotations: [BinaryAnnotation.t],
+      debug: boolean,
+      timestamp: Protocol.timestamp(),
+      duration: Protocol.duration()
+    }
   end
 
   defmodule Annotation do
@@ -51,10 +62,13 @@ defmodule Tapper.Protocol do
     ]
 
     alias Tapper.Protocol.Endpoint
+    alias Tapper.Protocol
 
-    @type timestamp :: Tapper.Span.timestamp()
-
-    @type t :: %__MODULE__{timestamp: timestamp(), value: String.t | atom(), host: Endpoint.t}
+    @type t :: %__MODULE__{
+      timestamp: Protocol.timestamp(),
+      value: String.t | atom(),
+      host: Endpoint.t
+    }
   end
 
   defmodule Endpoint do
@@ -70,7 +84,12 @@ defmodule Tapper.Protocol do
     @type ipv4 :: {integer(), integer(), integer(), integer()}
     @type ipv6 :: {integer(), integer(), integer(), integer(), integer(), integer(), integer(), integer()}
 
-    @type t :: %__MODULE__{ipv4: ipv4(), port: integer(), service_name: String.t, ipv6: ipv6() | nil}
+    @type t :: %__MODULE__{
+      ipv4: ipv4(),
+      port: integer(),
+      service_name: String.t,
+      ipv6: ipv6() | nil
+    }
   end
 
   defmodule BinaryAnnotation do
@@ -85,7 +104,12 @@ defmodule Tapper.Protocol do
 
     alias Tapper.Protocol.Endpoint
 
-    @type t :: %__MODULE__{key: String.t | atom(), annotation_type: atom(), value: term(), host: Endpoint.t}
+    @type t :: %__MODULE__{
+      key: String.t | atom(),
+      annotation_type: atom(),
+      value: term(),
+      host: Endpoint.t
+    }
   end
 
 end

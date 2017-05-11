@@ -7,6 +7,7 @@ defmodule Tracer.Server.SpanTest do
   import Test.Helper.Server
 
   alias Tapper.Tracer.Trace
+  alias Tapper.Timestamp
 
   require Logger
 
@@ -14,7 +15,7 @@ defmodule Tracer.Server.SpanTest do
 
     {trace, span_id} = init_with_opts(config: config())
 
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
     child_span = child_span_info("child", Tapper.SpanId.generate(), span_id, timestamp)
 
     {:noreply, state, _ttl} = Tapper.Tracer.Server.handle_cast({:start_span, child_span, []}, trace)
@@ -28,12 +29,12 @@ defmodule Tracer.Server.SpanTest do
 
     {trace, span_id} = init_with_opts(config: config())
 
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
     child_span = child_span_info("child", Tapper.SpanId.generate(), span_id, timestamp)
 
     {:noreply, state, _ttl} = Tapper.Tracer.Server.handle_cast({:start_span, child_span, []}, trace)
 
-    child_end_timestamp = timestamp + 100
+    child_end_timestamp = Timestamp.incr(timestamp, 100, :milliseconds)
     {:noreply, state, _ttl} = Tapper.Tracer.Server.handle_cast({:finish_span, child_span.id, child_end_timestamp}, state)
 
     assert state.spans[child_span.id]
@@ -46,7 +47,7 @@ defmodule Tracer.Server.SpanTest do
 
     {trace, span_id} = init_with_opts(config: config())
 
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
     child_span = child_span_info("child", Tapper.SpanId.generate(), span_id, timestamp)
 
     {:noreply, state, _ttl} = Tapper.Tracer.Server.handle_cast({:start_span, child_span, [local: "my_function"]}, trace)
@@ -60,7 +61,7 @@ defmodule Tracer.Server.SpanTest do
 
     {trace, span_id} = init_with_opts(config: config())
 
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
     child_span = child_span_info("child", Tapper.SpanId.generate(), span_id, timestamp)
 
     {:noreply, state, _ttl} = Tapper.Tracer.Server.handle_cast({:start_span, child_span, [local: MyAtom]}, trace)
@@ -74,7 +75,7 @@ defmodule Tracer.Server.SpanTest do
 
     {trace, _span_id} = init_with_opts(config: config())
 
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
     span_id = Tapper.SpanId.generate()
 
     {:noreply, state, _ttl} = Tapper.Tracer.Server.handle_cast({:finish_span, span_id, timestamp}, trace)
@@ -90,7 +91,7 @@ defmodule Tracer.Server.SpanTest do
 
     {trace, span_id} = init_with_opts(config: config)
 
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
 
     {:stop, :normal, []} = Tapper.Tracer.Server.handle_cast({:finish, timestamp, []}, trace)
 
@@ -115,7 +116,7 @@ defmodule Tracer.Server.SpanTest do
     {trace, span_id} = init_with_opts(config: config, ttl: 1000)
 
     # add a child span to simulate one running async
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
 
     child_span = child_span_info("child", Tapper.SpanId.generate(), span_id, timestamp)
     {:noreply, state, ^ttl} = Tapper.Tracer.Server.handle_cast({:start_span, child_span, []}, trace)
@@ -123,7 +124,7 @@ defmodule Tracer.Server.SpanTest do
     assert state.spans[child_span.id]
 
     # finish asynchronously
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
 
     {:noreply, state, ^ttl} = Tapper.Tracer.Server.handle_cast({:finish, timestamp, [async: true]}, state)
 

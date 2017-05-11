@@ -4,6 +4,8 @@ defmodule Tapper.Tracer.Supervisor do
   use Supervisor
   require Logger
 
+  alias Tapper.Timestamp
+
   def start_link(config) do
     Supervisor.start_link(__MODULE__, [config], name: __MODULE__)
   end
@@ -17,7 +19,7 @@ defmodule Tapper.Tracer.Supervisor do
   end
 
   @doc "start tracing server with initial trace info"
-  @spec start_tracer(Tapper.Tracer.Api.trace_init(), timestamp :: integer(), opts :: Keyword.t) :: Supervisor.on_start_child()
+  @spec start_tracer(Tapper.Tracer.Api.trace_init(), timestamp :: Timestamp.timestamp(), opts :: Keyword.t) :: Supervisor.on_start_child()
   def start_tracer(trace_init, timestamp, opts) do
 
     # NB calls Tapper.Tracer.Server.start_link/5 with our worker init config as first argument (see worker above)

@@ -15,6 +15,7 @@ defmodule Tapper.Tracer do
   require Logger
 
   import Tapper.Tracer.Server, only: [via_tuple: 1]
+  alias Tapper.Timestamp
   alias Tapper.Tracer.Trace
 
   @doc """
@@ -39,7 +40,7 @@ defmodule Tapper.Tracer do
   def start(opts \\ []) when is_list(opts) do
     trace_id = Tapper.TraceId.generate()
     span_id = elem(trace_id, 0) &&& 0xFFFFFFFFFFFFFFFF # lower 64 bits
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
 
     # check type, and default to :client
     opts = default_type_opts(opts, :client) # if we're starting a trace, we're a client
@@ -93,7 +94,7 @@ defmodule Tapper.Tracer do
   def join(trace_id, span_id, parent_id, sample, debug, opts \\ []), do: join({trace_id, span_id, parent_id, sample, debug}, opts)
   def join(trace_init = {trace_id, span_id, parent_id, sample, debug}, opts \\ []) when is_list(opts) do
 
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
 
     # check and default type to :server
     opts = default_type_opts(opts, :server)
@@ -146,7 +147,7 @@ defmodule Tapper.Tracer do
   def finish(id, opts \\ [])
   def finish(%Tapper.Id{sampled: false}, _opts), do: :ok
   def finish(id = %Tapper.Id{}, opts) when is_list(opts) do
-    end_timestamp = System.os_time(:microseconds)
+    end_timestamp = Timestamp.instant()
 
     GenServer.cast(via_tuple(id), {:finish, end_timestamp, opts})
   end
@@ -169,7 +170,7 @@ defmodule Tapper.Tracer do
   def start_span(id = %Tapper.Id{sampled: false}, _opts), do: id
 
   def start_span(id = %Tapper.Id{span_id: span_id}, opts) when is_list(opts) do
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
 
     child_span_id = Tapper.SpanId.generate()
 
@@ -199,7 +200,7 @@ defmodule Tapper.Tracer do
 
   def finish_span(id = %Tapper.Id{}) do
 
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
 
     updated_id = Tapper.Id.pop(id)
 
@@ -211,13 +212,13 @@ defmodule Tapper.Tracer do
   def name(:ignore, _name), do: :ignore
 
   def name(id = %Tapper.Id{span_id: span_id}, name) when is_binary(name) do
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
     GenServer.cast(via_tuple(id), {:name, span_id, name, timestamp})
     id
   end
 
   def async(id = %Tapper.Id{span_id: span_id}) do
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
     GenServer.cast(via_tuple(id), {:async, span_id, timestamp})
     id
   end
@@ -227,7 +228,7 @@ defmodule Tapper.Tracer do
   def annotate(:ignore, _type, _opts), do: :ignore
 
   def annotate(id = %Tapper.Id{span_id: span_id}, type, opts) do
-    timestamp = opts[:timestamp] || System.os_time(:microseconds)
+    timestamp = opts[:timestamp] || Timestamp.instant()
     value = map_annotation_type(type)
     endpoint = check_endpoint(opts[:endpoint]) # ensure endpoint is an Endpoint.t, or nil
 
@@ -244,7 +245,7 @@ defmodule Tapper.Tracer do
   def binary_annotate(:ignore, _type, _key, _value, _endpoint), do: :ignore
 
   def binary_annotate(id = %Tapper.Id{span_id: span_id}, type, key, value, endpoint) when type in @binary_annotation_types do
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
 
     GenServer.cast(via_tuple(id), {:binary_annotation, span_id, type, key, value, timestamp, check_endpoint(endpoint)})
 

@@ -1,5 +1,8 @@
 defmodule Test.Helper.Server do
 
+  alias Tapper.Timestamp
+  alias Tapper.Tracer.Trace
+
   # create some basic Tapper.Tracer.Server configuration
   def config() do
     %{
@@ -26,7 +29,7 @@ defmodule Test.Helper.Server do
     config = opts[:config] || config()
     trace_id = Tapper.TraceId.generate()
     span_id = Tapper.SpanId.generate()
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
 
     {:ok, trace, _ttl} = Tapper.Tracer.Server.init([config, {trace_id, span_id, :root, true, false}, self(), timestamp, opts])
     {trace, span_id}
@@ -55,6 +58,34 @@ defmodule Test.Helper.Server do
     ref = make_ref()
     fun = fn(term) -> send(self_pid, {ref, term}) end
     {ref, fun}
+  end
+
+  def trace(spans \\ []) do
+    timestamp = Timestamp.instant()
+
+    spans =
+      Enum.map(spans, fn(span) -> {span.id, span} end)
+      |> Enum.into(Map.new)
+
+    %Trace{
+      parent_id: :root,
+      trace_id: Tapper.TraceId.generate(),
+      span_id: 1,
+      timestamp: timestamp,
+      end_timestamp: Timestamp.incr(timestamp, 5000),
+      spans: spans
+    }
+  end
+
+  def span(id, start_timestamp, duration_us) do
+    %Trace.SpanInfo{
+        id: id,
+        name: "span_#{id}",
+        start_timestamp: start_timestamp,
+        end_timestamp: Timestamp.incr(start_timestamp, duration_us),
+        annotations: [],
+        binary_annotations: []
+      }
   end
 
 end

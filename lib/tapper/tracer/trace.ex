@@ -1,7 +1,7 @@
 defmodule Tapper.Tracer.Trace do
   @moduledoc "Tracer internal state, and functions to convert this to protocol spans (Tapper.Protocol)"
 
-  alias Tapper.Protocol
+  alias Tapper.Timestamp
 
   @doc "Tracer state: the state of a single trace session."
   defstruct [
@@ -28,9 +28,9 @@ defmodule Tapper.Tracer.Trace do
     config: map(),
     sample: boolean(),
     debug: boolean(),
-    timestamp: integer(),
-    end_timestamp: integer(),
-    last_activity: integer(),
+    timestamp: Timestamp.timestamp(),
+    end_timestamp: Timestamp.timestamp(),
+    last_activity: Timestamp.timestamp(),
     ttl: integer(),
     async: nil | true
   }
@@ -49,7 +49,15 @@ defmodule Tapper.Tracer.Trace do
       :binary_annotations
     ]
 
-    @type t :: %__MODULE__{}
+    @type t :: %__MODULE__{
+      name: String.t,
+      id: Tapper.SpandId.t,
+      parent_id: Tapper.SpandId.t,
+      start_timestamp: Timestamp.timestamp(),
+      end_timestamp: Timestamp.timestamp(),
+      annotations: [Annotation.t],
+      binary_annotations: [BinaryAnnotation.t]
+    }
   end
 
   defmodule Annotation do
@@ -61,9 +69,13 @@ defmodule Tapper.Tracer.Trace do
       :host
     ]
 
-    @type t :: %__MODULE__{timestamp: integer(), value: atom() | String.t, host: Tapper.Endpoint.t | nil}
+    @type t :: %__MODULE__{
+      timestamp: Timestamp.timestamp(),
+      value: atom() | String.t,
+      host: Tapper.Endpoint.t | nil
+    }
 
-    def new(value, timestamp, endpoint = %Tapper.Endpoint{}) when is_integer(timestamp) do
+    def new(value, timestamp, endpoint = %Tapper.Endpoint{}) when is_tuple(timestamp) do
       %__MODULE__{
         value: value,
         timestamp: timestamp,
@@ -71,7 +83,7 @@ defmodule Tapper.Tracer.Trace do
       }
     end
 
-    def new(value, timestamp) when is_integer(timestamp) do
+    def new(value, timestamp) when is_tuple(timestamp) do
       %__MODULE__{
         value: value,
         timestamp: timestamp
@@ -88,7 +100,14 @@ defmodule Tapper.Tracer.Trace do
       :host # optional
     ]
 
-    @type t :: %__MODULE__{key: atom() | String.t, value: any(), annotation_type: atom(), host: Tapper.Endpoint.t | nil}
+    @type annotation_type :: :string | :bool | :i16 | :i32 | :i64 | :double | :bytes
+
+    @type t :: %__MODULE__{
+      key: atom() | String.t,
+      value: any(),
+      annotation_type: annotation_type(),
+      host: Tapper.Endpoint.t | nil
+    }
 
     @types [:string, :bool, :i16, :i32, :i64, :double, :bytes]
 
@@ -119,70 +138,4 @@ defmodule Tapper.Tracer.Trace do
     }
   end
 
-  @spec to_protocol_spans(__MODULE__.t) :: [%Protocol.Span{}]
-  def to_protocol_spans(%__MODULE__{trace_id: trace_id, debug: debug, spans: spans, end_timestamp: end_timestamp}) do
-
-    {trace_id, _} = trace_id
-
-    spans
-    |> Map.values
-    |> Enum.map(fn(span) ->
-
-      duration = if(is_nil(span.end_timestamp), do: end_timestamp - span.start_timestamp, else: span.end_timestamp - span.start_timestamp)
-
-      %Protocol.Span{
-        trace_id: trace_id,
-        name: span.name,
-        id: span.id,
-        parent_id: span.parent_id,
-        debug: debug,
-        timestamp: span.start_timestamp,
-        duration: max(duration, 1),
-        annotations: to_protocol_annotations(span.annotations),
-        binary_annotations: to_protocol_binary_annotations(span.binary_annotations)
-      }
-    end)
-  end
-
-  def to_protocol_annotations(annotations) when is_nil(annotations), do: []
-  def to_protocol_annotations(annotations) when is_list(annotations) do
-    Enum.map(annotations, &to_protocol_annotation/1)
-  end
-
-  def to_protocol_binary_annotations(binary_annotations) when is_nil(binary_annotations), do: []
-  def to_protocol_binary_annotations(binary_annotations) when is_list(binary_annotations) do
-    Enum.map(binary_annotations, &to_protocol_binary_annotation/1)
-  end
-
-  def to_protocol_annotation(annotation = %__MODULE__.Annotation{}) do
-    %Protocol.Annotation{
-      timestamp: annotation.timestamp,
-      value: annotation.value,
-      host: to_protocol_endpoint(annotation.host)
-    }
-  end
-
-  def to_protocol_binary_annotation(annotation = %__MODULE__.BinaryAnnotation{}) do
-    %Protocol.BinaryAnnotation{
-      key: annotation.key,
-      value: annotation.value,
-      annotation_type: annotation.annotation_type,
-      host: to_protocol_endpoint(annotation.host)
-    }
-  end
-
-  def to_protocol_endpoint(nil), do: nil
-  def to_protocol_endpoint(host = %Tapper.Endpoint{}) do
-    endpoint = %Protocol.Endpoint{
-      port: host.port || 0,
-      service_name: host.service_name || "unknown"
-    }
-
-    case host.ip do
-      {_, _, _, _} -> %{endpoint | ipv4: host.ip}
-      {_, _, _, _, _, _, _, _} -> %{endpoint | ipv6: host.ip}
-      _ -> endpoint
-    end
-
-  end
 end

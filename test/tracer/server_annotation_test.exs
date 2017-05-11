@@ -4,12 +4,13 @@ defmodule Tracer.Server.AnnotationTest do
   import Test.Helper.Server
 
   alias Tapper.Tracer.Trace
+  alias Tapper.Timestamp
 
   test "add annotatation, no endpoint; stores default endpoint" do
     {trace, span_id} = init_with_opts()
 
     value = :cr
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
 
     {:noreply, state, _ttl} =
         Tapper.Tracer.Server.handle_cast({:annotation, span_id, value, timestamp, nil}, trace)
@@ -37,7 +38,7 @@ defmodule Tracer.Server.AnnotationTest do
     {trace, span_id} = init_with_opts()
 
     value = :cr
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
     endpoint = random_endpoint()
 
     {:noreply, state, _ttl} =
@@ -66,14 +67,14 @@ defmodule Tracer.Server.AnnotationTest do
     {trace, span_id} = init_with_opts()
 
     value_1 = :cr
-    timestamp_1 = System.os_time(:microseconds)
+    timestamp_1 = {instant, offset} = Timestamp.instant()
     endpoint_1 = random_endpoint()
 
     {:noreply, state_1, _ttl} =
       Tapper.Tracer.Server.handle_cast({:annotation, span_id, value_1, timestamp_1, endpoint_1}, trace)
 
     value_2 = :my_custom_annotation
-    timestamp_2 = timestamp_1 + 1
+    timestamp_2 = {instant + 1, offset}
     endpoint_2 = random_endpoint()
 
     {:noreply, state_2, _ttl} =
@@ -105,7 +106,7 @@ defmodule Tracer.Server.AnnotationTest do
     {trace, _span_id} = init_with_opts()
 
     value = :cr
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
 
     no_span_id = Tapper.SpanId.generate()
     {:noreply, state, _ttl} =
@@ -121,7 +122,7 @@ defmodule Tracer.Server.AnnotationTest do
     type = :string
     key = "http_method"
     value = "POST"
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
 
     {:noreply, state, _ttl} =
       Tapper.Tracer.Server.handle_cast({:binary_annotation, span_id, type, key, value, timestamp, nil}, trace)
@@ -153,7 +154,7 @@ defmodule Tracer.Server.AnnotationTest do
     type = :string
     key = "http_method"
     value = "POST"
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
     endpoint = random_endpoint()
 
     {:noreply, state, _ttl} =
@@ -186,7 +187,7 @@ defmodule Tracer.Server.AnnotationTest do
     type_1 = :string
     key_1 = "http_method"
     value_1 = "GET"
-    timestamp_1 = System.os_time(:microseconds)
+    timestamp_1 = Timestamp.instant()
     endpoint_1 = random_endpoint()
 
     {:noreply, state_1, _ttl} =
@@ -195,7 +196,7 @@ defmodule Tracer.Server.AnnotationTest do
     type_2 = :i16
     key_2 = "http_status"
     value_2 = 404
-    timestamp_2 = System.os_time(:microseconds)
+    timestamp_2 = Timestamp.instant()
     endpoint_2 = random_endpoint()
 
     {:noreply, state_2, _ttl} =
@@ -231,7 +232,7 @@ defmodule Tracer.Server.AnnotationTest do
     type = :string
     key = "http_method"
     value = "POST"
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
 
     no_span_id = Tapper.SpanId.generate()
     {:noreply, state, _ttl} =

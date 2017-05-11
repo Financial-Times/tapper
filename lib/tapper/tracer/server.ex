@@ -11,6 +11,7 @@ defmodule Tapper.Tracer.Server do
 
   alias Tapper.Tracer.Trace
   alias Tapper.Tracer.Annotations
+  alias Tapper.Timestamp
 
   @doc """
   Starts a Tracer, registering a name derived from the `Tapper.Id`.
@@ -19,7 +20,7 @@ defmodule Tapper.Tracer.Server do
   * `config` - worker config from `Tapper.Tracer.Supervisor` worker spec.
   * `trace_init` - trace parameters (trace_id, span_id, etc.)
   * `pid` - pid of process that called `Tapper.start/1` or `Tapper.join/6`.
-  * `timestamp` - microsecond timestamp of trace receive/start event.
+  * `timestamp` (`Tapper.Timestamp.t`) - timestamp of trace receive/start event.
   * `opts` - options which were passed to start or join, see `Tapper.Tracer.Server.init/1`.
 
   NB called by `Tapper.Tracer.Supervisor` when starting a trace with `start_tracer/2`.
@@ -46,7 +47,7 @@ defmodule Tapper.Tracer.Server do
   * `config` - worker config from Tapper.Tracer.Supervisor's worker spec.
   * `trace_init` - trace parameters i.e. `{trace_id, span_id, parent_span_id, sample, debug}`
   * `pid` - pid of process that called `Tapper.start/1` or `Tapper.join/6`.
-  * `timestamp` - microsecond timestamp of trace receive/start event.
+  * `timestamp` (`Tapper.Timestamp.t`) - timestamp of trace receive/start event.
   * `opts` - options passed to start or join, see below.
 
   ## Options
@@ -110,7 +111,7 @@ defmodule Tapper.Tracer.Server do
   """
   def handle_info(:timeout, trace = %Trace{}) do
     Logger.debug(fn -> inspect({trace.trace_id, :timeout}) end)
-    timestamp = System.os_time(:microsecond)
+    timestamp = Timestamp.instant()
 
     trace = Tapper.Tracer.Timeout.timeout_trace(trace, timestamp)
 
@@ -289,7 +290,7 @@ defmodule Tapper.Tracer.Server do
   def report_trace(trace = %Trace{}) do
     Logger.debug(fn -> "Sending trace #{inspect trace}" end)
 
-    spans = Trace.to_protocol_spans(trace)
+    spans = Trace.Convert.to_protocol_spans(trace)
 
     case trace.config.reporter do
       fun when is_function(fun, 1) -> fun.(spans)

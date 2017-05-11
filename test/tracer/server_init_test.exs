@@ -4,12 +4,13 @@ defmodule Tracer.Server.InitTest do
   import Test.Helper.Server
 
   alias Tapper.Tracer.Trace
+  alias Tapper.Timestamp
 
   test "init, no options" do
     config = config()
     trace_id = Tapper.TraceId.generate()
     span_id = Tapper.SpanId.generate()
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
 
     {:ok, trace, ttl} = Tapper.Tracer.Server.init([config, {trace_id, span_id, :root, true, false}, self(), timestamp, []])
 
@@ -55,7 +56,7 @@ defmodule Tracer.Server.InitTest do
     config = config()
     trace_id = Tapper.TraceId.generate()
     span_id = Tapper.SpanId.generate()
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
 
     {:ok, trace, ^ttl} = Tapper.Tracer.Server.init([config, {trace_id, span_id, :root, true, false}, self(), timestamp, [ttl: ttl]])
 
@@ -153,7 +154,7 @@ defmodule Tracer.Server.InitTest do
 
     assert trace.spans[span_id].name == "name"
 
-    timestamp = System.os_time(:microseconds)
+    timestamp = Timestamp.instant()
 
     {:noreply, state, _ttl} =
         Tapper.Tracer.Server.handle_cast({:name, span_id, "new-name", timestamp}, trace)

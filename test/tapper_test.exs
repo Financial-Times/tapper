@@ -192,7 +192,8 @@ defmodule TapperTest do
     assert child_1.duration <= main.duration
     assert child_2.duration <= main.duration
 
-    assert main.timestamp + main.duration >= child_1.timestamp + child_1.duration, "Last span to finish should set main span's' duration"
+    # beware rounding in time calculations
+    assert_in_delta main.timestamp + main.duration, child_1.timestamp + child_1.duration, 2, "Last span to finish should set main span's' duration"
     assert main.timestamp + main.duration >= child_2.timestamp + child_2.duration, "Main span's duration should be >= all child spans"
 
     assert child_1.duration > child_2.duration
@@ -248,6 +249,12 @@ defmodule TapperTest do
     assert child_1.id != main.id
     assert child_2.id != main.id
 
+    assert protocol_annotation_by_value(child_1, :timeout), "expected :timeout annotation on unfinished span"
+    refute protocol_annotation_by_value(child_2, :timeout), "unexpected :timeout annotation"
+
+    assert protocol_annotation_by_value(main, :async), "expected main span to have async annotation"
+    assert protocol_annotation_by_value(child_2, :async), "expected child_2 span to have async annotation"
+
     assert main.timestamp <= child_1.timestamp
     assert main.timestamp <= child_2.timestamp
     assert child_1.timestamp <= child_2.timestamp
@@ -259,20 +266,18 @@ defmodule TapperTest do
     assert child_1.duration <= main.duration
     assert child_2.duration <= main.duration
 
-    assert main.timestamp + main.duration >= child_1.timestamp + child_1.duration, "Last span to finish should set main span's' duration"
-    assert main.timestamp + main.duration >= child_2.timestamp + child_2.duration, "Main span's duration should be >= all child spans"
+    # beware rounding in time unit conversion!
+    assert_in_delta main.timestamp + main.duration, child_1.timestamp + child_1.duration, 2,
+      "main span and unfinished spans should have same end time"
+
+    assert main.timestamp + main.duration > child_2.timestamp + child_2.duration,
+      "main span's duration should be > finished child spans"
 
     assert child_1.duration > child_2.duration
     assert child_1.duration < 300_000, "Unterminated child_1 span should have duration less than sleep time"
     assert child_1.duration >= 100_000, "Unterminated child_1 span should have duration >= the TTL time #{child_1.duration}"
 
     assert child_2.duration >= 50_000, "child_2 span should have a duration greater than its sleep time"
-
-    assert protocol_annotation_by_value(child_1, :timeout), "expected :timeout annotation on unfinished span"
-    refute protocol_annotation_by_value(child_2, :timeout), "unexpected :timeout annotation"
-
-    assert protocol_annotation_by_value(main, :async), "expected main span to have async annotation"
-    assert protocol_annotation_by_value(child_2, :async), "expected child_2 span to have async annotation"
   end
 
 end
