@@ -65,12 +65,14 @@ defmodule Tapper.Tracer.Trace.Convert do
   def to_protocol_endpoint(host = %Tapper.Endpoint{}) do
     endpoint = %Protocol.Endpoint{
       port: host.port || 0,
-      service_name: host.service_name || "unknown"
+      service_name: host.service_name || host.hostname || "unknown"
     }
 
+    host = Tapper.Endpoint.resolve(host)
+
     case host.ip do
-      {_, _, _, _} -> %{endpoint | ipv4: host.ip}
-      {_, _, _, _, _, _, _, _} -> %{endpoint | ipv6: host.ip}
+      ip when is_tuple(ip) and tuple_size(ip) == 4 -> %{endpoint | ipv4: ip}
+      ip when is_tuple(ip) and tuple_size(ip) == 8 -> %{endpoint | ipv6: ip}
       _ -> endpoint
     end
 

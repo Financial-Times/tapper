@@ -62,6 +62,17 @@ defmodule Tracer.TraceToProtocolTest do
       assert %Protocol.Endpoint{service_name: "unknown"} = protocol_endpoint
     end
 
+
+    test "missing service_name becomes hostname if set" do
+      endpoint = %Tapper.Endpoint{
+        hostname: "my-service.ft.com"
+      }
+
+      protocol_endpoint = Convert.to_protocol_endpoint(endpoint)
+
+      assert %Protocol.Endpoint{service_name: "my-service.ft.com"} = protocol_endpoint
+    end
+
     test "port copies" do
       endpoint = %Tapper.Endpoint{
         port: 9876
@@ -83,6 +94,25 @@ defmodule Tracer.TraceToProtocolTest do
 
     test "nil endpoint converts to nil" do
       assert Convert.to_protocol_endpoint(nil) == nil
+    end
+
+    test "hostname with ipv4 resolution sets ipv4 field" do
+      endpoint = %Tapper.Endpoint{
+        hostname: :inet
+      }
+
+      protocol_endpoint = Convert.to_protocol_endpoint(endpoint)
+
+      assert %Protocol.Endpoint{ipv4: {10, 1, 1, 10}} = protocol_endpoint
+    end
+    test "hostname with ipv6 resolution sets ipv6 field" do
+            endpoint = %Tapper.Endpoint{
+        hostname: :inet6
+      }
+
+      protocol_endpoint = Convert.to_protocol_endpoint(endpoint)
+
+      assert %Protocol.Endpoint{ipv6: {1111, 1, 1, 1, 1, 1, 1, 1111}} = protocol_endpoint
     end
 
   end
