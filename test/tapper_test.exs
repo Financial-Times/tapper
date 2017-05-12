@@ -21,16 +21,16 @@ defmodule TapperTest do
     |> Tapper.http_request_size(100)
     |> Tapper.http_status_code(201)
     |> Tapper.http_response_size(1024)
-    |> Tapper.tag("cpu_temperature", 78.3)
+    |> Tapper.add_tag("cpu_temperature", 78.3)
 
     id = Tapper.finish_span(id)
 
     id = Tapper.start_span(id, name: "child-2", local: "local-algorithm")
 
     id
-    |> Tapper.annotate(:ws)
-    |> Tapper.annotate(:wr, %Tapper.Endpoint{service_name: "proto", ip: {1, 2, 3, 4}})
-    |> Tapper.binary_annotate(:i16, "units", 233)
+    |> Tapper.add_annotation(:ws)
+    |> Tapper.add_annotation(:wr, %Tapper.Endpoint{service_name: "proto", ip: {1, 2, 3, 4}})
+    |> Tapper.add_binary_annotation(:i16, "units", 233)
 
     id = Tapper.finish_span(id)
 
@@ -98,14 +98,14 @@ defmodule TapperTest do
 
     id_1 = Tapper.start_span(id, name: "child-1")
     t1 = Task.async(fn ->
-        Tapper.tag(id_1, "task", 1)
+        Tapper.add_tag(id_1, "task", 1, nil)
         Process.sleep(300)
         Tapper.finish_span(id_1)
       end)
 
     id_2 = Tapper.start_span(id, name: "child-2")
     t2 = Task.async(fn ->
-        Tapper.tag(id_2, "task", 2)
+        Tapper.add_tag(id_2, "task", 2, nil)
         Process.sleep(200)
         Tapper.finish_span(id_2)
       end)
@@ -152,14 +152,14 @@ defmodule TapperTest do
 
     id_1 = Tapper.start_span(id, name: "child-1")
     t1 = Task.async(fn ->
-        Tapper.tag(id_1, "task", 1)
+        Tapper.add_tag(id_1, "task", 1, nil)
         Process.sleep(300)
         Tapper.finish_span(id_1)
       end)
 
     id_2 = Tapper.start_span(id, name: "child-2")
     t2 = Task.async(fn ->
-        Tapper.tag(id_2, "task", 2)
+        Tapper.add_tag(id_2, "task", 2, nil)
         Process.sleep(50)
         Tapper.finish_span(id_2)
       end)
@@ -216,14 +216,14 @@ defmodule TapperTest do
 
     id_1 = Tapper.start_span(id, name: "child-1")
     t1 = Task.async(fn ->
-        Tapper.tag(id_1, "task", 1)
+        Tapper.add_tag(id_1, "task", 1)
         Process.sleep(300)
         Tapper.finish_span(id_1)
       end)
 
     id_2 = Tapper.start_span(id, name: "child-2")
     t2 = Task.async(fn ->
-        Tapper.tag(id_2, "task", 2)
+        Tapper.add_tag(id_2, "task", 2)
         Tapper.async(id_2)
         Process.sleep(50)
         Tapper.finish_span(id_2)

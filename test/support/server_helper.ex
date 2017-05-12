@@ -2,6 +2,7 @@ defmodule Test.Helper.Server do
 
   alias Tapper.Timestamp
   alias Tapper.Tracer.Trace
+  alias Tapper.Tracer
 
   # create some basic Tapper.Tracer.Server configuration
   def config() do
@@ -86,6 +87,18 @@ defmodule Test.Helper.Server do
         annotations: [],
         binary_annotations: []
       }
+  end
+
+  def name_update_message(span_id, timestamp, name) do
+    {:update, span_id, timestamp, [Tracer.name_delta(name)]}
+  end
+
+  def annotation_update_message(span_id, timestamp, {value, endpoint}) do
+    {:update, span_id, timestamp, [Tracer.annotation_delta(value, endpoint)]}
+  end
+
+  def binary_annotation_update_message(span_id, timestamp, {type, key, value, endpoint}) do
+    {:update, span_id, timestamp, [Tracer.binary_annotation_delta(type, key, value, endpoint)]}
   end
 
 end

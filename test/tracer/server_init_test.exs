@@ -3,6 +3,7 @@ defmodule Tracer.Server.InitTest do
 
   import Test.Helper.Server
 
+  alias Tapper.Tracer
   alias Tapper.Tracer.Trace
   alias Tapper.Timestamp
 
@@ -157,9 +158,10 @@ defmodule Tracer.Server.InitTest do
     timestamp = Timestamp.instant()
 
     {:noreply, state, _ttl} =
-        Tapper.Tracer.Server.handle_cast({:name, span_id, "new-name", timestamp}, trace)
+        Tapper.Tracer.Server.handle_cast({:update, span_id, timestamp, [Tracer.name_delta("new-name")]}, trace)
 
     assert state.spans[span_id].name == "new-name"
     assert state.last_activity == timestamp
   end
+
 end

@@ -1,27 +1,52 @@
 defmodule Tapper.Tracer.Api do
   @moduledoc "The (minimal) low-level API for the `Tapper.Tracer`; clients will normally use the `Tapper` module."
+  alias Tapper.Endpoint
 
-    @type trace_init :: {Tapper.TraceId.t, Tapper.SpanId.t, Tapper.SpanId.t | :root, boolean(), boolean()}
+  @type maybe_endpoint :: Endpoint.t | nil
 
-    @callback start(opts :: Keyword.t) :: Tapper.Id.t
-    @callback join(trace_id :: Tapper.TraceId.t,
-      span_id :: Tapper.SpanId.t,
-      parent_id :: Tapper.SpanId.t | :root,
-      sample :: boolean(), debug :: boolean(),
-      opts :: Keyword.t) :: Tapper.Id.t
+  @typedoc "Delta for span name"
+  @type name_delta :: {:name, name :: String.t | atom()}
 
-    @callback start_span(tapper_id :: Tapper.Id.t, opts :: Keyword.t) :: Tapper.Id.t
-    @callback finish_span(tapper_id :: Tapper.Id.t) :: Tapper.Id.t
+  @typedoc "Delta for async span"
+  @type async_delta :: :async
 
-    @callback finish(tapper_id :: Tapper.Id.t) :: :ok
+  @type annotation_value :: String.t | atom()
 
-    @callback name(tapper_id :: Tapper.Id.t, name :: String.t) :: Tapper.Id.t
+  @typedoc "Delta for simple annotations"
+  @type annotation_delta :: {
+    :annotate,
+    {value :: annotation_value(),  endpoint :: maybe_endpoint()}
+  }
 
-    @callback async(tapper_id :: Tapper.Id.t) :: Tapper.Id.t
+  @type binary_annotation_type :: :string | :bool | :i16 | :i32 | :i64 | :double | :bytes
+  @type binary_annotation_key :: String.t | atom()
+  @type binary_annotation_value :: String.t | atom() | boolean() | integer() | float() | binary()
 
-    @callback annotate(tapper_id :: Tapper.Id.t, type :: atom(), opts :: Keyword.t) :: Tapper.Id.t
+  @typedoc "Delta for binary annotations"
+  @type binary_annotation_delta :: {
+    :binary_annotate,
+    {
+      type :: binary_annotation_type(),
+      key :: binary_annotation_key(),
+      value :: binary_annotation_value,
+      endpoint :: maybe_endpoint()
+    }
+  }
 
-    @type binary_annotation_type :: :string | :bool | :i16 | :i32 | :i64 | :double | :bytes
+  @type delta :: name_delta | async_delta | annotation_delta | binary_annotation_delta
 
-    @callback binary_annotate(tapper_id :: Tapper.Id.t, type :: binary_annotation_type(), key :: String.t | atom(), value :: any(), endpoint :: Tapper.Endpoint.t | nil) :: Tapper.Id.t
+  # operations
+  @callback start(opts :: Keyword.t) :: Tapper.Id.t
+  @callback join(trace_id :: Tapper.TraceId.t,
+    span_id :: Tapper.SpanId.t,
+    parent_id :: Tapper.SpanId.t | :root,
+    sample :: boolean(), debug :: boolean(),
+    opts :: Keyword.t) :: Tapper.Id.t
+
+  @callback start_span(tapper_id :: Tapper.Id.t, opts :: Keyword.t) :: Tapper.Id.t
+  @callback finish_span(tapper_id :: Tapper.Id.t) :: Tapper.Id.t
+
+  @callback finish(tapper_id :: Tapper.Id.t) :: :ok
+
+  @callback update(tapper_id :: Tapper.Id.t, deltas :: [delta], opts :: Keyword.t) :: Tapper.Id.t
 end

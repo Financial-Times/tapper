@@ -128,7 +128,8 @@ defmodule Tapper.Tracer.Server do
     case trace.async || opts[:async] do
       true ->
         Logger.info(fn -> "Finish Trace #{Tapper.TraceId.format(trace.trace_id)} ASYNC" end)
-        trace = annotate(trace, trace.span_id, Annotations.annotation(:async, timestamp, Trace.endpoint_from_config(trace.config)))
+        async_annotation = Annotations.annotation(:async, timestamp, Trace.endpoint_from_config(trace.config))
+        trace = update_span(trace, trace.span_id, fn(span) -> %{span | annotations: [async_annotation | span.annotations]} end)
         trace = %Trace{trace | last_activity: timestamp, async: true}
 
         {:noreply, trace, trace.ttl}
@@ -170,69 +171,38 @@ defmodule Tapper.Tracer.Server do
     {:noreply, trace, trace.ttl}
   end
 
-  @doc "via Tapper.Tracer.name/2"
-  def handle_cast(msg = {:name, span_id, name, timestamp}, trace) do
+  @doc "via Tapper.Tracer.update/3"
+  def handle_cast(msg = {:update, span_id, timestamp, deltas}, trace) do
     Logger.debug(fn -> inspect({trace.trace_id, msg}) end)
 
-    trace = update_span(trace, span_id, fn(span) -> put_in(span.name, name) end)
+    endpoint = Trace.endpoint_from_config(trace.config)
 
-    trace = put_in(trace.last_activity, timestamp)
-
-    {:noreply, trace, trace.ttl}
-  end
-
-  @doc "via Tapper.Tracer.async/1"
-  def handle_cast(msg = {:async, span_id, timestamp}, trace) do
-    Logger.debug(fn -> inspect({trace.trace_id, msg}) end)
-
-    trace = annotate(trace, span_id, Annotations.annotation(:async, timestamp, Trace.endpoint_from_config(trace.config)))
-    trace = %Trace{trace | async: true, last_activity: timestamp}
-
-    {:noreply, trace, trace.ttl}
-  end
-
-  @doc "via Tapper.Tracer.annotate/3"
-  def handle_cast(msg = {:annotation, span_id, value, timestamp, endpoint}, trace) do
-    Logger.debug(fn -> inspect({trace.trace_id, msg}) end)
-
-    endpoint = endpoint || Trace.endpoint_from_config(trace.config)
-    annotation = Annotations.annotation(value, timestamp, endpoint)
-
-    trace = annotate(trace, span_id, annotation)
+    trace = Enum.reduce(deltas, trace, &(apply_update(&1, &2, span_id, timestamp, endpoint)))
     trace = %Trace{trace | last_activity: timestamp}
 
     {:noreply, trace, trace.ttl}
   end
 
-  @doc "via Tapper.Tracer.binary_annotate/5"
-  def handle_cast(msg = {:binary_annotation, span_id, type, key, value, timestamp, endpoint}, trace) do
-    Logger.debug(fn -> inspect({trace.trace_id, msg}) end)
+  def apply_update({:annotate, {value, endpoint}}, trace = %Trace{}, span_id, timestamp, default_endpoint) do
+    annotation = Annotations.annotation(value, timestamp, endpoint || default_endpoint)
+    update_span(trace, span_id, fn(span) -> %{span | annotations: [annotation | span.annotations]} end)
+  end
 
-    endpoint = endpoint || Trace.endpoint_from_config(trace.config)
-    annotation = Annotations.binary_annotation(type, key, value, endpoint)
-
-    trace = case annotation do
-      nil ->
-        Logger.warn(fn -> "Invalid binary annotation type #{type} for span #{Tapper.SpanId.format(span_id)}" end)
-        trace
-      _ ->
-        annotate(trace, span_id, annotation)
+  def apply_update({:binary_annotate, {type, key, value, endpoint}}, trace = %Trace{}, span_id, _timestamp, default_endpoint) do
+    case Annotations.binary_annotation(type, key, value, endpoint || default_endpoint) do
+      nil -> trace
+      annotation -> update_span(trace, span_id, fn(span) -> %{span | binary_annotations: [annotation | span.binary_annotations]} end)
     end
-
-    trace = %Trace{trace | last_activity: timestamp}
-
-    {:noreply, trace, trace.ttl}
   end
 
-  @spec annotate(Trace.t, Tapper.SpanId.t, annotation :: %Trace.Annotation{} | %Trace.BinaryAnnotation{}) :: Trace.t
-  def annotate(trace, span_id, annotation)
-
-  def annotate(trace = %Trace{}, span_id, annotation = %Trace.Annotation{}) do
-    update_span(trace, span_id, fn(span) -> update_in(span.annotations, &([annotation | &1])) end)
+  def apply_update({:name, name}, trace = %Trace{}, span_id, _timestamp, _default_endpoint) do
+    update_span(trace, span_id, fn(span) -> %{span | name: name} end)
   end
 
-  def annotate(trace = %Trace{}, span_id, annotation = %Trace.BinaryAnnotation{}) do
-    update_span(trace, span_id, fn(span) -> update_in(span.binary_annotations, &([annotation | &1])) end)
+  def apply_update(:async, trace = %Trace{}, span_id, timestamp, default_endpoint) do
+    annotation = Annotations.annotation(:async, timestamp, default_endpoint)
+    trace = update_span(trace, span_id, fn(span) -> %{span | annotations: [annotation | span.annotations]} end)
+    %{trace | async: true}
   end
 
   @doc "update a span (identified by span id) in a trace with an updater function, taking care of case where span does not exist."

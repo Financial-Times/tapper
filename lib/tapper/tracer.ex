@@ -15,8 +15,10 @@ defmodule Tapper.Tracer do
   require Logger
 
   import Tapper.Tracer.Server, only: [via_tuple: 1]
+
   alias Tapper.Timestamp
   alias Tapper.Tracer.Trace
+  alias Tapper.Tracer.Api
 
   @doc """
   start a new root trace, e.g. on originating a request, e.g.:
@@ -209,45 +211,45 @@ defmodule Tapper.Tracer do
     updated_id
   end
 
-  def name(:ignore, _name), do: :ignore
-
-  def name(id = %Tapper.Id{span_id: span_id}, name) when is_binary(name) do
-    timestamp = Timestamp.instant()
-    GenServer.cast(via_tuple(id), {:name, span_id, name, timestamp})
-    id
+  @spec name_delta(name :: String.t | atom) :: Api.name_delta
+  def name_delta(name) do
+    {:name, name}
   end
 
-  def async(id = %Tapper.Id{span_id: span_id}) do
-    timestamp = Timestamp.instant()
-    GenServer.cast(via_tuple(id), {:async, span_id, timestamp})
-    id
+  @spec async_delta() :: Api.async_delta
+  def async_delta do
+    :async
   end
 
-  def annotate(id, type, opts \\ [])
-
-  def annotate(:ignore, _type, _opts), do: :ignore
-
-  def annotate(id = %Tapper.Id{span_id: span_id}, type, opts) do
-    timestamp = opts[:timestamp] || Timestamp.instant()
-    value = map_annotation_type(type)
-    endpoint = check_endpoint(opts[:endpoint]) # ensure endpoint is an Endpoint.t, or nil
-
-    GenServer.cast(via_tuple(id), {:annotation, span_id, value, timestamp, endpoint})
-
-    id
+  @doc "build a span annotation, suitable for passing to `update/3`"
+  @spec annotation_delta(value :: Api.annotation_value(), endpoint :: Api.maybe_endpoint) :: Api.annotation_delta
+  def annotation_delta(value, endpoint \\ nil) do
+    value = map_annotation_type(value)
+    endpoint = check_endpoint(endpoint)
+    {:annotate, {value, endpoint}}
   end
 
   @binary_annotation_types [:string, :bool, :i16, :i32, :i64, :double, :bytes]
 
-  @spec binary_annotate(Tapper.Id.t | :ignore, Tapper.Tracer.Api.binary_annotation_type(), atom() | String.t, any(), Tapper.Endpoint.t | nil) :: Tapper.Id.t
-  def binary_annotate(id, type, key, value, endpoint \\ nil)
+  @doc "build a span binary annotation, suitable for passing to `update/3`"
+  @spec binary_annotation_delta(type :: Api.binary_annotation_type, key :: Api.binary_annotation_key, value :: Api.binary_annotation_value, endpoint :: Api.maybe_endpoint ) :: Api.binary_annotaton_delta
+  def binary_annotation_delta(type, key, value, endpoint \\ nil) when type in @binary_annotation_types do
+    endpoint = check_endpoint(endpoint)
+    {:binary_annotate, {type, key, value, endpoint}}
+  end
 
-  def binary_annotate(:ignore, _type, _key, _value, _endpoint), do: :ignore
 
-  def binary_annotate(id = %Tapper.Id{span_id: span_id}, type, key, value, endpoint) when type in @binary_annotation_types do
-    timestamp = Timestamp.instant()
+  @spec update(id :: Tapper.Id.t, deltas :: [Api.delta()], opts :: Keyword.t) :: Tapper.Id.t
+  def update(id, deltas, opts \\ [])
 
-    GenServer.cast(via_tuple(id), {:binary_annotation, span_id, type, key, value, timestamp, check_endpoint(endpoint)})
+  def update(:ignore, _deltas, _opts), do: :ignore
+
+  def update(id = %Tapper.Id{}, [], _opts), do: id
+
+  def update(id = %Tapper.Id{span_id: span_id}, deltas, opts) when is_list(deltas) and is_list(opts) do
+    timestamp = opts[:timestamp] || Timestamp.instant()
+
+    GenServer.cast(via_tuple(id), {:update, span_id, timestamp, deltas})
 
     id
   end
