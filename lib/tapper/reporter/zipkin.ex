@@ -2,11 +2,13 @@ defmodule Tapper.Reporter.Zipkin do
   @moduledoc """
   Reporter that sends spans to Zipkin Server API.
 
-  Currently supports only JSON encoding.
+  * Currently supports only JSON encoding.
+  * Does not batch spans: would probably be done with an intermediate.
 
   ## See also
 
-  * `Tapper.Application`
+  * `Tapper.Application` - reporter is selection.
+  * `Tapper.Reporter.Api` - the implemented behaviour.
 
   ## Configuration
 
@@ -14,6 +16,7 @@ defmodule Tapper.Reporter.Zipkin do
   | --- | ------- |
   | `collector_url` | Full URL of Zipkin collector endpoint |
 
+  e.g.
   ```
   config :tapper, Tapper.Reporter.Zipkin,
     collector_url: "https://my-zipkin.domain.com:9411/api/v1/spans"
@@ -21,6 +24,8 @@ defmodule Tapper.Reporter.Zipkin do
   """
 
   require Logger
+
+  import Tapper.Config, only: [env: 1]
 
   @behaviour Tapper.Reporter.Api
 
@@ -62,6 +67,4 @@ defmodule Tapper.Reporter.Zipkin do
     Application.get_env(:tapper, __MODULE__)
   end
 
-  defp env({:system, name}), do: System.get_env(name)
-  defp env(val), do: val
 end

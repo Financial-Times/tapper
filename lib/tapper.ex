@@ -99,7 +99,7 @@ defmodule Tapper do
   def finish(id, opts \\ []), do: Tracer.finish(id, opts)
 
   @doc """
-  Starts a child span.
+  Starts a child span, returning an updated `Tapper.Id`.
 
   ## Arguments
   * `id` - Tapper id.
@@ -109,7 +109,7 @@ defmodule Tapper do
   """
   def start_span(id, opts \\ []), do: Tracer.start_span(id, opts)
 
-  @doc "finish a nested span."
+  @doc "finish a nested span, returning an updated `Tapper.Id`."
   def finish_span(id), do: Tracer.finish_span(id)
 
   @doc "name (or rename) the current span."

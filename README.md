@@ -9,9 +9,9 @@ A client making a request:
 
 ```elixir
 # start a new, sampled, trace, and root span;
-# creates a 'client send' annotation on root span 
-# (defaults to type: :client) and an 'server address' (sa) 
-# binary annotation (because we pass the remote option with 
+# creates a 'client send' annotation on root span
+# (defaults to type: :client) and an 'server address' (sa)
+# binary annotation (because we pass the remote option with
 # an endpoint)
 
 service_host = %Tapper.Endpoint{service_name: "my-service"}
@@ -19,7 +19,7 @@ service_host = %Tapper.Endpoint{service_name: "my-service"}
 id = Tapper.start(name: "fetch", sample: true, remote: service_host)
 
 
-# add some detail (binary annotations) about the request  
+# add some detail (binary annotations) about the request
 # we're about to do
 id
 |> Tapper.http_host("my.server.co.uk")
@@ -41,7 +41,7 @@ Tapper.finish(id)
 
 ### A Server
 
-A server processing a request (usually performed via integration e.g. [`Tapper.Plug`](https://github.com/Financial-Times/tapper_plug):
+A server processing a request (usually performed via integration e.g. [`Tapper.Plug`](https://github.com/Financial-Times/tapper_plug)):
 
 ```elixir
 # use propagated trace details (e.g. from Plug integration);
@@ -79,11 +79,11 @@ Tapper.finish(id)
 > NB `Tapper.start_span/2` and `Tapper.finish_span/1` return an updated id, whereas all annotation functions return the same id, so you don't need to propagate the id backwards down a call-chain to just add annotations, but you should propagate the id forwards when adding spans, and pair `finish_span/1` with the id from the corresponding `start_span/2`. Parallel spans can share the same starting id.
 
 #### See also
-[`Tapper.Plug`](https://github.com/Financial-Times/tapper_plug) - [Plug](https://github.com/elixir-lang/plug) integration: decodes incoming B3 trace headers, joining or sampling traces.
+[`Tapper.Plug`](https://github.com/Financial-Times/tapper_plug) - [Plug](https://github.com/elixir-lang/plug) integration: decodes incoming [B3](https://github.com/openzipkin/b3-propagation) trace headers, joining or sampling traces.
 
 ## Implementation
 
-The Tapper API starts, and communicates with a `GenServer` process (`Tapper.Tracer.Server`), with one server started per trace; all traces are thus isolated.
+The Tapper API starts, and communicates with a supervised `GenServer` process (`Tapper.Tracer.Server`), with one server started per trace; all traces are thus isolated.
 
 Once a trace has been started, all span operations and annotation updates are performed asynchronously by sending a message to the server; this way there is minimum processing on the client side.
 
@@ -138,12 +138,21 @@ Add the `:tapper` application to your mix project's applications:
 
 Tapper looks for the following application configuration settings under the `:tapper` key:
 
-| attribute | description |
-| --------- | ----------- |
-| `:system_id` | code for the hosting application, for tagging spans |
-| `:reporter` | module of reporter `ingest/1` function |
+| attribute | type | description |
+| --------- | ---- | ----------- |
+| `system_id` | String.t | This application's id; used for `service_name` in default endpoint host used in annotations. |
+| `ip`        | tuple    | This application's principle IPV4 or IPV6 address, as 4- or 8-tuple of ints; defaults to IP of first non-loopback interface, or `{127.0.0.1}` if none. |
+| `port`      | integer  | This application's principle service port, for endpoint port in annotations; defaults to 0 |
+| `reporter`  | atom     | Module implementing `Tapper.Reporter.Api` to use for reporting spans, defaults to `Tapper.Reporter.Console`. |
 
-Additionally the Zipkin reporter (`Tapper.Reporter.Zipkin`) has its own configuraton:
+All keys support the Phoenix-style `{:system, var}` format, to allow lookup from shell environment variables, e.g. `{:system, "PORT"}` to read `PORT` environment variable.
+
+The default reporter is `Tapper.Reporter.Console` which just just logs JSON spans;
+`Tapper.Reporter.Zipkin` reports spans to a Zipkin server.
+
+### Zipkin Reporter
+
+The Zipkin reporter (`Tapper.Reporter.Zipkin`) has its own configuration:
 
 | attribute | description |
 | --------- | ----------- |
@@ -158,6 +167,14 @@ config :tapper,
 config :tapper, Tapper.Reporter.Zipkin,
     collector_url: "http://localhost:9411/api/v1/spans"
 ```
+
+### Custom Reporters
+
+You can implement your own reporter module by implementing the `Tapper.Reporter.Api` protocol.
+
+This defines a function `ingest/1` that receives spans in the form of `Tapper.Protocol.Span` structs,
+with timestamps and durations in microseconds. For JSON serialization, see `Tapper.Encoder.Json` which
+encodes to a format compatible with Zipkin server.
 
 ## Why 'Tapper'?
 
