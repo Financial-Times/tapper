@@ -51,7 +51,7 @@ defmodule TracerTest do
       {ref, reporter} = msg_reporter()
 
       id1 = Tracer.start(debug: true, name: "main-span", reporter: reporter)
-      id2 = Tracer.update(id1, [Tracer.binary_annotation_delta(:string, "test", "value")])
+      id2 = Tracer.update_span(id1, [Tracer.binary_annotation_delta(:string, "test", "value")])
 
       assert id1 == id2
       assert %Tapper.Id{} = id1
@@ -66,7 +66,7 @@ defmodule TracerTest do
       {ref, reporter} = msg_reporter()
 
       id1 = Tracer.start(debug: true, name: "main-span", reporter: reporter)
-      id2 = Tracer.update(id1, [Tracer.annotation_delta(:cr)])
+      id2 = Tracer.update_span(id1, [Tracer.annotation_delta(:cr)])
 
       assert id1 == id2
       assert %Tapper.Id{} = id1
@@ -80,7 +80,7 @@ defmodule TracerTest do
   test "ignored id" do
     assert :ignore == Tracer.start_span(:ignore)
     assert :ignore == Tracer.finish_span(:ignore)
-    assert :ignore == Tracer.update(:ignore, [Tracer.name_delta("name")])
+    assert :ignore == Tracer.update_span(:ignore, [Tracer.name_delta("name")])
   end
 
 end

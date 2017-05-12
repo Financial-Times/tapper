@@ -17,7 +17,7 @@ defmodule Tapper.Tracer.Annotations do
 
 
   @spec binary_annotation(type :: atom(), key :: String.t | atom(), value :: any(), Tapper.Endpoint.t) :: Trace.BinaryAnnotation.t | nil
-  def binary_annotation(type, key, value, endpoint = %Tapper.Endpoint{}) when is_atom(type) and is_binary(key) do
+  def binary_annotation(type, key, value, endpoint = %Tapper.Endpoint{}) when is_atom(type) and (is_binary(key) or is_atom(key)) do
     case type do
       type when type in [:bool, :string, :bytes, :i16, :i32, :i64, :double] ->
         Trace.BinaryAnnotation.new(key, value, type, endpoint)

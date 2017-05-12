@@ -288,24 +288,29 @@ defmodule TapperTest do
       id = Tapper.start(name: "main", sample: true, reporter: reporter, ttl: 100)
 
       id_1 = Tapper.start_span(id, name: "child-1")
-      Tapper.update(id_1, [
+      Tapper.update_span(id_1, [
         Tapper.client_address(%Tapper.Endpoint{ip: {1, 2, 3, 4}}),
         Tapper.http_host("my-client"),
-        Tapper.http_method("POST")
-      ])
+        Tapper.http_method("POST"),
+        Tapper.wire_send(),
+        Tapper.wire_receive()
+      ], [])
 
       Tapper.finish_span(id_1)
 
       Tapper.finish(id)
 
-      assert_received {^ref, spans}
+      assert_receive {^ref, spans}
 
-      main = protocol_span_by_name(spans, "main")
       child_1 = protocol_span_by_name(spans, "child-1")
 
-      assert protocol_annotation_by_value(child_1, :ca), "expected :ca annotation on child span"
+      assert protocol_annotation_by_value(child_1, :ws), "expected :ws annotation on child span"
+      assert protocol_annotation_by_value(child_1, :wr), "expected :ws annotation on child span"
+      assert protocol_binary_annotation_by_key(child_1, :ca), "expected :ca binary annotation on child span"
       assert protocol_binary_annotation_by_key(child_1, "http.host"), "expected http.host binary annotation on child span"
       assert protocol_binary_annotation_by_key(child_1, "http.method"), "expected http.method binary annotation on child span"
+
+      assert child_1.timestamp <= protocol_annotation_by_value(child_1, :ws).timestamp
     end
 
   end

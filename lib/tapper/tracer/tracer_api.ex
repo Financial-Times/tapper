@@ -44,9 +44,9 @@ defmodule Tapper.Tracer.Api do
     opts :: Keyword.t) :: Tapper.Id.t
 
   @callback start_span(tapper_id :: Tapper.Id.t, opts :: Keyword.t) :: Tapper.Id.t
+  @callback update_span(tapper_id :: Tapper.Id.t, deltas :: [delta], opts :: Keyword.t) :: Tapper.Id.t
   @callback finish_span(tapper_id :: Tapper.Id.t) :: Tapper.Id.t
 
   @callback finish(tapper_id :: Tapper.Id.t) :: :ok
 
-  @callback update(tapper_id :: Tapper.Id.t, deltas :: [delta], opts :: Keyword.t) :: Tapper.Id.t
 end

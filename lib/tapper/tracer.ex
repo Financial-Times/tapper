@@ -239,14 +239,14 @@ defmodule Tapper.Tracer do
   end
 
 
-  @spec update(id :: Tapper.Id.t, deltas :: [Api.delta()], opts :: Keyword.t) :: Tapper.Id.t
-  def update(id, deltas, opts \\ [])
+  @spec update_span(id :: Tapper.Id.t, deltas :: [Api.delta()], opts :: Keyword.t) :: Tapper.Id.t
+  def update_span(id, deltas, opts \\ [])
 
-  def update(:ignore, _deltas, _opts), do: :ignore
+  def update_span(:ignore, _deltas, _opts), do: :ignore
 
-  def update(id = %Tapper.Id{}, [], _opts), do: id
+  def update_span(id = %Tapper.Id{}, [], _opts), do: id
 
-  def update(id = %Tapper.Id{span_id: span_id}, deltas, opts) when is_list(deltas) and is_list(opts) do
+  def update_span(id = %Tapper.Id{span_id: span_id}, deltas, opts) when is_list(deltas) and is_list(opts) do
     timestamp = opts[:timestamp] || Timestamp.instant()
 
     GenServer.cast(via_tuple(id), {:update, span_id, timestamp, deltas})
