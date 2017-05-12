@@ -42,7 +42,14 @@ defmodule Tapper.Reporter.Zipkin do
 
     result = HTTPoison.post(url, data, headers, options)
 
-    Logger.debug(fn -> inspect(result) end)
+    case result do
+      {:ok, %HTTPoison.Response{status_code: 202}} ->
+        Logger.debug(fn -> "Spans sent OK." end)
+      {:ok, response = %HTTPoison.Response{status_code: status}} ->
+        Logger.warn(fn -> "Failed to send spans: status=#{status} #{inspect response}" end)
+      {:error, %HTTPoison.Error{reason: reason}} ->
+        Logger.warn(fn -> "HTTP Protocol Error sending spans: #{reason}" end)
+    end
 
     :ok
   end
