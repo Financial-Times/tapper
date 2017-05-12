@@ -107,7 +107,13 @@ defmodule Tapper do
   * `id` - Tapper id.
 
   ## Options
+  * `name` (string) - name the span.
   * `local` (string) - provide a local span context name (via a `lc` binary annotation).
+  * `annotations` (list) - a list of annotations to attach to the span.
+
+  ```
+  id = start_span(id, name: "foo", local: "do foo", annotations: [Tapper.sql_query("select * from foo")])
+  ```
   """
   defdelegate start_span(id, opts \\ []), to: Tracer
 

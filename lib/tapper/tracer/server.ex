@@ -147,15 +147,18 @@ defmodule Tapper.Tracer.Server do
   def handle_cast(msg = {:start_span, span_info, opts}, trace) do
     Logger.debug(fn -> inspect({Tapper.TraceId.format(trace.trace_id), msg}) end)
 
+    config_endpoint = Trace.endpoint_from_config(trace.config)
+
     span_info = case opts[:local] do
       val when not is_nil(val) ->
-          annotation = Trace.BinaryAnnotation.new(:lc, val, :string, Trace.endpoint_from_config(trace.config))
+          annotation = Trace.BinaryAnnotation.new(:lc, val, :string, config_endpoint)
           update_in(span_info.binary_annotations, &([annotation | &1]))
       _ -> span_info
     end
 
     trace = put_in(trace.spans[span_info.id], span_info)
     trace = put_in(trace.last_activity, span_info.start_timestamp)
+    trace = apply_updates(trace, opts[:annotations], span_info.id, span_info.start_timestamp, config_endpoint)
 
     {:noreply, trace, trace.ttl}
   end
@@ -177,10 +180,15 @@ defmodule Tapper.Tracer.Server do
 
     endpoint = Trace.endpoint_from_config(trace.config)
 
-    trace = Enum.reduce(deltas, trace, &(apply_update(&1, &2, span_id, timestamp, endpoint)))
+    trace = apply_updates(trace, deltas, span_id, timestamp, endpoint)
     trace = %Trace{trace | last_activity: timestamp}
 
     {:noreply, trace, trace.ttl}
+  end
+
+  def apply_updates(trace, nil, _span_id, _timestamp, _endpoint), do: trace
+  def apply_updates(trace, deltas, span_id, timestamp, endpoint) do
+    Enum.reduce(deltas, trace, &(apply_update(&1, &2, span_id, timestamp, endpoint)))
   end
 
   def apply_update({:annotate, {value, endpoint}}, trace = %Trace{}, span_id, timestamp, default_endpoint) do

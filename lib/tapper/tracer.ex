@@ -156,7 +156,7 @@ defmodule Tapper.Tracer do
 
 
   @doc """
-  Starts a child span.
+  Starts a child span, returning an updated `Tapper.Id`.
 
   ## Arguments
   * `id` - Tapper id.
@@ -164,6 +164,11 @@ defmodule Tapper.Tracer do
   ## Options
   * `name` (string) - name of span.
   * `local` (string) - provide a local span context name (via a `lc` binary annotation).
+  * `annotations` (list) - a list of annotations to attach to the span.
+
+  ```
+  id = start_span(id, name: "foo", local: "do foo", annotations: [Tapper.sql_query("select * from foo")])
+  ```
   """
   def start_span(id, opts \\ [])
 
