@@ -102,8 +102,7 @@ def deps do
 end
 ```
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `tapper` to your list of dependencies in `mix.exs`:
+For release versions, the package can be installed by adding `tapper` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
@@ -111,9 +110,7 @@ def deps do
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/tapper](https://hexdocs.pm/tapper).
+The documentation can be found at [https://hexdocs.pm/tapper](https://hexdocs.pm/tapper).
 
 ## Configuration
 
