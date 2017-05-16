@@ -54,7 +54,7 @@ defmodule Tapper do
   * `debug` - boolean, enabled debug.
   * `type` - the type of the span, i.e.. `:client`, `:server`; defaults to `:client`. See notes below.
   * `annotations` (list) - a list of annotations, specified by `Tapper.http_host/2` etc.
-  * `remote` (`%Tapper.Endpoint{}`) - the remote Endpoint: automatically creates a "sa" (client) or "ca" (server) binary annotation on this span.
+  * `remote` (`%Tapper.Endpoint{}`) - the remote Endpoint: automatically creates a "sa" (client) or "ca" (server) binary annotation on this span, see also `Tapper.server_address/1`.
   * `ttl` - how long this span should live before automatically finishing it
       (useful for long-running async operations); milliseconds (default 30,000 ms)
   * `endpoint` - sets the endpoint for the annotation created by `type`, defaults to one derived from Tapper configuration (see `Tapper.Application.start/2`).
@@ -63,7 +63,7 @@ defmodule Tapper do
   #### Notes
 
   * If neither `sample` nor `debug` are set, all operations on this trace become a no-op.
-  * `type` determines the type of an automatically created `sr` (`:server`) or `cs` (`:client`) annotation.
+  * `type` determines the type of an automatically created `sr` (`:server`) or `cs` (`:client`) annotation, see also `Tapper.client_send/0` and `Tapper.server_receive/0`.
   """
   defdelegate start(opts \\ []), to: Tracer
 
@@ -72,8 +72,8 @@ defmodule Tapper do
   ```
   id = Tapper.Tracer.join(trace_id, span_id, parent_id, sampled, debug, name: "receive request")
   ```
-  NB Probably called by an integration (e.g. [`tapper_plug`](https://github.com/Financial-Times/tapper_plug), name, annotations etc.
-  added in the service code, so the name is optional here, see `name/2`.
+  NB Probably called by an integration (e.g. [`tapper_plug`](https://github.com/Financial-Times/tapper_plug)) with name, annotations etc.
+  added in the service code, so the name is optional here, see `name/1`.
 
   ### Arguments
 
@@ -89,8 +89,8 @@ defmodule Tapper do
   ### Options
   * `name` (String) - name of span
   * `type` - the type of the span, i.e.. `:client`, `:server`; defaults to `:server`. See notes below.
-  * `annotations` (list) - a list of annotations, specified by `Tapper.tag/2` etc.
-  * `remote` (`Tapper.Endpoint`) - the remote endpoint: automatically creates a "sa" (`:client`) or "ca" (`:server`) binary annotation on this span.
+  * `annotations` (list) - a list of annotations, specified by `Tapper.tag/3` etc.
+  * `remote` (`Tapper.Endpoint`) - the remote endpoint: automatically creates a "sa" (`:client`) or "ca" (`:server`) binary annotation on this span, see also `Tapper.server_address/1`.
   * `ttl` (integer) - how long this span should live between operations before automatically finishing it (useful for long-running async operations);
       milliseconds, defaults to 30,000 ms.
   * `endpoint` - sets the endpoint for the initial `cr` or `sr` annotation, defaults to one derived from Tapper configuration (see `Tapper.Application.start/2`).
@@ -99,7 +99,7 @@ defmodule Tapper do
   #### Notes
 
   * If neither `sample` nor `debug` are set, all operations on this trace become a no-op.
-  * `type` determines the type of an automatically created `sr` (`:server`) or `cs` (`:client`) annotation.
+  * `type` determines the type of an automatically created `sr` (`:server`) or `cs` (`:client`) annotation, see also `Tapper.client_send/0` and `Tapper.server_receive/0`.
   """
   defdelegate join(trace_id, span_id, parent_id, sample, debug, opts \\ []), to: Tracer
 

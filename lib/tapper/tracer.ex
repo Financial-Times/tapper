@@ -38,7 +38,10 @@ defmodule Tapper.Tracer do
   * `ttl` - how long this span should live before automatically finishing it
     (useful for long-running async operations); milliseconds.
 
-  NB if neither `sample` nor `debug` are set, all operations on this trace become a no-op.
+  #### Notes
+
+  * If neither `sample` nor `debug` are set, all operations on this trace become a no-op.
+  * `type` determines the type of an automatically created `sr` (`:server`) or `cs` (`:client`) annotation, see also `Tapper.client_send/0` and `Tapper.server_receive/0`.
   """
   def start(opts \\ []) when is_list(opts) do
     trace_id = Tapper.TraceId.generate()
@@ -72,8 +75,8 @@ defmodule Tapper.Tracer do
   id = Tapper.Tracer.join(trace_id, span_id, parent_id, sampled, debug, name: "receive request")
   ```
 
-  NB Probably called by an integration (e.g. [`tapper_plug`](https://github.com/Financial-Times/tapper_plug), name, annotations etc.
-  added in the service code, so the name is optional here, see `name/2`.
+  NB Probably called by an integration (e.g. [`tapper_plug`](https://github.com/Financial-Times/tapper_plug)) with name, annotations etc.
+  added in the service code, so the name is optional here, see `Tapper.name/1`.
 
   ## Arguments
 
@@ -85,15 +88,18 @@ defmodule Tapper.Tracer do
 
 
   ## Options
-  * `name` name of span, see also `name/2`.
+  * `name` name of span, see also `Tapper.name/1`.
   * `annotations` - a list of annotations to attach to main span, specified by `Tapper.tag/3` etc.
   * `type` - the type of the span, i.e.. `:client`, `:server`; defaults to `:server`; determines which of `sr` (`:server`) or `cs`
     (`:client`) annotations is added. Defaults to `:server`.
-  * `remote` - the remote Endpoint: automatically creates a "sa" (`:client`) or "ca" (`:server`) binary annotation on this span.
+  * `remote` (`Tapper.Endpoint`) - the remote endpoint: automatically creates a "sa" (`:client`) or "ca" (`:server`) binary annotation on this span, see also `Tapper.server_address/1`.
   * `ttl` - how long this span should live between operations, before automatically finishing it
     (useful for long-running async operations); milliseconds.
 
-  NB if neither `sample` nor `debug` are `true`, all operations on this trace become a no-op.
+  #### Notes
+
+  * If neither `sample` nor `debug` are set, all operations on this trace become a no-op.
+  * `type` determines the type of an automatically created `sr` (`:server`) or `cs` (`:client`) annotation, see also `Tapper.client_send/0` and `Tapper.server_receive/0`.
   """
   def join(trace_id, span_id, parent_id, sample, debug, opts \\ []), do: join({trace_id, span_id, parent_id, sample, debug}, opts)
   def join(trace_init = {trace_id, span_id, parent_id, sample, debug}, opts \\ []) when is_list(opts) do
