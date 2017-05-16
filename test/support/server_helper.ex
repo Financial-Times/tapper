@@ -101,4 +101,18 @@ defmodule Test.Helper.Server do
     {:update, span_id, timestamp, [Tracer.binary_annotation_delta(type, key, value, endpoint)]}
   end
 
+  def span_by_name(spans, name) do
+      Enum.find(spans, fn(span) -> span.name === name end)
+  end
+
+  def annotation_by_value(%Trace.SpanInfo{annotations: annotations}, value), do: annotation_by_value(annotations, value)
+  def annotation_by_value(annotations, value) do
+      Enum.find(annotations, fn(%Trace.Annotation{value: an_value}) -> an_value === value end)
+  end
+
+  def binary_annotation_by_key(%Trace.SpanInfo{binary_annotations: annotations}, key), do: binary_annotation_by_key(annotations, key)
+  def binary_annotation_by_key(annotations, key) when is_list(annotations) do
+      Enum.find(annotations, fn(%Trace.BinaryAnnotation{key: an_key}) -> an_key === key end)
+  end
+
 end

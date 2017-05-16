@@ -51,8 +51,9 @@ defmodule Tapper.Tracer.Server do
   * `opts` - options passed to start or join, see below.
 
   ## Options
-  * `type` (`:client` or `:server`) - determines whether the first annotation should be `cs` (`:client`) or `sr` (`:server`).
   * `name` (`String`) - name of the span.
+  * `annotations` - a list of annotations, specified by `Tapper.Tracer.annotation_delta/2` etc.
+  * `type` (`:client` or `:server`) - determines whether the first annotation should be `cs` (`:client`) or `sr` (`:server`).
   * `endpoint` (`Tapper.Endpoint`) - sets the endpoint for the initial `cr` or `sr` annotation, defaults to one derived from Tapper configuration (see `Tapper.Application`).
   * `remote` (`Tapper.Endpoint`) - an endpoint to set as the `sa` (:client) or `ca` (:server) binary annotation.
   * `ttl` (integer, ms) - set the no-activity time-out for this trace in milliseconds; defaults to 30,000 ms.
@@ -96,6 +97,9 @@ defmodule Tapper.Tracer.Server do
         ttl: ttl
     }
 
+    # apply any specified annotations
+    trace = apply_updates(trace, opts[:annotations], span_id, timestamp, endpoint)
+
     {:ok, trace, ttl}
   end
 
@@ -125,11 +129,17 @@ defmodule Tapper.Tracer.Server do
   def handle_cast(msg = {:finish, timestamp, opts}, trace) do
     Logger.debug(fn -> inspect({trace.trace_id, msg}) end)
 
+    trace = apply_updates(trace, opts[:annotations], trace.span_id, timestamp, Trace.endpoint_from_config(trace.config))
+
     case trace.async || opts[:async] do
       true ->
         Logger.info(fn -> "Finish Trace #{Tapper.TraceId.format(trace.trace_id)} ASYNC" end)
-        async_annotation = Annotations.annotation(:async, timestamp, Trace.endpoint_from_config(trace.config))
-        trace = update_span(trace, trace.span_id, fn(span) -> %{span | annotations: [async_annotation | span.annotations]} end)
+        trace = case Trace.has_annotation?(trace, trace.span_id, :async) do
+          false ->
+            async_annotation = Annotations.annotation(:async, timestamp, Trace.endpoint_from_config(trace.config))
+            update_span(trace, trace.span_id, fn(span) -> %{span | annotations: [async_annotation | span.annotations]} end)
+          true -> trace
+        end
         trace = %Trace{trace | last_activity: timestamp, async: true}
 
         {:noreply, trace, trace.ttl}
@@ -164,12 +174,13 @@ defmodule Tapper.Tracer.Server do
   end
 
   @doc "via Tapper.Tracer.finish_span/1"
-  def handle_cast(msg = {:finish_span, span_id, timestamp}, trace) do
+  def handle_cast(msg = {:finish_span, span_id, timestamp, opts}, trace) do
     Logger.debug(fn -> inspect({trace.trace_id, msg}) end)
 
     trace = update_span(trace, span_id, fn(span) -> put_in(span.end_timestamp, timestamp) end)
 
     trace = put_in(trace.last_activity, timestamp)
+    trace = apply_updates(trace, opts[:annotations], span_id, timestamp, opts[:endpoint] || Trace.endpoint_from_config(trace.config))
 
     {:noreply, trace, trace.ttl}
   end

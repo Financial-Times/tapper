@@ -164,4 +164,27 @@ defmodule Tracer.Server.InitTest do
     assert state.last_activity == timestamp
   end
 
+  test "init with annotations adds annotations" do
+    {trace, span_id} = init_with_opts(name: "name", annotations: [
+      Tracer.annotation_delta(:ws),
+      Tracer.binary_annotation_delta(:double, "temp", 69.2)
+    ])
+
+    assert annotation_by_value(trace.spans[span_id], :ws)
+    assert binary_annotation_by_key(trace.spans[span_id], "temp")
+  end
+
+  test "init with conflicting shortcut annotations still adds annotations" do
+    alternative_endpoint = random_endpoint()
+    {trace, span_id} = init_with_opts(name: "name", annotations: [
+      Tracer.name_delta("foo"),
+      Tracer.annotation_delta(:cs, alternative_endpoint)
+    ])
+
+    assert trace.spans[span_id].name == "foo"
+    cs = annotation_by_value(trace.spans[span_id], :cs)
+    assert cs
+    assert cs.host == alternative_endpoint
+  end
+
 end

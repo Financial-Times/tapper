@@ -11,26 +11,24 @@ defmodule TapperTest do
 
     id = Tapper.start(name: "main", sample: true, reporter: reporter)
 
-    id = Tapper.start_span(id, name: "child-1")
-
-    id
-    |> Tapper.http_host("api.ft.com")
-    |> Tapper.http_path("my/api")
-    |> Tapper.http_method("PUT")
-    |> Tapper.http_url("https://api.ft.com/my/api?foo=bar")
-    |> Tapper.http_request_size(100)
-    |> Tapper.http_status_code(201)
-    |> Tapper.http_response_size(1024)
-    |> Tapper.add_tag("cpu_temperature", 78.3)
+    id = Tapper.start_span(id, name: "child-1", annotations: [
+      Tapper.http_host("api.ft.com"),
+      Tapper.http_path("my/api"),
+      Tapper.http_method("PUT"),
+      Tapper.http_url("https://api.ft.com/my/api?foo=bar"),
+      Tapper.http_request_size(100),
+      Tapper.http_status_code(201),
+      Tapper.http_response_size(1024),
+      Tapper.tag("cpu_temperature", 78.3)
+    ])
 
     id = Tapper.finish_span(id)
 
-    id = Tapper.start_span(id, name: "child-2", local: "local-algorithm")
-
-    id
-    |> Tapper.add_annotation(:ws)
-    |> Tapper.add_annotation(:wr, %Tapper.Endpoint{service_name: "proto", ip: {1, 2, 3, 4}})
-    |> Tapper.add_binary_annotation(:i16, "units", 233)
+    id = Tapper.start_span(id, name: "child-2", local: "local-algorithm", annotations: [
+      Tapper.annotation(:ws),
+      Tapper.annotation(:wr, %Tapper.Endpoint{service_name: "proto", ip: {1, 2, 3, 4}}),
+      Tapper.binary_annotation(:i16, "units", 233)
+    ])
 
     id = Tapper.finish_span(id)
 
@@ -98,14 +96,14 @@ defmodule TapperTest do
 
     id_1 = Tapper.start_span(id, name: "child-1")
     t1 = Task.async(fn ->
-        Tapper.add_tag(id_1, "task", 1, nil)
+        Tapper.update_span(id_1, Tapper.tag("task", 1))
         Process.sleep(300)
         Tapper.finish_span(id_1)
       end)
 
     id_2 = Tapper.start_span(id, name: "child-2")
     t2 = Task.async(fn ->
-        Tapper.add_tag(id_2, "task", 2, nil)
+        Tapper.update_span(id_2, Tapper.tag("task", 2))
         Process.sleep(200)
         Tapper.finish_span(id_2)
       end)
@@ -152,14 +150,14 @@ defmodule TapperTest do
 
     id_1 = Tapper.start_span(id, name: "child-1")
     t1 = Task.async(fn ->
-        Tapper.add_tag(id_1, "task", 1, nil)
+        Tapper.update_span(id_1, Tapper.tag("task", 1, nil))
         Process.sleep(300)
         Tapper.finish_span(id_1)
       end)
 
     id_2 = Tapper.start_span(id, name: "child-2")
     t2 = Task.async(fn ->
-        Tapper.add_tag(id_2, "task", 2, nil)
+        Tapper.update_span(id_2, Tapper.tag("task", 2, nil))
         Process.sleep(50)
         Tapper.finish_span(id_2)
       end)
@@ -216,15 +214,17 @@ defmodule TapperTest do
 
     id_1 = Tapper.start_span(id, name: "child-1")
     t1 = Task.async(fn ->
-        Tapper.add_tag(id_1, "task", 1)
+        Tapper.update_span(id_1, Tapper.tag("task", 1))
         Process.sleep(300)
         Tapper.finish_span(id_1)
       end)
 
     id_2 = Tapper.start_span(id, name: "child-2")
     t2 = Task.async(fn ->
-        Tapper.add_tag(id_2, "task", 2)
-        Tapper.async(id_2)
+        Tapper.update_span(id_2, [
+          Tapper.tag("task", 2),
+          Tapper.async()
+        ])
         Process.sleep(50)
         Tapper.finish_span(id_2)
       end)
@@ -232,10 +232,10 @@ defmodule TapperTest do
     Tapper.finish(id, async: true)
 
     # we should receive spans due to time-out, before tasks have finished
-    assert_receive {^ref, spans}, 200
+    assert_receive {^ref, spans}, 300
 
 
-    [{^t1, {:ok, _}}, {^t2, {:ok, _}}] = Task.yield_many([t1,t2], 400)
+    [{^t1, {:ok, _}}, {^t2, {:ok, _}}] = Task.yield_many([t1, t2], 500)
 
 
     assert length(spans) == 3

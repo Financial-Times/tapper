@@ -138,4 +138,12 @@ defmodule Tapper.Tracer.Trace do
     }
   end
 
+  def has_annotation?(trace = %__MODULE__{}, span_id, value), do: has_annotation?(trace.spans[span_id], value)
+
+  def has_annotation?(nil, _value), do: false
+
+  def has_annotation?(%__MODULE__.SpanInfo{annotations: annotations}, value) do
+    Enum.any?(annotations, fn(annotation) -> annotation.value === value end)
+  end
+
 end

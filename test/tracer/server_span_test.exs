@@ -5,6 +5,7 @@ defmodule Tracer.Server.SpanTest do
   use ExUnit.Case
 
   import Test.Helper.Server
+  import Test.Helper.Protocol
 
   alias Tapper.Tracer.Trace
   alias Tapper.Timestamp
@@ -35,12 +36,13 @@ defmodule Tracer.Server.SpanTest do
     {:noreply, state, _ttl} = Tapper.Tracer.Server.handle_cast({:start_span, child_span, []}, trace)
 
     child_end_timestamp = Timestamp.incr(timestamp, 100, :milliseconds)
-    {:noreply, state, _ttl} = Tapper.Tracer.Server.handle_cast({:finish_span, child_span.id, child_end_timestamp}, state)
+    {:noreply, state, _ttl} = Tapper.Tracer.Server.handle_cast({:finish_span, child_span.id, child_end_timestamp, annotations: [Tapper.Tracer.annotation_delta(:xx)]}, state)
 
     assert state.spans[child_span.id]
     assert state.spans[child_span.id].start_timestamp == timestamp
     assert state.spans[child_span.id].end_timestamp == child_end_timestamp
     assert state.last_activity == child_end_timestamp
+    assert annotation_by_value(state.spans[child_span.id], :xx)
   end
 
   test "start_span with local context option adds lc annotation" do
@@ -78,7 +80,7 @@ defmodule Tracer.Server.SpanTest do
     timestamp = Timestamp.instant()
     span_id = Tapper.SpanId.generate()
 
-    {:noreply, state, _ttl} = Tapper.Tracer.Server.handle_cast({:finish_span, span_id, timestamp}, trace)
+    {:noreply, state, _ttl} = Tapper.Tracer.Server.handle_cast({:finish_span, span_id, timestamp, []}, trace)
 
     assert state.spans == trace.spans
     assert state.last_activity == timestamp
@@ -93,7 +95,8 @@ defmodule Tracer.Server.SpanTest do
 
     timestamp = Timestamp.instant()
 
-    {:stop, :normal, []} = Tapper.Tracer.Server.handle_cast({:finish, timestamp, []}, trace)
+    {:stop, :normal, []} = Tapper.Tracer.Server.handle_cast({:finish, timestamp,
+      annotations: [{:binary_annotate, {:string, :yy, "yyy", nil}}, {:annotate, {:xx, nil}}]}, trace)
 
     assert_received {^ref, spans}
 
@@ -102,8 +105,9 @@ defmodule Tracer.Server.SpanTest do
 
     [%Tapper.Protocol.Span{id: ^span_id, annotations: annotations, binary_annotations: binary_annotations}] = spans
 
-    assert [%Tapper.Protocol.Annotation{value: :cs}] = annotations
-    assert binary_annotations == []
+    assert protocol_annotation_by_value(annotations, :cs)
+    assert protocol_annotation_by_value(annotations, :xx)
+    assert protocol_binary_annotation_by_key(binary_annotations, :yy)
   end
 
   test "finish async tags main span and timeout reports spans" do
@@ -126,14 +130,14 @@ defmodule Tracer.Server.SpanTest do
     # finish asynchronously
     timestamp = Timestamp.instant()
 
-    {:noreply, state, ^ttl} = Tapper.Tracer.Server.handle_cast({:finish, timestamp, [async: true]}, state)
+    {:noreply, state, ^ttl} = Tapper.Tracer.Server.handle_cast({:finish, timestamp, async: true, annotations: [Tapper.Tracer.annotation_delta(:xx)]}, state)
 
-    annotations = state.spans[trace.span_id].annotations
+    span = state.spans[trace.span_id]
 
-    assert is_list(annotations)
-    assert length(annotations) == 2
+    assert Trace.has_annotation?(span, :xx)
+    assert Trace.has_annotation?(span, :async)
 
-    assert hd(annotations) == %Tapper.Tracer.Trace.Annotation{
+    assert hd(span.annotations) == %Tapper.Tracer.Trace.Annotation{
       value: :async,
       timestamp: timestamp,
       host: Trace.endpoint_from_config(config)
@@ -157,8 +161,8 @@ defmodule Tracer.Server.SpanTest do
 
     %Tapper.Protocol.Span{id: ^span_id, annotations: annotations, binary_annotations: binary_annotations} = main_proto_span
 
-    assert Enum.any?(annotations, fn(an) -> match?(%Tapper.Protocol.Annotation{value: :cs}, an) end)
-    assert Enum.any?(annotations, fn(an) -> match?(%Tapper.Protocol.Annotation{value: :async}, an) end)
+    assert protocol_annotation_by_value(annotations, :cs)
+    assert protocol_annotation_by_value(annotations, :async)
 
     assert binary_annotations == []
   end
