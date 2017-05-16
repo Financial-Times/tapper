@@ -15,8 +15,10 @@ defmodule Tapper.Tracer do
   require Logger
 
   import Tapper.Tracer.Server, only: [via_tuple: 1]
+
   alias Tapper.Timestamp
   alias Tapper.Tracer.Trace
+  alias Tapper.Tracer.Api
 
   @doc """
   start a new root trace, e.g. on originating a request, e.g.:
@@ -30,12 +32,16 @@ defmodule Tapper.Tracer do
   * `name` - the name of the span.
   * `sample` - boolean, whether to sample this trace or not.
   * `debug` - boolean, enabled debug.
+  * `annotations` - a list of annotations to attach to main span, specified by `Tapper.tag/3` etc.
   * `type` - the type of the span, i.e.. `:client`, `:server`; defaults to `:client`.
   * `remote` - the remote Endpoint: automatically creates a "sa" (client) or "ca" (server) binary annotation on this span.
   * `ttl` - how long this span should live before automatically finishing it
     (useful for long-running async operations); milliseconds.
 
-  NB if neither `sample` nor `debug` are set, all operations on this trace become a no-op.
+  #### Notes
+
+  * If neither `sample` nor `debug` are set, all operations on this trace become a no-op.
+  * `type` determines the type of an automatically created `sr` (`:server`) or `cs` (`:client`) annotation, see also `Tapper.client_send/0` and `Tapper.server_receive/0`.
   """
   def start(opts \\ []) when is_list(opts) do
     trace_id = Tapper.TraceId.generate()
@@ -69,8 +75,8 @@ defmodule Tapper.Tracer do
   id = Tapper.Tracer.join(trace_id, span_id, parent_id, sampled, debug, name: "receive request")
   ```
 
-  NB Probably called by an integration (e.g. [`tapper_plug`](https://github.com/Financial-Times/tapper_plug), name, annotations etc.
-  added in the service code, so the name is optional here, see `name/2`.
+  NB Probably called by an integration (e.g. [`tapper_plug`](https://github.com/Financial-Times/tapper_plug)) with name, annotations etc.
+  added in the service code, so the name is optional here, see `Tapper.name/1`.
 
   ## Arguments
 
@@ -82,14 +88,18 @@ defmodule Tapper.Tracer do
 
 
   ## Options
-  * `name` name of span, see also `name/2`.
+  * `name` name of span, see also `Tapper.name/1`.
+  * `annotations` - a list of annotations to attach to main span, specified by `Tapper.tag/3` etc.
   * `type` - the type of the span, i.e.. `:client`, `:server`; defaults to `:server`; determines which of `sr` (`:server`) or `cs`
     (`:client`) annotations is added. Defaults to `:server`.
-  * `remote` - the remote Endpoint: automatically creates a "sa" (`:client`) or "ca" (`:server`) binary annotation on this span.
+  * `remote` (`Tapper.Endpoint`) - the remote endpoint: automatically creates a "sa" (`:client`) or "ca" (`:server`) binary annotation on this span, see also `Tapper.server_address/1`.
   * `ttl` - how long this span should live between operations, before automatically finishing it
     (useful for long-running async operations); milliseconds.
 
-  NB if neither `sample` nor `debug` are `true`, all operations on this trace become a no-op.
+  #### Notes
+
+  * If neither `sample` nor `debug` are set, all operations on this trace become a no-op.
+  * `type` determines the type of an automatically created `sr` (`:server`) or `cs` (`:client`) annotation, see also `Tapper.client_send/0` and `Tapper.server_receive/0`.
   """
   def join(trace_id, span_id, parent_id, sample, debug, opts \\ []), do: join({trace_id, span_id, parent_id, sample, debug}, opts)
   def join(trace_init = {trace_id, span_id, parent_id, sample, debug}, opts \\ []) when is_list(opts) do
@@ -135,14 +145,19 @@ defmodule Tapper.Tracer do
 
   For `async` processes (where spans persist in another process), just call
   `finish/2` when done with the main span, passing the `async` option, and finish
-  child spans as normal using `finish_span/1`. When the trace times out, spans will
+  child spans as normal using `finish_span/2`. When the trace times out, spans will
   be sent to the server, marking any unfinished spans with a `timeout` annotation.
+
+  ```
+  id = Tapper.finish(id, async: true, annotations: [Tapper.http_status_code(401)])
+  ```
 
   ## See also
   * `Tapper.Tracer.Timeout` - the time-out logic.
 
   ## Options
-  * `async` - mark the trace as asynchronous, allowing child spans to finish within the TTL.
+  * `async` (boolean) - mark the trace as asynchronous, allowing child spans to finish within the TTL.
+  * `annotations` (list) - list of annotations to attach to main span.
   """
   def finish(id, opts \\ [])
   def finish(%Tapper.Id{sampled: false}, _opts), do: :ok
@@ -154,7 +169,7 @@ defmodule Tapper.Tracer do
 
 
   @doc """
-  Starts a child span.
+  Starts a child span, returning an updated `Tapper.Id`.
 
   ## Arguments
   * `id` - Tapper id.
@@ -162,6 +177,11 @@ defmodule Tapper.Tracer do
   ## Options
   * `name` (string) - name of span.
   * `local` (string) - provide a local span context name (via a `lc` binary annotation).
+  * `annotations` (list) - a list of annotations to attach to the span.
+
+  ```
+  id = Tapper.start_span(id, name: "foo", local: "do foo", annotations: [Tapper.sql_query("select * from foo")])
+  ```
   """
   def start_span(id, opts \\ [])
 
@@ -192,64 +212,80 @@ defmodule Tapper.Tracer do
     updated_id
   end
 
-  def finish_span(id)
+  @doc """
+  Finish a nested span, returning an updated `Tapper.Id`.
 
-  def finish_span(:ignore), do: :ignore
+  ## Arguments
+  * `id` - Tapper id.
 
-  def finish_span(id = %Tapper.Id{sampled: false}), do: id
+  ## Options
+  * `annotations` (list) - a list of annotations to attach the the span.
 
-  def finish_span(id = %Tapper.Id{}) do
+  ```
+  id = finish_span(id, annotations: [Tapper.http_status_code(202)])
+  ```
+  """
+  def finish_span(id, opts \\ [])
+
+  def finish_span(:ignore, _), do: :ignore
+
+  def finish_span(id = %Tapper.Id{sampled: false}, _), do: id
+
+  def finish_span(id = %Tapper.Id{}, opts) do
 
     timestamp = Timestamp.instant()
 
     updated_id = Tapper.Id.pop(id)
 
-    GenServer.cast(via_tuple(id), {:finish_span, id.span_id, timestamp})
+    GenServer.cast(via_tuple(id), {:finish_span, id.span_id, timestamp, opts})
 
     updated_id
   end
 
-  def name(:ignore, _name), do: :ignore
-
-  def name(id = %Tapper.Id{span_id: span_id}, name) when is_binary(name) do
-    timestamp = Timestamp.instant()
-    GenServer.cast(via_tuple(id), {:name, span_id, name, timestamp})
-    id
+  @spec name_delta(name :: String.t | atom) :: Api.name_delta
+  def name_delta(name) do
+    {:name, name}
   end
 
-  def async(id = %Tapper.Id{span_id: span_id}) do
-    timestamp = Timestamp.instant()
-    GenServer.cast(via_tuple(id), {:async, span_id, timestamp})
-    id
+  @spec async_delta() :: Api.async_delta
+  def async_delta do
+    :async
   end
 
-  def annotate(id, type, opts \\ [])
-
-  def annotate(:ignore, _type, _opts), do: :ignore
-
-  def annotate(id = %Tapper.Id{span_id: span_id}, type, opts) do
-    timestamp = opts[:timestamp] || Timestamp.instant()
-    value = map_annotation_type(type)
-    endpoint = check_endpoint(opts[:endpoint]) # ensure endpoint is an Endpoint.t, or nil
-
-    GenServer.cast(via_tuple(id), {:annotation, span_id, value, timestamp, endpoint})
-
-    id
+  @doc "build a span annotation, suitable for passing to `update/3`; see also convenience functions in `Tapper`."
+  @spec annotation_delta(value :: Api.annotation_value(), endpoint :: Api.maybe_endpoint) :: Api.annotation_delta
+  def annotation_delta(value, endpoint \\ nil) do
+    value = map_annotation_type(value)
+    endpoint = check_endpoint(endpoint)
+    {:annotate, {value, endpoint}}
   end
 
   @binary_annotation_types [:string, :bool, :i16, :i32, :i64, :double, :bytes]
 
-  @spec binary_annotate(Tapper.Id.t | :ignore, Tapper.Tracer.Api.binary_annotation_type(), atom() | String.t, any(), Tapper.Endpoint.t | nil) :: Tapper.Id.t
-  def binary_annotate(id, type, key, value, endpoint \\ nil)
+  @doc "build a span binary annotation, suitable for passing to `update/3`; see also convenience functions in `Tapper`."
+  @spec binary_annotation_delta(type :: Api.binary_annotation_type, key :: Api.binary_annotation_key, value :: Api.binary_annotation_value, endpoint :: Api.maybe_endpoint ) :: Api.binary_annotaton_delta
+  def binary_annotation_delta(type, key, value, endpoint \\ nil) when type in @binary_annotation_types do
+    endpoint = check_endpoint(endpoint)
+    {:binary_annotate, {type, key, value, endpoint}}
+  end
 
-  def binary_annotate(:ignore, _type, _key, _value, _endpoint), do: :ignore
+  @spec update_span(id :: Tapper.Id.t, deltas :: [Api.delta()], opts :: Keyword.t) :: Tapper.Id.t
+  def update_span(id, deltas, opts \\ [])
 
-  def binary_annotate(id = %Tapper.Id{span_id: span_id}, type, key, value, endpoint) when type in @binary_annotation_types do
-    timestamp = Timestamp.instant()
+  def update_span(:ignore, _deltas, _opts), do: :ignore
 
-    GenServer.cast(via_tuple(id), {:binary_annotation, span_id, type, key, value, timestamp, check_endpoint(endpoint)})
+  def update_span(id = %Tapper.Id{}, [], _opts), do: id
+
+  def update_span(id = %Tapper.Id{span_id: span_id}, deltas = [_d | _ds], opts) when is_list(opts) do
+    timestamp = opts[:timestamp] || Timestamp.instant()
+
+    GenServer.cast(via_tuple(id), {:update, span_id, timestamp, deltas})
 
     id
+  end
+
+  def update_span(id = %Tapper.Id{}, delta, opts) when not is_list(delta) and is_list(opts) do
+    update_span(id, [delta], opts)
   end
 
   def whereis(:ignore), do: []

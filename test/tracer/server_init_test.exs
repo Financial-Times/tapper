@@ -3,6 +3,7 @@ defmodule Tracer.Server.InitTest do
 
   import Test.Helper.Server
 
+  alias Tapper.Tracer
   alias Tapper.Tracer.Trace
   alias Tapper.Timestamp
 
@@ -157,9 +158,33 @@ defmodule Tracer.Server.InitTest do
     timestamp = Timestamp.instant()
 
     {:noreply, state, _ttl} =
-        Tapper.Tracer.Server.handle_cast({:name, span_id, "new-name", timestamp}, trace)
+        Tapper.Tracer.Server.handle_cast({:update, span_id, timestamp, [Tracer.name_delta("new-name")]}, trace)
 
     assert state.spans[span_id].name == "new-name"
     assert state.last_activity == timestamp
   end
+
+  test "init with annotations adds annotations" do
+    {trace, span_id} = init_with_opts(name: "name", annotations: [
+      Tracer.annotation_delta(:ws),
+      Tracer.binary_annotation_delta(:double, "temp", 69.2)
+    ])
+
+    assert annotation_by_value(trace.spans[span_id], :ws)
+    assert binary_annotation_by_key(trace.spans[span_id], "temp")
+  end
+
+  test "init with conflicting shortcut annotations still adds annotations" do
+    alternative_endpoint = random_endpoint()
+    {trace, span_id} = init_with_opts(name: "name", annotations: [
+      Tracer.name_delta("foo"),
+      Tracer.annotation_delta(:cs, alternative_endpoint)
+    ])
+
+    assert trace.spans[span_id].name == "foo"
+    cs = annotation_by_value(trace.spans[span_id], :cs)
+    assert cs
+    assert cs.host == alternative_endpoint
+  end
+
 end

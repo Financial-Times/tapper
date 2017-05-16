@@ -4,26 +4,39 @@ defmodule Tapper do
 
   ## Example
   ```
-  id = Tapper.start(name: "main", type: :client, debug: true) # start new trace (and span)
+  # start new trace (and span)
+  id = Tapper.start(name: "main", type: :client, debug: true, annotations: [Tapper.tag("a", "b")])
 
   # or join an existing one
   # id = Trapper.join(trace_id, span_id, parent_id, sample, debug, name: "main")
 
-  id = Tapper.start_span(id, name: "call-out") # start child span
+  # start child span
+  id = Tapper.start_span(id, name: "call-out", annotations: [
+    Tapper.wire_send(),
+    Tapper.http_path("/resource/1234")
+  ])
 
-  # tag current span with metadata
-  id
-  |> Tapper.http_path("/resource/1234")
-  |> Tapper.tag("version", 12)
-
+  # do something
   ...
-  id = Tapper.finish_span(child_id) # end child span
+
+  # tag current span with some additional metadata, e.g. when available
+  Tapper.update_span(id, [
+    Tapper.tag("userId", 12)
+  ])
+  ...
+
+  # end child span
+  id = Tapper.finish_span(child_id, annotations: [
+    Tapper.http_status(200)
+  ])
 
   Tapper.finish(span_id) # end trace
   ```
   """
 
   @behaviour Tapper.Tracer.Api
+
+  @binary_annotation_types [:string, :bool, :i16, :i32, :i64, :double, :bytes]
 
   alias Tapper.Tracer
 
@@ -34,29 +47,33 @@ defmodule Tapper do
   id = Tapper.Tracer.start(name: "request resource", type: :client, remote: remote_endpoint)
   ```
 
-  Options:
+  ### Options
 
   * `name` - the name of the span.
   * `sample` - boolean, whether to sample this trace or not.
   * `debug` - boolean, enabled debug.
-  * `type` - the type of the span, i.e.. `:client`, `:server`; defaults to `:client`.
-  * `remote` ([`%Tapper.Endpoint{}`](Tapper.Endpoint.html)) - the remote Endpoint: automatically creates a "sa" (client) or "ca" (server) binary annotation on this span.
+  * `type` - the type of the span, i.e.. `:client`, `:server`; defaults to `:client`. See notes below.
+  * `annotations` (list) - a list of annotations, specified by `Tapper.http_host/2` etc.
+  * `remote` (`%Tapper.Endpoint{}`) - the remote Endpoint: automatically creates a "sa" (client) or "ca" (server) binary annotation on this span, see also `Tapper.server_address/1`.
   * `ttl` - how long this span should live before automatically finishing it
       (useful for long-running async operations); milliseconds (default 30,000 ms)
-  * `endpoint` - sets the endpoint for the initial `cr` or `sr` annotation, defaults to one derived from Tapper configuration (see `Tapper.Application.start/2`).
+  * `endpoint` - sets the endpoint for the annotation created by `type`, defaults to one derived from Tapper configuration (see `Tapper.Application.start/2`).
   * `reporter` - override the configured reporter for this trace; useful for testing.
 
-  NB if neither `sample` nor `debug` are set, all operations on this trace become a no-op.
+  #### Notes
+
+  * If neither `sample` nor `debug` are set, all operations on this trace become a no-op.
+  * `type` determines the type of an automatically created `sr` (`:server`) or `cs` (`:client`) annotation, see also `Tapper.client_send/0` and `Tapper.server_receive/0`.
   """
-  def start(opts \\ []), do: Tracer.start(opts)
+  defdelegate start(opts \\ []), to: Tracer
 
   @doc """
   join an existing trace, e.g. server recieving an annotated request.
   ```
   id = Tapper.Tracer.join(trace_id, span_id, parent_id, sampled, debug, name: "receive request")
   ```
-  NB Probably called by an integration (e.g. [`tapper_plug`](https://github.com/Financial-Times/tapper_plug), name, annotations etc.
-  added in the service code, so the name is optional here, see `name/2`.
+  NB Probably called by an integration (e.g. [`tapper_plug`](https://github.com/Financial-Times/tapper_plug)) with name, annotations etc.
+  added in the service code, so the name is optional here, see `name/1`.
 
   ### Arguments
 
@@ -71,32 +88,38 @@ defmodule Tapper do
 
   ### Options
   * `name` (String) - name of span
-  * `type` (atom) - the type of the span, i.e.. :client, :server; defaults to `:server`.
-  * `remote` (`Tapper.Endpoint`) - the remote endpoint: automatically creates a "sa" (`:client`) or "ca" (`:server`) binary annotation on this span.
+  * `type` - the type of the span, i.e.. `:client`, `:server`; defaults to `:server`. See notes below.
+  * `annotations` (list) - a list of annotations, specified by `Tapper.tag/3` etc.
+  * `remote` (`Tapper.Endpoint`) - the remote endpoint: automatically creates a "sa" (`:client`) or "ca" (`:server`) binary annotation on this span, see also `Tapper.server_address/1`.
   * `ttl` (integer) - how long this span should live between operations before automatically finishing it (useful for long-running async operations);
       milliseconds, defaults to 30,000 ms.
   * `endpoint` - sets the endpoint for the initial `cr` or `sr` annotation, defaults to one derived from Tapper configuration (see `Tapper.Application.start/2`).
   * `reporter` - override the configured reporter for this trace; useful for testing.
 
-  NB if neither `sample` nor `debug` are `true`, all operations on this trace become a no-op.
+  #### Notes
+
+  * If neither `sample` nor `debug` are set, all operations on this trace become a no-op.
+  * `type` determines the type of an automatically created `sr` (`:server`) or `cs` (`:client`) annotation, see also `Tapper.client_send/0` and `Tapper.server_receive/0`.
   """
-  def join(trace_id, span_id, parent_id, sample, debug, opts \\ []), do: Tracer.join(trace_id, span_id, parent_id, sample, debug, opts)
+  defdelegate join(trace_id, span_id, parent_id, sample, debug, opts \\ []), to: Tracer
 
   @doc """
   Finishes the trace.
 
   For `async` processes (where spans persist in another process), call
   `finish/2` when done with the main span, passing the `async` option, and finish
-  child spans as normal using `finish_span/1`. When the trace times out, spans will
+  child spans as normal using `finish_span/2`. When the trace times out, spans will
   be sent to the server, marking any unfinished spans with a `timeout` annotation.
 
   ## Options
   * `async` - mark the trace as asynchronous, allowing child spans to finish within the TTL.
+  * `annotations` (list) - a list of annotations to attach to the span.
 
   ## See also
-  * `Tapper.Tracer.Timeout`
+  * `Tapper.Tracer.Timeout` - timeout behaviour.
+  * `async/0` annotation.
   """
-  def finish(id, opts \\ []), do: Tracer.finish(id, opts)
+  defdelegate finish(id, opts \\ []), to: Tracer
 
   @doc """
   Starts a child span, returning an updated `Tapper.Id`.
@@ -105,20 +128,56 @@ defmodule Tapper do
   * `id` - Tapper id.
 
   ## Options
+  * `name` (string) - name the span.
   * `local` (string) - provide a local span context name (via a `lc` binary annotation).
+  * `annotations` (list) - a list of annotations to attach to the span.
+
+  ```
+  id = start_span(id, name: "foo", local: "do foo", annotations: [Tapper.sql_query("select * from foo")])
+  ```
   """
-  def start_span(id, opts \\ []), do: Tracer.start_span(id, opts)
-
-  @doc "finish a nested span, returning an updated `Tapper.Id`."
-  def finish_span(id), do: Tracer.finish_span(id)
-
-  @doc "name (or rename) the current span."
-  def name(id, name), do: Tracer.name(id, name)
+  defdelegate start_span(id, opts \\ []), to: Tracer
 
   @doc """
-  Marks the span as asynchronous, adding an `async` annotation.
+  Finish a nested child span, returning an updated `Tapper.Id`.
 
-  This is semantically equivalent to calling `finish/2` with the `async` option, and engages
+  ## Arguments
+  * `id` - Tapper id.
+
+  ## Options
+  * `annotations` (list) - a list of annotations to attach the the span.
+
+  ```
+  id = Tapper.finish_span(id, annotations: [Tapper.http_status_code(202)])
+  ```
+  """
+  defdelegate finish_span(id, opts \\ []), to: Tracer
+
+  @doc """
+  Commit annotations to a span; returns the same `Tapper.Id`.
+
+  Use with annotation helper functions:
+  ```
+  id = Tapper.start_span(id)
+
+  Tapper.update_span(id, [
+    Tapper.async(),
+    Tapper.name("child"),
+    Tapper.http_path("/server/x"),
+    Tapper.tag("x", 101)
+  ])
+  ```
+  """
+  defdelegate update_span(id, deltas, opts \\[]), to: Tracer
+
+
+  @doc "Annotation helper: name (or rename) the current span."
+  def name(name), do: Tracer.name_delta(name)
+
+  @doc """
+  Annotation helper: marks the span as asynchronous, adding an `async` annotation.
+
+  This is semantically equivalent to calling `finish/2` with the `async` option, and
   has the same time-out behaviour, but annotates individual spans as being asynchronous.
   You can call this for every asynchronous span.
 
@@ -126,84 +185,84 @@ defmodule Tapper do
 
   ## See also
   * `Tapper.Tracer.Timeout`
+  * `Tapper.finish/2`
   """
-  def async(id), do: Tracer.async(id)
+  def async, do: Tracer.async_delta()
 
-  @doc "mark a server_receive event (`sr`); see also `:server` option on `Tapper.start/1`."
-  def server_receive(id), do: Tracer.annotate(id, :sr)
-  @doc "mark a server_send event (`ss`)."
-  def server_send(id), do: Tracer.annotate(id, :ss)
+  @doc "Annotation helper: mark a server_receive event (`sr` annotation); see also `:server` option on `Tapper.start/1`."
+  def server_receive, do: Tracer.annotation_delta(:sr)
 
-  @doc "mark a client_send event (`cs`); see also `:client` option on `Tapper.start/1`."
-  def client_send(id), do: Tracer.annotate(id, :cs)
-  @doc "mark a client_receive event (`cr`)."
-  def client_receive(id), do: Tracer.annotate(id, :cr)
+  @doc "Annotation helper: mark a server_send event (`ss` annotation)."
+  def server_send, do: Tracer.annotation_delta(:ss)
 
-  @doc "mark a send event (`ws`)."
-  def wire_send(id), do: Tracer.annotate(id, :ws)
-  @doc "mark a receive event (`wr`)."
-  def wire_receive(id), do: Tracer.annotate(id, :wr)
+  @doc "Annotation helper: mark a client_send event (`cs` annotation); see also `:client` option on `Tapper.start/1`."
+  def client_send, do: Tracer.annotation_delta(:cs)
 
-  @doc "mark an error event (`error`)."
-  def error(id), do: Tracer.annotate(id, :error)
+  @doc "Annotation helper: mark a client_receive event (`cr` annotation)."
+  def client_receive, do: Tracer.annotation_delta(:cr)
 
-  @doc "mark an event, general interface."
-  def annotate(id, type, endpoint \\ nil), do: Tracer.annotate(id, type, endpoint: endpoint)
+  @doc "Annotation helper: mark a send event (`ws` annotation)."
+  def wire_send, do: Tracer.annotation_delta(:ws)
 
+  @doc "Annotation helper: mark a receive event (`wr` annotation)."
+  def wire_receive, do: Tracer.annotation_delta(:wr)
 
-  @doc "Tag with the client's address (`ca`)."
-  def client_address(id, host = %Tapper.Endpoint{}), do: Tracer.binary_annotate(id, :bool, "ca", true, host)
+  @doc "Annotation helper: mark an error event (`error` annotation)."
+  def error, do: Tracer.annotation_delta(:error)
 
-  @doc "Tag with the server's address (`sa`)."
-  def server_address(id, host = %Tapper.Endpoint{}), do: Tracer.binary_annotate(id, :bool, "sa", true, host)
+  @doc "Annotation helper: Tag with the client's address (`ca` binary annotation)."
+  def client_address(endpoint), do: Tracer.binary_annotation_delta(:bool, :ca, true, endpoint)
 
-  @doc "Tag with HTTP host information (`http.host`)."
-  def http_host(id, hostname) when is_binary(hostname), do: Tracer.binary_annotate(id, :string, "http.host", hostname)
+  @doc "Annotation helper: Tag with the server's address (`sa` binary annotation)."
+  def server_address(endpoint), do: Tracer.binary_annotation_delta(:bool, :sa, true, endpoint)
 
-  @doc "Tag with HTTP method information (`http.method`)."
-  def http_method(id, method) when is_binary(method), do: Tracer.binary_annotate(id, :string, "http.method", method)
+  @doc "Annotation helper: Tag with HTTP host information (`http.host` binary annotation)."
+  def http_host(hostname) when is_binary(hostname), do: Tracer.binary_annotation_delta(:string, "http.host", hostname)
 
-  @doc "Tag with HTTP path information: should be without query parameters (`http.path`)"
-  def http_path(id, path) when is_binary(path), do: Tracer.binary_annotate(id, :string, "http.path", path)
+  @doc "Annotation helper: Tag with HTTP method information (`http.method` binary annotation)."
+  def http_method(method) when is_binary(method) or is_atom(method), do: Tracer.binary_annotation_delta(:string, "http.method", method)
 
-  @doc "Tag with full HTTP URL information (`http.url`)"
-  def http_url(id, url) when is_binary(url), do: Tracer.binary_annotate(id, :string, "http.url", url)
+  @doc "Annotation helper: Tag with HTTP path information: should be without query parameters (`http.path` binary annotation)"
+  def http_path(path) when is_binary(path), do: Tracer.binary_annotation_delta(:string, "http.path", path)
 
-  @doc "Tag with an HTTP status code (`http.status_code`)"
-  def http_status_code(id, code) when is_integer(code), do: Tracer.binary_annotate(id, :i16, "http.status_code", code)
+  @doc "Annotation helper: Tag with full HTTP URL information (`http.url` binary annotation)"
+  def http_url(url) when is_binary(url), do: Tracer.binary_annotation_delta(:string, "http.url", url)
 
-  @doc "Tag with an HTTP request size (`http.request.size`)"
-  def http_request_size(id, size) when is_integer(size), do: Tracer.binary_annotate(id, :i64, "http.request.size", size)
+  @doc "Annotation helper: Tag with an HTTP status code (`http.status_code` binary annotation)"
+  def http_status_code(code) when is_integer(code), do: Tracer.binary_annotation_delta(:i16, "http.status_code", code)
 
-  @doc "Tag with an HTTP reponse size (`http.response.size`)"
-  def http_response_size(id, size) when is_integer(size), do: Tracer.binary_annotate(id, :i64, "http.response.size", size)
+  @doc "Annotation helper: Tag with an HTTP request size (`http.request.size` binary annotation)"
+  def http_request_size(size) when is_integer(size), do: Tracer.binary_annotation_delta(:i64, "http.request.size", size)
 
-  @doc "Tag with a database query (`sql.querl`)"
-  def sql_query(id, query) when is_binary(query), do: Tracer.binary_annotate(id, :string, "sql.query", query)
+  @doc "Annotation helper: Tag with an HTTP reponse size (`http.response.size` binary annotation)"
+  def http_response_size(size) when is_integer(size), do: Tracer.binary_annotation_delta(:i64, "http.response.size", size)
 
-  @doc "Tag with an error message (`error`)"
-  def error(id, message) when is_binary(message), do: Tracer.binary_annotate(id, :string, :error, message)
+  @doc "Annotation helper: Tag with a database query (`sql.query` binary annotation)"
+  def sql_query(query) when is_binary(query), do: Tracer.binary_annotation_delta(:string, "sql.query", query)
 
-  @doc "Tag with a general (key,value,host) binary annotation, determining type of annotation automatically"
-  def tag(id, key, value, endpoint \\ nil)
+  @doc "Annotation helper: Tag with an error message (`error` binary annotation)"
+  def error_message(message) when is_binary(message), do: Tracer.binary_annotation_delta(:string, :error, message)
 
-  def tag(id, key, value, endpoint) when is_binary(key) and is_binary(value), do: Tracer.binary_annotate(id, :string, key, value, endpoint)
-  def tag(id, key, value, endpoint) when is_binary(key) and is_integer(value), do: Tracer.binary_annotate(id, :i64, key, value, endpoint)
-  def tag(id, key, value, endpoint) when is_binary(key) and is_float(value), do: Tracer.binary_annotate(id, :double, key, value, endpoint)
-  def tag(id, key, value, endpoint) when is_binary(key), do: Tracer.binary_annotate(id, :string, key, inspect(value), endpoint)
+  @doc "Annotation helper: Tag with a general (key,value,host) binary annotation, determining type of annotation automatically"
+  def tag(key, value, endpoint \\ nil)
+  def tag(key, value, endpoint) when (is_binary(key) or is_atom(key)) and is_binary(value), do: Tracer.binary_annotation_delta(:string, key, value, endpoint)
+  def tag(key, value, endpoint) when (is_binary(key) or is_atom(key)) and is_boolean(value), do: Tracer.binary_annotation_delta(:bool, key, value, endpoint)
+  def tag(key, value, endpoint) when (is_binary(key) or is_atom(key)) and is_integer(value), do: Tracer.binary_annotation_delta(:i64, key, value, endpoint)
+  def tag(key, value, endpoint) when (is_binary(key) or is_atom(key)) and is_float(value), do: Tracer.binary_annotation_delta(:double, key, value, endpoint)
+  def tag(key, value, endpoint) when (is_binary(key) or is_atom(key)), do: Tracer.binary_annotation_delta(:string, key, inspect(value), endpoint)
 
-
-  @binary_annotation_types [:string, :bool, :i16, :i32, :i64, :double, :bytes]
+  @doc "Annotation helper: mark an event (annotation), general interface."
+  def annotation(value, endpoint \\ nil) when not is_map(value), do: Tracer.annotation_delta(value, endpoint)
 
   @doc """
-  Tag with a general binary annotation.
+  Annotation helper: tag with a general binary annotation.
 
   ```
   binary_annotation(id, :i16, "tab", 4)
   ```
   """
-  def binary_annotate(id, type, key, value, endpoint \\ nil)
-
-  def binary_annotate(id, type, key, value, endpoint) when type in @binary_annotation_types, do: Tracer.binary_annotate(id, type, key, value, endpoint)
+  def binary_annotation(type, key, value, endpoint \\ nil) when type in @binary_annotation_types do
+     Tracer.binary_annotation_delta(type, key, value, endpoint)
+  end
 
 end

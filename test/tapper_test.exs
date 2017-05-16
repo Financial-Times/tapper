@@ -11,26 +11,24 @@ defmodule TapperTest do
 
     id = Tapper.start(name: "main", sample: true, reporter: reporter)
 
-    id = Tapper.start_span(id, name: "child-1")
-
-    id
-    |> Tapper.http_host("api.ft.com")
-    |> Tapper.http_path("my/api")
-    |> Tapper.http_method("PUT")
-    |> Tapper.http_url("https://api.ft.com/my/api?foo=bar")
-    |> Tapper.http_request_size(100)
-    |> Tapper.http_status_code(201)
-    |> Tapper.http_response_size(1024)
-    |> Tapper.tag("cpu_temperature", 78.3)
+    id = Tapper.start_span(id, name: "child-1", annotations: [
+      Tapper.http_host("api.ft.com"),
+      Tapper.http_path("my/api"),
+      Tapper.http_method("PUT"),
+      Tapper.http_url("https://api.ft.com/my/api?foo=bar"),
+      Tapper.http_request_size(100),
+      Tapper.http_status_code(201),
+      Tapper.http_response_size(1024),
+      Tapper.tag("cpu_temperature", 78.3)
+    ])
 
     id = Tapper.finish_span(id)
 
-    id = Tapper.start_span(id, name: "child-2", local: "local-algorithm")
-
-    id
-    |> Tapper.annotate(:ws)
-    |> Tapper.annotate(:wr, %Tapper.Endpoint{service_name: "proto", ip: {1, 2, 3, 4}})
-    |> Tapper.binary_annotate(:i16, "units", 233)
+    id = Tapper.start_span(id, name: "child-2", local: "local-algorithm", annotations: [
+      Tapper.annotation(:ws),
+      Tapper.annotation(:wr, %Tapper.Endpoint{service_name: "proto", ip: {1, 2, 3, 4}}),
+      Tapper.binary_annotation(:i16, "units", 233)
+    ])
 
     id = Tapper.finish_span(id)
 
@@ -98,14 +96,14 @@ defmodule TapperTest do
 
     id_1 = Tapper.start_span(id, name: "child-1")
     t1 = Task.async(fn ->
-        Tapper.tag(id_1, "task", 1)
+        Tapper.update_span(id_1, Tapper.tag("task", 1))
         Process.sleep(300)
         Tapper.finish_span(id_1)
       end)
 
     id_2 = Tapper.start_span(id, name: "child-2")
     t2 = Task.async(fn ->
-        Tapper.tag(id_2, "task", 2)
+        Tapper.update_span(id_2, Tapper.tag("task", 2))
         Process.sleep(200)
         Tapper.finish_span(id_2)
       end)
@@ -152,14 +150,14 @@ defmodule TapperTest do
 
     id_1 = Tapper.start_span(id, name: "child-1")
     t1 = Task.async(fn ->
-        Tapper.tag(id_1, "task", 1)
+        Tapper.update_span(id_1, Tapper.tag("task", 1, nil))
         Process.sleep(300)
         Tapper.finish_span(id_1)
       end)
 
     id_2 = Tapper.start_span(id, name: "child-2")
     t2 = Task.async(fn ->
-        Tapper.tag(id_2, "task", 2)
+        Tapper.update_span(id_2, Tapper.tag("task", 2, nil))
         Process.sleep(50)
         Tapper.finish_span(id_2)
       end)
@@ -216,15 +214,17 @@ defmodule TapperTest do
 
     id_1 = Tapper.start_span(id, name: "child-1")
     t1 = Task.async(fn ->
-        Tapper.tag(id_1, "task", 1)
+        Tapper.update_span(id_1, Tapper.tag("task", 1))
         Process.sleep(300)
         Tapper.finish_span(id_1)
       end)
 
     id_2 = Tapper.start_span(id, name: "child-2")
     t2 = Task.async(fn ->
-        Tapper.tag(id_2, "task", 2)
-        Tapper.async(id_2)
+        Tapper.update_span(id_2, [
+          Tapper.tag("task", 2),
+          Tapper.async()
+        ])
         Process.sleep(50)
         Tapper.finish_span(id_2)
       end)
@@ -232,10 +232,10 @@ defmodule TapperTest do
     Tapper.finish(id, async: true)
 
     # we should receive spans due to time-out, before tasks have finished
-    assert_receive {^ref, spans}, 200
+    assert_receive {^ref, spans}, 300
 
 
-    [{^t1, {:ok, _}}, {^t2, {:ok, _}}] = Task.yield_many([t1,t2], 400)
+    [{^t1, {:ok, _}}, {^t2, {:ok, _}}] = Task.yield_many([t1, t2], 500)
 
 
     assert length(spans) == 3
@@ -278,6 +278,72 @@ defmodule TapperTest do
     assert child_1.duration >= 100_000, "Unterminated child_1 span should have duration >= the TTL time #{child_1.duration}"
 
     assert child_2.duration >= 50_000, "child_2 span should have a duration greater than its sleep time"
+  end
+
+
+  describe "batch tests" do
+
+    test "batch updates" do
+      {ref, reporter} = Test.Helper.Server.msg_reporter()
+      id = Tapper.start(name: "main", sample: true, reporter: reporter, ttl: 100)
+
+      id_1 = Tapper.start_span(id, name: "child-1")
+      Tapper.update_span(id_1, [
+        Tapper.client_address(%Tapper.Endpoint{ip: {1, 2, 3, 4}}),
+        Tapper.http_host("my-client"),
+        Tapper.http_method("POST"),
+        Tapper.wire_send(),
+        Tapper.wire_receive()
+      ], [])
+
+      Tapper.finish_span(id_1)
+
+      Tapper.finish(id)
+
+      assert_receive {^ref, spans}
+
+      child_1 = protocol_span_by_name(spans, "child-1")
+
+      assert protocol_annotation_by_value(child_1, :ws), "expected :ws annotation on child span"
+      assert protocol_annotation_by_value(child_1, :wr), "expected :ws annotation on child span"
+      assert protocol_binary_annotation_by_key(child_1, :ca), "expected :ca binary annotation on child span"
+      assert protocol_binary_annotation_by_key(child_1, "http.host"), "expected http.host binary annotation on child span"
+      assert protocol_binary_annotation_by_key(child_1, "http.method"), "expected http.method binary annotation on child span"
+
+      assert child_1.timestamp <= protocol_annotation_by_value(child_1, :ws).timestamp
+    end
+
+    test "batch start_span" do
+      {ref, reporter} = Test.Helper.Server.msg_reporter()
+      id = Tapper.start(name: "main", sample: true, reporter: reporter, ttl: 100)
+
+      id_1 = Tapper.start_span(id, name: "child-1", annotations:
+        [
+          Tapper.client_address(%Tapper.Endpoint{ip: {1, 2, 3, 4}}),
+          Tapper.http_host("my-client"),
+          Tapper.http_method("POST"),
+          Tapper.wire_send(),
+          Tapper.wire_receive()
+        ]
+      )
+
+      Tapper.finish_span(id_1)
+
+      Tapper.finish(id)
+
+      assert_receive {^ref, spans}
+
+      child_1 = protocol_span_by_name(spans, "child-1")
+
+      assert protocol_annotation_by_value(child_1, :ws), "expected :ws annotation on child span"
+      assert protocol_annotation_by_value(child_1, :wr), "expected :ws annotation on child span"
+      assert protocol_binary_annotation_by_key(child_1, :ca), "expected :ca binary annotation on child span"
+      assert protocol_binary_annotation_by_key(child_1, "http.host"), "expected http.host binary annotation on child span"
+      assert protocol_binary_annotation_by_key(child_1, "http.method"), "expected http.method binary annotation on child span"
+
+      assert child_1.timestamp <= protocol_annotation_by_value(child_1, :ws).timestamp
+    end
+
   end
 
 end

@@ -13,7 +13,7 @@ defmodule Tracer.Server.AnnotationTest do
     timestamp = Timestamp.instant()
 
     {:noreply, state, _ttl} =
-        Tapper.Tracer.Server.handle_cast({:annotation, span_id, value, timestamp, nil}, trace)
+        Tapper.Tracer.Server.handle_cast(annotation_update_message(span_id, timestamp, {value, nil}), trace)
 
     assert is_map(state.spans)
 
@@ -42,7 +42,7 @@ defmodule Tracer.Server.AnnotationTest do
     endpoint = random_endpoint()
 
     {:noreply, state, _ttl} =
-      Tapper.Tracer.Server.handle_cast({:annotation, span_id, value, timestamp, endpoint}, trace)
+      Tapper.Tracer.Server.handle_cast(annotation_update_message(span_id, timestamp, {value, endpoint}), trace)
 
     assert is_map(state.spans)
 
@@ -71,14 +71,14 @@ defmodule Tracer.Server.AnnotationTest do
     endpoint_1 = random_endpoint()
 
     {:noreply, state_1, _ttl} =
-      Tapper.Tracer.Server.handle_cast({:annotation, span_id, value_1, timestamp_1, endpoint_1}, trace)
+      Tapper.Tracer.Server.handle_cast(annotation_update_message(span_id, timestamp_1, {value_1, endpoint_1}), trace)
 
     value_2 = :my_custom_annotation
     timestamp_2 = {instant + 1, offset}
     endpoint_2 = random_endpoint()
 
     {:noreply, state_2, _ttl} =
-      Tapper.Tracer.Server.handle_cast({:annotation, span_id, value_2, timestamp_2, endpoint_2}, state_1)
+      Tapper.Tracer.Server.handle_cast(annotation_update_message(span_id, timestamp_2, {value_2, endpoint_2}), state_1)
 
     span = state_2.spans[span_id]
 
@@ -110,7 +110,7 @@ defmodule Tracer.Server.AnnotationTest do
 
     no_span_id = Tapper.SpanId.generate()
     {:noreply, state, _ttl} =
-        Tapper.Tracer.Server.handle_cast({:annotation, no_span_id, value, timestamp, nil}, trace)
+        Tapper.Tracer.Server.handle_cast(annotation_update_message(no_span_id, timestamp, {value, nil}), trace)
 
     assert state.spans == trace.spans
     assert timestamp == state.last_activity
@@ -125,7 +125,7 @@ defmodule Tracer.Server.AnnotationTest do
     timestamp = Timestamp.instant()
 
     {:noreply, state, _ttl} =
-      Tapper.Tracer.Server.handle_cast({:binary_annotation, span_id, type, key, value, timestamp, nil}, trace)
+      Tapper.Tracer.Server.handle_cast(binary_annotation_update_message(span_id, timestamp, {type, key, value, nil}), trace)
 
     assert is_map(state.spans)
 
@@ -158,7 +158,7 @@ defmodule Tracer.Server.AnnotationTest do
     endpoint = random_endpoint()
 
     {:noreply, state, _ttl} =
-      Tapper.Tracer.Server.handle_cast({:binary_annotation, span_id, type, key, value, timestamp, endpoint}, trace)
+      Tapper.Tracer.Server.handle_cast(binary_annotation_update_message(span_id, timestamp, {type, key, value, endpoint}), trace)
 
     assert is_map(state.spans)
 
@@ -191,7 +191,7 @@ defmodule Tracer.Server.AnnotationTest do
     endpoint_1 = random_endpoint()
 
     {:noreply, state_1, _ttl} =
-      Tapper.Tracer.Server.handle_cast({:binary_annotation, span_id, type_1, key_1, value_1, timestamp_1, endpoint_1}, trace)
+      Tapper.Tracer.Server.handle_cast(binary_annotation_update_message(span_id, timestamp_1, {type_1, key_1, value_1, endpoint_1}), trace)
 
     type_2 = :i16
     key_2 = "http_status"
@@ -200,7 +200,7 @@ defmodule Tracer.Server.AnnotationTest do
     endpoint_2 = random_endpoint()
 
     {:noreply, state_2, _ttl} =
-      Tapper.Tracer.Server.handle_cast({:binary_annotation, span_id, type_2, key_2, value_2, timestamp_2, endpoint_2}, state_1)
+      Tapper.Tracer.Server.handle_cast(binary_annotation_update_message(span_id, timestamp_2, {type_2, key_2, value_2, endpoint_2}), state_1)
 
 
     span = state_2.spans[span_id]
@@ -236,7 +236,7 @@ defmodule Tracer.Server.AnnotationTest do
 
     no_span_id = Tapper.SpanId.generate()
     {:noreply, state, _ttl} =
-      Tapper.Tracer.Server.handle_cast({:binary_annotation, no_span_id, type, key, value, timestamp, nil}, trace)
+      Tapper.Tracer.Server.handle_cast(binary_annotation_update_message(no_span_id, timestamp, {type, key, value, nil}), trace)
 
     assert state.spans == trace.spans
     assert timestamp == state.last_activity
