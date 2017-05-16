@@ -73,7 +73,7 @@ defmodule Tapper.Tracer.Server do
     endpoint = %Tapper.Endpoint{} = (opts[:endpoint] || Trace.endpoint_from_config(config))
 
     # we shouldn't be stopped by the exit of the process that started the trace because async
-    # processes may still be processing; we use either an explicit `finish/1` or
+    # processes may still be processing; we use either an explicit `finish/2` or
     # the `ttl` option to terminate hanging traces.
     ttl = case Keyword.get(opts, :ttl) do
         ms when is_integer(ms) -> ms
@@ -173,7 +173,7 @@ defmodule Tapper.Tracer.Server do
     {:noreply, trace, trace.ttl}
   end
 
-  @doc "via Tapper.Tracer.finish_span/1"
+  @doc "via Tapper.Tracer.finish_span/2"
   def handle_cast(msg = {:finish_span, span_id, timestamp, opts}, trace) do
     Logger.debug(fn -> inspect({trace.trace_id, msg}) end)
 

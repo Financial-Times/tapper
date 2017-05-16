@@ -139,7 +139,7 @@ defmodule Tapper.Tracer do
 
   For `async` processes (where spans persist in another process), just call
   `finish/2` when done with the main span, passing the `async` option, and finish
-  child spans as normal using `finish_span/1`. When the trace times out, spans will
+  child spans as normal using `finish_span/2`. When the trace times out, spans will
   be sent to the server, marking any unfinished spans with a `timeout` annotation.
 
   ```

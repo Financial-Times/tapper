@@ -108,7 +108,7 @@ defmodule Tapper do
 
   For `async` processes (where spans persist in another process), call
   `finish/2` when done with the main span, passing the `async` option, and finish
-  child spans as normal using `finish_span/1`. When the trace times out, spans will
+  child spans as normal using `finish_span/2`. When the trace times out, spans will
   be sent to the server, marking any unfinished spans with a `timeout` annotation.
 
   ## Options
@@ -153,11 +153,29 @@ defmodule Tapper do
   """
   defdelegate finish_span(id, opts \\ []), to: Tracer
 
-  @doc "name (or rename) the current span."
+  @doc """
+  Commit annotations to a span; returns the same `Tapper.Id`.
+
+  Use with annotation helper functions:
+  ```
+  id = Tapper.start_span(id)
+
+  Tapper.update_span(id, [
+    Tapper.async(),
+    Tapper.name("child"),
+    Tapper.http_path("/server/x"),
+    Tapper.tag("x", 101)
+  ])
+  ```
+  """
+  defdelegate update_span(id, deltas, opts \\[]), to: Tracer
+
+
+  @doc "Annotation helper: name (or rename) the current span."
   def name(name), do: Tracer.name_delta(name)
 
   @doc """
-  Marks the span as asynchronous, adding an `async` annotation.
+  Annotation helper: marks the span as asynchronous, adding an `async` annotation.
 
   This is semantically equivalent to calling `finish/2` with the `async` option, and
   has the same time-out behaviour, but annotates individual spans as being asynchronous.
@@ -171,61 +189,61 @@ defmodule Tapper do
   """
   def async, do: Tracer.async_delta()
 
-  @doc "mark a server_receive event (`sr` annotation); see also `:server` option on `Tapper.start/1`."
+  @doc "Annotation helper: mark a server_receive event (`sr` annotation); see also `:server` option on `Tapper.start/1`."
   def server_receive, do: Tracer.annotation_delta(:sr)
 
-  @doc "mark a server_send event (`ss` annotation)."
+  @doc "Annotation helper: mark a server_send event (`ss` annotation)."
   def server_send, do: Tracer.annotation_delta(:ss)
 
-  @doc "mark a client_send event (`cs` annotation); see also `:client` option on `Tapper.start/1`."
+  @doc "Annotation helper: mark a client_send event (`cs` annotation); see also `:client` option on `Tapper.start/1`."
   def client_send, do: Tracer.annotation_delta(:cs)
 
-  @doc "mark a client_receive event (`cr` annotation)."
+  @doc "Annotation helper: mark a client_receive event (`cr` annotation)."
   def client_receive, do: Tracer.annotation_delta(:cr)
 
-  @doc "mark a send event (`ws` annotation)."
+  @doc "Annotation helper: mark a send event (`ws` annotation)."
   def wire_send, do: Tracer.annotation_delta(:ws)
 
-  @doc "mark a receive event (`wr` annotation)."
+  @doc "Annotation helper: mark a receive event (`wr` annotation)."
   def wire_receive, do: Tracer.annotation_delta(:wr)
 
-  @doc "mark an error event (`error` annotation)."
+  @doc "Annotation helper: mark an error event (`error` annotation)."
   def error, do: Tracer.annotation_delta(:error)
 
-  @doc "Tag with the client's address (`ca` binary annotation)."
+  @doc "Annotation helper: Tag with the client's address (`ca` binary annotation)."
   def client_address(endpoint), do: Tracer.binary_annotation_delta(:bool, :ca, true, endpoint)
 
-  @doc "Tag with the server's address (`sa` binary annotation)."
+  @doc "Annotation helper: Tag with the server's address (`sa` binary annotation)."
   def server_address(endpoint), do: Tracer.binary_annotation_delta(:bool, :sa, true, endpoint)
 
-  @doc "Tag with HTTP host information (`http.host` binary annotation)."
+  @doc "Annotation helper: Tag with HTTP host information (`http.host` binary annotation)."
   def http_host(hostname) when is_binary(hostname), do: Tracer.binary_annotation_delta(:string, "http.host", hostname)
 
-  @doc "Tag with HTTP method information (`http.method` binary annotation)."
+  @doc "Annotation helper: Tag with HTTP method information (`http.method` binary annotation)."
   def http_method(method) when is_binary(method) or is_atom(method), do: Tracer.binary_annotation_delta(:string, "http.method", method)
 
-  @doc "Tag with HTTP path information: should be without query parameters (`http.path` binary annotation)"
+  @doc "Annotation helper: Tag with HTTP path information: should be without query parameters (`http.path` binary annotation)"
   def http_path(path) when is_binary(path), do: Tracer.binary_annotation_delta(:string, "http.path", path)
 
-  @doc "Tag with full HTTP URL information (`http.url` binary annotation)"
+  @doc "Annotation helper: Tag with full HTTP URL information (`http.url` binary annotation)"
   def http_url(url) when is_binary(url), do: Tracer.binary_annotation_delta(:string, "http.url", url)
 
-  @doc "Tag with an HTTP status code (`http.status_code` binary annotation)"
+  @doc "Annotation helper: Tag with an HTTP status code (`http.status_code` binary annotation)"
   def http_status_code(code) when is_integer(code), do: Tracer.binary_annotation_delta(:i16, "http.status_code", code)
 
-  @doc "Tag with an HTTP request size (`http.request.size` binary annotation)"
+  @doc "Annotation helper: Tag with an HTTP request size (`http.request.size` binary annotation)"
   def http_request_size(size) when is_integer(size), do: Tracer.binary_annotation_delta(:i64, "http.request.size", size)
 
-  @doc "Tag with an HTTP reponse size (`http.response.size` binary annotation)"
+  @doc "Annotation helper: Tag with an HTTP reponse size (`http.response.size` binary annotation)"
   def http_response_size(size) when is_integer(size), do: Tracer.binary_annotation_delta(:i64, "http.response.size", size)
 
-  @doc "Tag with a database query (`sql.query` binary annotation)"
+  @doc "Annotation helper: Tag with a database query (`sql.query` binary annotation)"
   def sql_query(query) when is_binary(query), do: Tracer.binary_annotation_delta(:string, "sql.query", query)
 
-  @doc "Tag with an error message (`error` binary annotation)"
+  @doc "Annotation helper: Tag with an error message (`error` binary annotation)"
   def error_message(message) when is_binary(message), do: Tracer.binary_annotation_delta(:string, :error, message)
 
-  @doc "Tag with a general (key,value,host) binary annotation, determining type of annotation automatically"
+  @doc "Annotation helper: Tag with a general (key,value,host) binary annotation, determining type of annotation automatically"
   def tag(key, value, endpoint \\ nil)
   def tag(key, value, endpoint) when (is_binary(key) or is_atom(key)) and is_binary(value), do: Tracer.binary_annotation_delta(:string, key, value, endpoint)
   def tag(key, value, endpoint) when (is_binary(key) or is_atom(key)) and is_boolean(value), do: Tracer.binary_annotation_delta(:bool, key, value, endpoint)
@@ -233,11 +251,11 @@ defmodule Tapper do
   def tag(key, value, endpoint) when (is_binary(key) or is_atom(key)) and is_float(value), do: Tracer.binary_annotation_delta(:double, key, value, endpoint)
   def tag(key, value, endpoint) when (is_binary(key) or is_atom(key)), do: Tracer.binary_annotation_delta(:string, key, inspect(value), endpoint)
 
-  @doc "mark an event (annotation), general interface."
+  @doc "Annotation helper: mark an event (annotation), general interface."
   def annotation(value, endpoint \\ nil) when not is_map(value), do: Tracer.annotation_delta(value, endpoint)
 
   @doc """
-  Tag with a general binary annotation.
+  Annotation helper: tag with a general binary annotation.
 
   ```
   binary_annotation(id, :i16, "tab", 4)
@@ -246,8 +264,5 @@ defmodule Tapper do
   def binary_annotation(type, key, value, endpoint \\ nil) when type in @binary_annotation_types do
      Tracer.binary_annotation_delta(type, key, value, endpoint)
   end
-
-  @doc "commit annotations to a span."
-  defdelegate update_span(id, deltas, opts \\[]), to: Tracer
 
 end
