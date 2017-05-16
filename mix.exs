@@ -8,7 +8,9 @@ defmodule Tapper.Mixfile do
      elixirc_paths: elixirc_paths(Mix.env),
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
+     name: "Tapper",
      source_url: "https://github.com/Financial-Times/tapper",
+     description: description(),
      package: package(),
      docs: docs(),
      deps: deps()]
@@ -24,10 +26,16 @@ defmodule Tapper.Mixfile do
   end
 
   def package do
-    [ files: ["lib", "mix.exs", "README.md"],
+    [
       maintainers: ["Ellis Pritchard"],
       licenses: ["MIT"],
       links: %{"Github" => "https://github.com/Financial-Times/tapper"} ]
+  end
+
+  defp description do
+    """
+    Implements an interface for recording traces and sending them to a Zipkin server.
+    """
   end
 
   def docs do
