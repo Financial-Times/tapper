@@ -2,6 +2,8 @@
 
 Implements an interface for recording traces and sending them to a [Zipkin](http://zipkin.io/) server.
 
+[![Inline docs](http://inch-ci.org/github/Financial-Times/tapper.svg)](http://inch-ci.org/github/Financial-Times/tapper)
+
 ## Synopsis
 
 ### A Client
@@ -74,6 +76,8 @@ Tapper.finish(id)
 #### See also
 [`Tapper.Plug`](https://github.com/Financial-Times/tapper_plug) - [Plug](https://github.com/elixir-lang/plug) integration: decodes incoming [B3](https://github.com/openzipkin/b3-propagation) trace headers, joining or sampling traces.
 
+The API documentation can be found at [https://hexdocs.pm/tapper](https://hexdocs.pm/tapper).
+
 ## Implementation
 
 The Tapper API starts, and communicates with a supervised `GenServer` process (`Tapper.Tracer.Server`), with one server started per trace; all traces are thus isolated.
@@ -109,8 +113,6 @@ def deps do
   [{:tapper, "~> 0.1.0"}]
 end
 ```
-
-The documentation can be found at [https://hexdocs.pm/tapper](https://hexdocs.pm/tapper).
 
 ## Configuration
 
