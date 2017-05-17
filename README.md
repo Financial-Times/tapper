@@ -2,7 +2,7 @@
 
 Implements an interface for recording traces and sending them to a [Zipkin](http://zipkin.io/) server.
 
-[![Inline docs](http://inch-ci.org/github/Financial-Times/tapper.svg)](http://inch-ci.org/github/Financial-Times/tapper)
+[![Hex pm](http://img.shields.io/hexpm/v/tapper.svg?style=flat)](https://hex.pm/packages/tapper) [![Inline docs](http://inch-ci.org/github/Financial-Times/tapper.svg)](http://inch-ci.org/github/Financial-Times/tapper) [![Build Status](https://travis-ci.org/Financial-Times/tapper.svg?branch=master)](https://travis-ci.org/Financial-Times/tapper)
 
 ## Synopsis
 
