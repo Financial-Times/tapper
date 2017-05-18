@@ -174,6 +174,12 @@ defmodule Tracer.Server.InitTest do
     assert binary_annotation_by_key(trace.spans[span_id], "temp")
   end
 
+  test "init with non-list annotations: adds annotation" do
+    {trace, span_id} = init_with_opts(name: "name", annotations: Tracer.annotation_delta(:ws))
+
+    assert annotation_by_value(trace.spans[span_id], :ws)
+  end
+
   test "init with conflicting shortcut annotations still adds annotations" do
     alternative_endpoint = random_endpoint()
     {trace, span_id} = init_with_opts(name: "name", annotations: [

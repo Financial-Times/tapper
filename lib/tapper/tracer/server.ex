@@ -198,8 +198,11 @@ defmodule Tapper.Tracer.Server do
   end
 
   def apply_updates(trace, nil, _span_id, _timestamp, _endpoint), do: trace
-  def apply_updates(trace, deltas, span_id, timestamp, endpoint) do
+  def apply_updates(trace, deltas, span_id, timestamp, endpoint) when is_list(deltas) do
     Enum.reduce(deltas, trace, &(apply_update(&1, &2, span_id, timestamp, endpoint)))
+  end
+  def apply_updates(trace, delta, span_id, timestamp, endpoint) when not is_list(delta) do
+    apply_update(delta, trace, span_id, timestamp, endpoint)
   end
 
   def apply_update({:annotate, {value, endpoint}}, trace = %Trace{}, span_id, timestamp, default_endpoint) do
@@ -218,10 +221,15 @@ defmodule Tapper.Tracer.Server do
     update_span(trace, span_id, fn(span) -> %{span | name: name} end)
   end
 
-  def apply_update(:async, trace = %Trace{}, span_id, timestamp, default_endpoint) do
+  def apply_update({:async, _}, trace = %Trace{}, span_id, timestamp, default_endpoint) do
     annotation = Annotations.annotation(:async, timestamp, default_endpoint)
     trace = update_span(trace, span_id, fn(span) -> %{span | annotations: [annotation | span.annotations]} end)
     %{trace | async: true}
+  end
+
+  def apply_update(value, trace = %Trace{}, span_id, timestamp, default_endpoint) when is_atom(value) do
+    annotation = Annotations.annotation(value, timestamp, default_endpoint)
+    update_span(trace, span_id, fn(span) -> %{span | annotations: [annotation | span.annotations]} end)
   end
 
   @doc "update a span (identified by span id) in a trace with an updater function, taking care of case where span does not exist."

@@ -293,7 +293,7 @@ defmodule TapperTest do
         Tapper.http_host("my-client"),
         Tapper.http_method("POST"),
         Tapper.wire_send(),
-        Tapper.wire_receive()
+        :wr
       ], [])
 
       Tapper.finish_span(id_1)
@@ -336,7 +336,7 @@ defmodule TapperTest do
       child_1 = protocol_span_by_name(spans, "child-1")
 
       assert protocol_annotation_by_value(child_1, :ws), "expected :ws annotation on child span"
-      assert protocol_annotation_by_value(child_1, :wr), "expected :ws annotation on child span"
+      assert protocol_annotation_by_value(child_1, :wr), "expected :wr annotation on child span"
       assert protocol_binary_annotation_by_key(child_1, :ca), "expected :ca binary annotation on child span"
       assert protocol_binary_annotation_by_key(child_1, "http.host"), "expected http.host binary annotation on child span"
       assert protocol_binary_annotation_by_key(child_1, "http.method"), "expected http.method binary annotation on child span"

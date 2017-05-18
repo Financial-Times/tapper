@@ -8,7 +8,7 @@ defmodule Tapper.Tracer.Api do
   @type name_delta :: {:name, name :: String.t | atom()}
 
   @typedoc "Delta for async span"
-  @type async_delta :: :async
+  @type async_delta :: {:async, boolean()}
 
   @type annotation_value :: String.t | atom()
 
@@ -16,7 +16,7 @@ defmodule Tapper.Tracer.Api do
   @type annotation_delta :: {
     :annotate,
     {value :: annotation_value(),  endpoint :: maybe_endpoint()}
-  }
+  } | annotation_value()
 
   @type binary_annotation_type :: :string | :bool | :i16 | :i32 | :i64 | :double | :bytes
   @type binary_annotation_key :: String.t | atom()
@@ -44,7 +44,7 @@ defmodule Tapper.Tracer.Api do
     opts :: Keyword.t) :: Tapper.Id.t
 
   @callback start_span(tapper_id :: Tapper.Id.t, opts :: Keyword.t) :: Tapper.Id.t
-  @callback update_span(tapper_id :: Tapper.Id.t, deltas :: [delta], opts :: Keyword.t) :: Tapper.Id.t
+  @callback update_span(tapper_id :: Tapper.Id.t, deltas :: delta | [delta], opts :: Keyword.t) :: Tapper.Id.t
   @callback finish_span(tapper_id :: Tapper.Id.t, opts :: Keyword.t) :: Tapper.Id.t
 
   @callback finish(tapper_id :: Tapper.Id.t, opts :: Keyword.t) :: :ok
