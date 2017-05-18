@@ -1,9 +1,9 @@
 defmodule Tapper.Tracer.Trace do
-  @moduledoc "Tracer internal state, and functions to convert this to protocol spans (Tapper.Protocol)"
+  @moduledoc "Tracer internal state, and functions to convert this to protocol spans (`Tapper.Protocol.Span`)"
 
   alias Tapper.Timestamp
 
-  @doc "Tracer state: the state of a single trace session."
+  @typedoc "Tracer state: the state of a single trace session."
   defstruct [
     :config,        # configuration from supervisor
     :trace_id,      # root trace_id
@@ -24,7 +24,7 @@ defmodule Tapper.Tracer.Trace do
     trace_id: Tapper.TraceId.t,
     span_id: Tapper.SpanId.t,
     parent_id: Tapper.SpanId.t | :root,
-    spans: %{required(Tapper.SpanId.t) => Tapper.Traceer.SpanInfo.t},
+    spans: %{required(Tapper.SpanId.t) => Tapper.Tracer.Trace.SpanInfo.t},
     config: map(),
     sample: boolean(),
     debug: boolean(),
@@ -38,6 +38,8 @@ defmodule Tapper.Tracer.Trace do
 
   defmodule SpanInfo do
     @moduledoc false
+    alias Tapper.Tracer.Trace.Annotation
+    alias Tapper.Tracer.Trace.BinaryAnnotation
 
     defstruct [
       :name,
@@ -49,10 +51,11 @@ defmodule Tapper.Tracer.Trace do
       :binary_annotations
     ]
 
+    @typedoc "A span inside a trace"
     @type t :: %__MODULE__{
       name: String.t,
-      id: Tapper.SpandId.t,
-      parent_id: Tapper.SpandId.t,
+      id: Tapper.SpanId.t,
+      parent_id: Tapper.SpanId.t,
       start_timestamp: Timestamp.timestamp(),
       end_timestamp: Timestamp.timestamp(),
       annotations: [Annotation.t],
@@ -63,6 +66,7 @@ defmodule Tapper.Tracer.Trace do
   defmodule Annotation do
     @moduledoc false
 
+    @typedoc "an event annotation"
     defstruct [
       :timestamp,
       :value,
@@ -93,6 +97,8 @@ defmodule Tapper.Tracer.Trace do
 
   defmodule BinaryAnnotation do
     @moduledoc false
+
+    @typedoc "a binary annotation"
     defstruct [
       :key,
       :value,
@@ -129,6 +135,7 @@ defmodule Tapper.Tracer.Trace do
     end
   end
 
+  @doc false
   @spec endpoint_from_config(map()) :: Tapper.Endpoint.t
   def endpoint_from_config(%{host_info: %{ip: ip, system_id: system_id}}) do
     %Tapper.Endpoint{
@@ -138,8 +145,10 @@ defmodule Tapper.Tracer.Trace do
     }
   end
 
+  @doc false
   def has_annotation?(trace = %__MODULE__{}, span_id, value), do: has_annotation?(trace.spans[span_id], value)
 
+  @doc false
   def has_annotation?(nil, _value), do: false
 
   def has_annotation?(%__MODULE__.SpanInfo{annotations: annotations}, value) do

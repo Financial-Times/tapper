@@ -3,6 +3,8 @@ defmodule Tapper.Id do
   The ID used with the API; tracks nested spans.
 
   > Clients should consider this ID opaque!
+
+  Use `destructure/1` to obtain trace parameters. NB special value `:ignore` produces no-ops in API functions.
   """
 
   defstruct [
@@ -18,9 +20,11 @@ defmodule Tapper.Id do
   alias Tapper.TraceId
   alias Tapper.SpanId
 
+  @typedoc false
   @type t :: %__MODULE__{trace_id: Tapper.TraceId.t, span_id: Tapper.SpanId.t, parent_ids: [Tapper.SpanId.t], sampled: boolean(), origin_parent_id: Tapper.SpanId.t | :root, sample: boolean(), debug: boolean()} | :ignore
 
   @doc "Create id from trace parameters"
+  @spec init(trace_id :: TraceId.t, span_id :: SpanId.t, parent_span_id :: SpanId.t, sample :: boolean, debug :: boolean) :: t
   def init(trace_id, span_id, parent_span_id, sample, debug) do
     %Tapper.Id{
       trace_id: trace_id,
@@ -34,6 +38,7 @@ defmodule Tapper.Id do
   end
 
   @doc "is the trace with this id being sampled?"
+  @spec sampled?(id :: t) :: boolean
   def sampled?(%Tapper.Id{sampled: sampled}), do: sampled
 
   @doc "Push the current span id onto the parent stack, and set new span id, returning updated Tapper Id"
@@ -60,7 +65,7 @@ defmodule Tapper.Id do
     Tapper.Id.destructure(id)
   ```
   """
-  @spec destructure(Tapper.Id.t) :: {String.t, String.t, String.t, boolean(), boolean()}
+  @spec destructure(Tapper.Id.t) :: {String.t, String.t, String.t, boolean, boolean}
   def destructure(%Tapper.Id{trace_id: trace_id, span_id: span_id, origin_parent_id: :root, parent_ids: [], sample: sample, debug: debug}) do
     {TraceId.to_hex(trace_id), SpanId.to_hex(span_id), "", sample, debug}
   end
@@ -86,6 +91,7 @@ defmodule Tapper.Id do
 
   defimpl Inspect do
     import Inspect.Algebra
+    @doc false
     def inspect(id, _opts) do
       sampled = if(id.sampled, do: "SAMPLED", else: "-")
       concat ["#Tapper.Id<", Tapper.TraceId.format(id.trace_id), ":", Tapper.SpanId.format(id.span_id), ",", sampled, ">"]
@@ -93,6 +99,7 @@ defmodule Tapper.Id do
   end
 
   defimpl String.Chars do
+    @doc false
     def to_string(id) do
       sampled = if(id.sampled, do: "SAMPLED", else: "-")
       "#Tapper.Id<" <> Tapper.TraceId.format(id.trace_id) <> ":" <> Tapper.SpanId.format(id.span_id) <> "," <> sampled <> ">"
@@ -105,28 +112,36 @@ defmodule Tapper.TraceId do
   @moduledoc """
   Generate, parse or format a top-level trace id.
 
-  The TraceId comprises the 128-bit Zipkin id, with a second component which is a per-VM unique key,
-  to disambiguate parallel requests to the same server, so each request gets it's own trace server,
-  which prevents lifecycle confusion.
+  The TraceId comprises the 128-bit Zipkin id, with a second component which is generated using a
+  per-VM unique number sequence, to disambiguate parallel requests to the same server, so each request
+  gets it's own trace server, which prevents lifecycle confusion.
   """
   @type int128 :: integer()
 
   @type t :: {int128, integer()}
 
+  @doc "generate a trace id"
   @spec generate() :: t
   def generate() do
     <<id :: size(128)>> = :crypto.strong_rand_bytes(16)
     {id, uniq()}
   end
 
+  @doc "format a trace id for logs etc."
+  @spec format(trace_id :: t) :: String.t
+  def format(trace_id)
   def format({id, unique}) do
     "#Tapper.TraceId<" <> Tapper.Id.Utils.to_hex(id) <> "." <> Integer.to_string(unique) <> ">"
   end
 
+  @doc "format a trace id to a hex string, for propagation etc."
+  @spec to_hex(trace_id :: t) :: String.t
+  def to_hex(trace_id)
   def to_hex({id, _unique}) do
     Tapper.Id.Utils.to_hex(id)
   end
 
+  @doc "parse a trace id from a hex string, for propagation etc."
   @spec parse(String.t) :: {:ok, t} | :error
   def parse(s) do
     case Integer.parse(s, 16) do
@@ -148,20 +163,26 @@ defmodule Tapper.SpanId do
   @type int64 :: integer()
   @type t :: int64()
 
-  @spec generate() :: integer()
+  @doc "generate a span id"
+  @spec generate() :: t
   def generate() do
     <<id :: size(64)>> = :crypto.strong_rand_bytes(8)
     id
   end
 
+  @doc "format a span id for logs etc."
+  @spec format(span_id :: t) :: String.t
   def format(span_id) do
     "#Tapper.SpanId<" <> Tapper.Id.Utils.to_hex(span_id) <> ">"
   end
 
+  @doc "format a span id as a hex string, for propagation etc."
+  @spec to_hex(span_id :: t) :: String.t
   def to_hex(span_id) do
     Tapper.Id.Utils.to_hex(span_id)
   end
 
+  @doc "parse a span id from a hex string, for propagation etc."
   @spec parse(String.t) :: {:ok, t} | :error
   def parse(s) do
     case Integer.parse(s, 16) do

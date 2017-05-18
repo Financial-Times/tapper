@@ -120,7 +120,7 @@ defmodule Tapper do
   defdelegate finish_span(id, opts \\ []), to: Tracer
 
   @spec update_span(tapper_id :: Tapper.Id.t, deltas :: Api.delta | [Api.delta], opts :: Keyword.t) :: Tapper.Id.t
-  defdelegate update_span(id, deltas, opts \\[]), to: Tracer
+  defdelegate update_span(id, deltas, opts \\ []), to: Tracer
 
   @doc "Annotation helper: name (or rename) the current span."
   @spec name(name :: String.t | atom) :: Api.name_delta
