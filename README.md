@@ -111,7 +111,7 @@ For release versions, the package can be installed by adding `tapper` to your li
 
 ```elixir
 def deps do
-  [{:tapper, "~> 0.1.0"}]
+  [{:tapper, "~> 0.2.0"}]
 end
 ```
 
