@@ -51,7 +51,8 @@ id = Tapper.join(trace_id, span_id, parent_span_id, sample, debug, annotations: 
 
 # call another service
 id = Tapper.start_span(id, name: "fetch-details", annotations: [
-    Tapper.http_path("/service/xx")
+    Tapper.http_path("/service/xx"),
+    Tapper.http_host("a-service.com")
 ])
 ...
 

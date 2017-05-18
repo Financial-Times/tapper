@@ -1,5 +1,9 @@
 defmodule Tapper.Tracer.Annotations do
-  @moduledoc "Helpers for creating annotations"
+  @moduledoc """
+  Helpers for creating annotations in `Tapper.Tracer.Server`.
+
+  > For client API, see helper functions in `Tapper` (`Tapper.annotation/2`, `Tapper.binary_annotation/4` etc.).
+  """
 
   alias Tapper.Tracer.Trace
   alias Tapper.Timestamp

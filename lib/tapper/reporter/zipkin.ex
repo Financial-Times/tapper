@@ -7,7 +7,7 @@ defmodule Tapper.Reporter.Zipkin do
 
   ## See also
 
-  * `Tapper.Application` - reporter is selection.
+  * `Tapper.Application` - reporter selection, also `Tapper.start/1`, `Tapper.join/6` via `reporter` option.
   * `Tapper.Reporter.Api` - the implemented behaviour.
 
   ## Configuration

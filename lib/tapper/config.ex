@@ -1,5 +1,10 @@
 defmodule Tapper.Config do
-  @moduledoc "Support functions for configuration parsing"
+  @moduledoc """
+  Support functions for configuration parsing.
+
+  For Tapper configuration, see `Tapper.Application`, for Zipkin configuration, see
+  `Tapper.Reporter.Zipkin`.
+  """
 
   def env({:system, var}), do: System.get_env(var)
   def env(val), do: val

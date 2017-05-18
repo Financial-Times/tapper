@@ -25,9 +25,14 @@ defmodule Tapper.Application do
   | --          | --       | --      |
   | `system_id` | String.t | This application's id; used for `service_name` in default [`Endpoint`](Tapper.Endpoint.html) used in annotations; default `unknown` |
   | `ip`        | tuple    | This application's principle IPV4 or IPV6 address, as 4- or 8-tuple of ints; defaults to IP of first non-loopback interface, or `{127.0.0.1}` if none. |
+  | `port`      | integer  | The application's principle port, e.g. HTTP port 80; defaults to 0 |
   | `reporter`  | atom     | Module implementing `Tapper.Reporter.Api` to use for reporting spans, defaults to `Tapper.Reporter.Console`. |
 
   All keys support the Phoenix-style `{:system, var}` format, to allow lookup from shell environment variables, e.g. `{:system, "PORT"}` to read `PORT` environment variable.
+
+  Config values will be converted to the expected type, principally so that string values can be handled from environment variables:
+  *  `ip` is expected in dotted IPV4 or colon IPV6 notation, see Erlang's [`inet:parse_address/1`](http://erlang.org/doc/man/inet.html#parse_address-1)
+  * `reporter` can be specified as a string which will be converted to an atom, following Elixir's module name rules.
 
   ## Example
   In `config.exs` etc.:

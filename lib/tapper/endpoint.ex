@@ -1,6 +1,6 @@
 defmodule Tapper.Endpoint do
   @moduledoc """
-  Endpoint description struct; used everywhere an endpoint is required.
+  Endpoint description struct; used in the API where a host endpoint is required.
 
   ## Example
   ```
@@ -10,12 +10,20 @@ defmodule Tapper.Endpoint do
     port: 80
   }
 
-  Tapper.server_address(id, endpoint)
+  Tapper.update_span(id, Tapper.server_address(endpoint))
   ```
 
   The `ip` field is either an IPV4 or an IPV6 address, as a 4- or 8-tuple; the
   port will default to `0`.
 
+  ### The Default Endpoint
+  Most APIs support passing an `Endpoint`, but do not require it. This is because in
+  most circumstances, the endpoint is that belonging to the caller, i.e. the server
+  or clients host; Tapper provides a default `Endpoint` in this case, set by
+  the application from configuration, on start-up. See `Tapper.Application` for
+  details.
+
+  ### DNS lookup
   Instead of an `ip` address, the `hostname` field can provide a DNS name
   (as a `String.t` or `atom`) which will be resolved to an IP address
   (see `Tapper.Tracer.Trace.Convert`) when the span is reported:
@@ -30,8 +38,8 @@ defmodule Tapper.Endpoint do
 
   > NB because DNS resolution happens asynchronously, the resulting IP address may
   not correspond the actual IP address connected to, e.g. if the service
-  is being IP load-balanced (e.g. by A record or AWS ALB). You can use the
-  `resolve/1` function before sending an annotation to make it *slightly more likely*
+  is being IP load-balanced by an AWS ALB. You can use the
+  `resolve/1` function before adding an annotation to make it *slightly more likely*
   to be the same IP address, at the expense of doing this in the client process,
   rather than in Tapper's server.
   """
@@ -52,6 +60,7 @@ defmodule Tapper.Endpoint do
     hostname: String.t | atom() | nil
   }
 
+  @doc "Resolve the DNS `hostname` field in an `Endpoint`, setting the `ip` address field."
   @spec resolve(endpoint :: __MODULE__.t) :: __MODULE__.t
   def resolve(endpoint)
 
@@ -62,6 +71,7 @@ defmodule Tapper.Endpoint do
 
   def resolve(endpoint = %__MODULE__{}), do: endpoint
 
+  @doc false
   def apply_hostent(endpoint, {:ok, {:hostent, _, _, :inet, _, [ipv4 | _]}}) do
     %{endpoint | ip: ipv4}
   end
