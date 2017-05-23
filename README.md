@@ -1,5 +1,7 @@
 # Tapper - Zipkin client for Elixir.
 
+[![Join the chat at https://gitter.im/Financial-Times/tapper](https://badges.gitter.im/Financial-Times/tapper.svg)](https://gitter.im/Financial-Times/tapper?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Implements an interface for recording traces and sending them to a [Zipkin](http://zipkin.io/) server.
 
 [![Hex pm](http://img.shields.io/hexpm/v/tapper.svg?style=flat)](https://hex.pm/packages/tapper) [![Inline docs](http://inch-ci.org/github/Financial-Times/tapper.svg)](http://inch-ci.org/github/Financial-Times/tapper) [![Build Status](https://travis-ci.org/Financial-Times/tapper.svg?branch=master)](https://travis-ci.org/Financial-Times/tapper) [![Join the chat at https://gitter.im/Financial-Times/tapper](https://badges.gitter.im/Financial-Times/tapper.svg)](https://gitter.im/Financial-Times/tapper?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
