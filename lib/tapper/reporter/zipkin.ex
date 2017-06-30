@@ -12,14 +12,16 @@ defmodule Tapper.Reporter.Zipkin do
 
   ## Configuration
 
-  | key | purpose |
-  | --- | ------- |
-  | `collector_url` | Full URL of Zipkin collector endpoint |
+  | key | purpose | default/required |
+  | --- | ------- | ---------------- |
+  | `collector_url` | Full URL of Zipkin collector endpoint<sup>[1]</sup> | Required |
+  | `client_opts` | additional options for `HTTPoison` client, see `HTTPoison.Base.request/5` | `ssl: [{:versions, [:'tlsv1.2']}], hackney: [pool: __MODULE__]` |
 
   e.g.
   ```
   config :tapper, Tapper.Reporter.Zipkin,
     collector_url: "https://my-zipkin.domain.com:9411/api/v1/spans"
+    client_opts: [timeout: 10000]
   ```
 
   <sup>[1]</sup> Tapper uses the [`DeferredConfig`](https://hexdocs.pm/deferred_config/readme.html) library to
@@ -31,7 +33,7 @@ defmodule Tapper.Reporter.Zipkin do
 
   @behaviour Tapper.Reporter.Api
 
-  @options hackney: [ssl: [{:versions, [:'tlsv1.2']}], recv_timeout: 5000, hackney: [pool: :tapper]]
+  @options ssl: [{:versions, [:'tlsv1.2']}], hackney: [pool: __MODULE__]
 
   def ingest(spans) when is_list(spans) do
     Logger.debug(fn -> "Sending #{length(spans)} spans to Zipkin" end)
@@ -40,7 +42,7 @@ defmodule Tapper.Reporter.Zipkin do
     url = url()
     data = process_request_body(spans)
     headers = process_request_headers([])
-    options = process_request_options([])
+    options = process_request_options(@options)
 
     result = HTTPoison.post(url, data, headers, options)
 
@@ -70,7 +72,8 @@ defmodule Tapper.Reporter.Zipkin do
   end
 
   def process_request_options(options) do
-    [@options | options]
+    client_opts = config()[:client_opts] || []
+    client_opts ++ options
   end
 
   def config() do
