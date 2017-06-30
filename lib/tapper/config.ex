@@ -6,9 +6,6 @@ defmodule Tapper.Config do
   `Tapper.Reporter.Zipkin`.
   """
 
-  def env({:system, var}), do: System.get_env(var)
-  def env(val), do: val
-
   def to_int(val) when is_integer(val), do: val
   def to_int(val) when is_binary(val), do: String.to_integer(val)
 

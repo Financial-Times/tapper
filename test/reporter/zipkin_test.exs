@@ -32,9 +32,13 @@ defmodule ZipkinTest do
   end
 
   test "adds hackney options" do
-    options = Tapper.Reporter.Zipkin.process_request_options([foo: :bar])
+    Application.put_env(:tapper, Tapper.Reporter.Zipkin, client_opts: [a: 1, b: 2])
 
-    assert hackney: [pool: :tapper] in options
+    options = Tapper.Reporter.Zipkin.process_request_options(foo: :bar)
+
+    assert a: 1 in options
+    assert b: 2 in options
+    assert foo: :bar in options
   end
 
   test "url from config" do

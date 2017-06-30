@@ -58,12 +58,13 @@ defmodule Tapper.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:poison, "~> 3.1.0"},
-      {:httpoison, "~> 0.11.0"},
+      {:poison, "~> 3.1"},
+      {:httpoison, "~> 0.12"},
+      {:deferred_config, "~> 0.1"},
       {:credo, "~> 0.5", only: [:dev, :test]},
       {:mix_test_watch, "~> 0.3", only: :dev, runtime: false},
       {:ex_doc, "~> 0.14", only: :dev, runtime: false},
-      {:dialyxir, "~> 0.5.0", only: [:dev]},
+      {:dialyxir, "~> 0.5", only: [:dev]},
       {:inch_ex, ">= 0.0.0", only: :docs}
     ]
   end

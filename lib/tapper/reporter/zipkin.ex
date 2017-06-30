@@ -21,11 +21,13 @@ defmodule Tapper.Reporter.Zipkin do
   config :tapper, Tapper.Reporter.Zipkin,
     collector_url: "https://my-zipkin.domain.com:9411/api/v1/spans"
   ```
+
+  <sup>[1]</sup> Tapper uses the [`DeferredConfig`](https://hexdocs.pm/deferred_config/readme.html) library to
+  resolve all configuration under the `:tapper` key, so see its documention for options.
+
   """
 
   require Logger
-
-  import Tapper.Config, only: [env: 1]
 
   @behaviour Tapper.Reporter.Api
 
@@ -54,8 +56,9 @@ defmodule Tapper.Reporter.Zipkin do
     :ok
   end
 
+  @spec url() :: String.t
   def url() do
-    env(config()[:collector_url]) || raise ArgumentError, "#{__MODULE__} reporter needs collector_url configuration"
+    config()[:collector_url] || raise ArgumentError, "#{__MODULE__} reporter needs collector_url configuration"
   end
 
   def process_request_body(spans) do
