@@ -189,6 +189,64 @@ defmodule TapperIdTest do
     end
   end
 
+  describe "contextual ids" do
+
+    test "put/get in context" do
+      Tapper.Id.delete_in_context()
+
+      id = Tapper.Id.test_id()
+
+      ^id = Tapper.Id.in_context(id)
+
+      assert ^id = Tapper.Id.in_context()
+    end
+
+    test "put overrides existing value" do
+      Tapper.Id.delete_in_context()
+
+      id1 = Tapper.Id.test_id()
+
+      ^id1 = Tapper.Id.in_context(id1)
+
+      id2 = Tapper.Id.test_id()
+
+      ^id2 = Tapper.Id.in_context(id2)
+
+      assert ^id2 = Tapper.Id.in_context()
+    end
+
+    test "get in context when no id returns :ignore by default" do
+      Application.delete_env(:tapper, :debug_context)
+      Tapper.Id.delete_in_context()
+
+      assert :ignore = Tapper.Id.in_context
+    end
+
+    test "get in context when no id with debug :warn returns :ignore" do
+      Application.put_env(:tapper, :debug_context, :warn)
+      Tapper.Id.delete_in_context()
+
+      Logger.disable(self()) # suppress log output
+
+      assert :ignore = Tapper.Id.in_context()
+    end
+
+    test "get in context when no id with debug true raises" do
+      Application.put_env(:tapper, :debug_context, true)
+      Tapper.Id.delete_in_context()
+
+      assert_raise RuntimeError, fn -> Tapper.Id.in_context() end
+    end
+
+    test "get in context when no id with debug truthy raises" do
+      Application.put_env(:tapper, :debug_context, :anything)
+      Tapper.Id.delete_in_context()
+
+      assert_raise RuntimeError, fn -> Tapper.Id.in_context() end
+    end
+
+  end
+
   describe "destructure/1" do
     test "destructure main span with non-root origin parent span" do
       id = %Tapper.Id{
@@ -290,24 +348,26 @@ defmodule TapperIdTest do
       trace_id: Tapper.TraceId.generate(),
       span_id: Tapper.SpanId.generate(),
       parent_ids: [],
-      sampled: true
+      sampled: true,
+      sample: true,
+      debug: false
     }
 
-    regex = ~r/#Tapper.Id<#Tapper.TraceId<(.+)\.(.+)>:#Tapper.SpanId<(.+)>,(.+)>/
+    regex = ~r/T([0-9a-z]+),S([0-9a-z]+),(S[+-]),(s[+-]),(d[+-])/
 
     chars = to_string(id)
 
     assert Regex.match?(regex, chars)
 
-    [_, trace_id, uniq, span_id, sampled] = Regex.run(regex, chars)
+    [_, trace_id, span_id, sampled, sample, debug] = Regex.run(regex, chars)
 
     {trace_id, ""} = Integer.parse(trace_id, 16)
-    {uniq, ""} = Integer.parse(uniq, 10)
     {span_id, ""} = Integer.parse(span_id, 16)
 
-    assert trace_id == elem(id.trace_id,0)
-    assert uniq == elem(id.trace_id,1)
+    assert trace_id == elem(id.trace_id, 0)
     assert span_id == id.span_id
-    assert sampled == "SAMPLED"
+    assert sampled == "S+"
+    assert sample == "s+"
+    assert debug == "d-"
   end
 end
