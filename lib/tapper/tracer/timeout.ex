@@ -64,7 +64,7 @@ defmodule Tapper.Tracer.Timeout do
           true ->
             # all child spans finished async before the timeout, update main span
             # with most latent child end_timestamp
-            end_timestamp = latest_timeout(child_spans) || timeout_timestamp
+            end_timestamp = latest_timestamp(child_spans) || timeout_timestamp
             trace = put_in(trace.spans[main_span_id].end_timestamp, end_timestamp)
             %Trace{trace | end_timestamp: end_timestamp}
 
@@ -88,12 +88,12 @@ defmodule Tapper.Tracer.Timeout do
         {^main_span_id, _span} -> false # reject main span
         _ -> true
       end)
-    |> Stream.map(fn({_,span}) -> span end) # flatten to stream of spans
+    |> Stream.map(fn({_, span}) -> span end) # flatten to stream of spans
   end
 
   @doc "Calculates the latest finished span timestamp; `false` if there are no finished spans."
-  @spec latest_timeout(spans :: Enumerable.t) :: Timestamp.timestamp() | false
-  def latest_timeout(spans) do
+  @spec latest_timestamp(spans :: Enumerable.t) :: Timestamp.timestamp() | false
+  def latest_timestamp(spans) do
     max_span =
       spans
       |> Stream.filter(&span_finished?/1) # only finished spans

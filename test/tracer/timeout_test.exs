@@ -62,15 +62,15 @@ defmodule Tracer.TimeoutTest do
     end
   end
 
-  describe "latest_timeout/1" do
+  describe "latest_timestamp/1" do
 
     test "returns false when there are no completed spans" do
       spans = [%Trace.SpanInfo{end_timestamp: nil}, %Trace.SpanInfo{end_timestamp: nil}]
-      refute Timeout.latest_timeout(spans)
+      refute Timeout.latest_timestamp(spans)
     end
 
     test "returns false when there are no spans" do
-      refute Timeout.latest_timeout([])
+      refute Timeout.latest_timestamp([])
     end
 
     test "returns expected max end_timestamp when spans completed" do
@@ -84,7 +84,7 @@ defmodule Tracer.TimeoutTest do
         %Trace.SpanInfo{end_timestamp: timestamp_3}
       ]
 
-      assert Timeout.latest_timeout(spans) === timestamp_2
+      assert Timeout.latest_timestamp(spans) === timestamp_2
     end
   end
 

@@ -131,7 +131,7 @@ defmodule Tapper.Tracer do
     id
   end
 
-  defp default_type_opts(opts, default) when default in [:client,:server] do
+  defp default_type_opts(opts, default) when default in [:client, :server] do
     {_, opts} = Keyword.get_and_update(opts, :type, fn(value) ->
       case value do
         nil -> {value, default}
@@ -151,7 +151,7 @@ defmodule Tapper.Tracer do
   end
 
   @doc """
-  Finishes the trace.
+  Finishes the trace, returns `:ok`.
 
   For `async` processes (where spans persist in another process), just call
   `finish/2` when done with the main span, passing the `async` option, and finish
@@ -280,7 +280,7 @@ defmodule Tapper.Tracer do
   @binary_annotation_types [:string, :bool, :i16, :i32, :i64, :double, :bytes]
 
   @doc "build a span binary annotation, suitable for passing to `annotations` option or `update_span/3`; see also convenience functions in `Tapper`."
-  @spec binary_annotation_delta(type :: Api.binary_annotation_type, key :: Api.binary_annotation_key, value :: Api.binary_annotation_value, endpoint :: Api.maybe_endpoint ) :: Api.binary_annotaton_delta
+  @spec binary_annotation_delta(type :: Api.binary_annotation_type, key :: Api.binary_annotation_key, value :: Api.binary_annotation_value, endpoint :: Api.maybe_endpoint) :: Api.binary_annotaton_delta
   def binary_annotation_delta(type, key, value, endpoint \\ nil) when type in @binary_annotation_types and (is_atom(key) or is_binary(key)) do
     endpoint = check_endpoint(endpoint)
     {:binary_annotate, {type, key, value, endpoint}}
