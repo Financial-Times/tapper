@@ -16,24 +16,27 @@ A client making a request:
 # binary annotation (because we pass the remote option with
 # an endpoint)
 
+# prepare remote endpoint metadata
 service_host = %Tapper.Endpoint{service_name: "my-service"}
 
-id = Tapper.start(name: "fetch", sample: true, remote: service_host)
-
-# add some detail (binary annotations) about the request
-# we're about to do
-Tapper.update_span(id, [
-  Tapper.http_host("my.server.co.uk")
-  Tapper.http_path("/index")
-  Tapper.http_method("GET")
+id = Tapper.start(name: "fetch", sample: true, remote: service_host, annotations: [
+  Tapper.http_host("my.server.co.uk"),
+  Tapper.http_path("/index"),
+  Tapper.http_method("GET"),
   Tapper.tag("some-key", "some-value")
 ])
 
-... do call ...
+# ... do call ...
 
-# finish the trace (and the top-level span), with some detail about the response
+# add response details to span
+Tapper.update_span(id, [
+    Tapper.http_status_code(status_code),
+    Tapper.client_receive()
+])
+
+# finish the trace (and the top-level span), with some detail about the operation
 Tapper.finish(id, annotations: [
-  Tapper.http_status_code(status_code)
+    tag("result", some_result)
 ])
 ```
 
@@ -42,37 +45,79 @@ Tapper.finish(id, annotations: [
 A server processing a request (usually performed via integration e.g. [`Tapper.Plug`](https://github.com/Financial-Times/tapper_plug)):
 
 ```elixir
-# use propagated trace details (e.g. from Plug integration);
+# use propagated trace context (e.g. from Plug integration) and incoming Plug.Conn;
 # adds a 'server receive' (sr) annotation (defaults to type: :server)
 id = Tapper.join(trace_id, span_id, parent_span_id, sample, debug, annotations: [
-  Tapper.client_address(%Tapper.Endpoint{ip: conn.remote_ip}), # we could also have used remote option on join
+  Tapper.client_address(%Tapper.Endpoint{ip: conn.remote_ip}), # equivalent to 'remote:' option
   Tapper.http_path(conn.request_path)
 ])
 
-# call another service
+# call another service in a child span
 id = Tapper.start_span(id, name: "fetch-details", annotations: [
     Tapper.http_path("/service/xx"),
     Tapper.http_host("a-service.com")
 ])
-...
+# ...
+Tapper.update_span(id, Tapper.client_send())
 
-Tapper.update_span(id, Tapper.wire_receive())
-...
+# ... call service
 
+Tapper.update_span(id, Tapper.client_receive())
+
+# finish child span with some details about response
 id = Tapper.finish_span(id, annotations: [
     Tapper.tag("userId", 1234),
     Tapper.http_status_code(200)
 ])
 
-# process request: span for expensive local processing etc.
-id = Tapper.start_span(id, name: "process", local: "compute-result") # adds lc binary annotation
-...
+# perform some expensive local processing in a named local span:
+id = Tapper.start_span(id, name: "process", local: "compute-result") # adds 'lc' binary annotation
+
+# ... do processing
+
 id = Tapper.finish_span(id)
 
-Tapper.finish(id)
+# ... send response
+
+# finish trace as far as this process is concerned
+Tapper.finish(id, annotations: Tapper.server_send())
 ```
 
 > NB `Tapper.start_span/2` and `Tapper.finish_span/2` return an updated id, whereas all other functions return the same id, so you don't need to propagate the id backwards down a call-chain to just add annotations, but you should propagate the id forwards when adding spans, and pair `finish_span/2` with the id from the corresponding `start_span/2`. Parallel spans can share the same starting id.
+
+### The Alternative Contextual API
+
+The above API is the *functional* API: you need the `Tapper.Id` on-hand whenever you use it. You may complain that this pollutes your API, or creates difficulties for integrations.
+
+Whilst you may mitigate this yourself using process dictionaries, ETS, or pure functional approaches using closures, the `Tapper.Ctx` interface provides a version of the API that tracks the `Tapper.Id` for you, using Erlang's process dictionary. Erlang purists might hate it, but it does get the id out of your mainstream code:
+
+```elixir
+
+def my_main_function() do
+  # ...
+  Tapper.Ctx.start(name: "main", sample: true)
+  # ...
+  x = do_something_useful(a_useful_argument)
+  # ...
+  Tapper.Ctx.finish()
+end
+
+def do_something_useful(a_useful_argument) do  # no Tapper.Id!
+  Tapper.Ctx.start_span(name: "do-something", annotations: tag("arg", a_useful_argument))
+  # ...
+  Tapper.Ctx.update_span(Tapper.wire_receive())
+  # ...
+  Tapper.Ctx.finish_span()
+end
+```
+
+It's nearly identical to the functional API, but without explicitly passing the `Tapper.Id` around.
+
+Behind the scenes, the `Tapper.Id` is managed using `Tapper.Ctx.put_context/1` and `Tapper.Ctx.context/0`. Use these functions 
+directly to propagate the `Tapper.Id` across process boundaries.
+
+See the `Tapper.Ctx` module for details, including details of options for debugging the inevitable incorrect usage in your code!
+
 
 #### See also
 [`Tapper.Plug`](https://github.com/Financial-Times/tapper_plug) - [Plug](https://github.com/elixir-lang/plug) integration: decodes incoming [B3](https://github.com/openzipkin/b3-propagation) trace headers, joining or sampling traces.
@@ -103,7 +148,7 @@ For the latest pre-release (and unstable) code, add github repo to your mix depe
 
 ```elixir
 def deps do
-  [{:tapper, git: "https://github.com/Financial-Times/tapper"}]
+  [{:tapper, github: "Financial-Times/tapper"}]
 end
 ```
 
@@ -138,7 +183,7 @@ Tapper looks for the following application configuration settings under the `:ta
 | `port`      | integer  | This application's principle service port, for endpoint port in annotations; defaults to 0 |
 | `reporter`  | atom     | Module implementing `Tapper.Reporter.Api` to use for reporting spans, defaults to `Tapper.Reporter.Console`. |
 
-All keys support the Phoenix-style `{:system, var}` format, to allow lookup from shell environment variables, e.g. `{:system, "PORT"}` to read `PORT` environment variable.
+All keys support the Phoenix-style `{:system, var}` format, to allow lookup from shell environment variables, e.g. `{:system, "PORT"}` to read `PORT` environment variable<sup>[1]</sup>.
 
 The default reporter is `Tapper.Reporter.Console` which just just logs JSON spans;
 `Tapper.Reporter.Zipkin` reports spans to a Zipkin server.
@@ -168,6 +213,9 @@ You can implement your own reporter module by implementing the `Tapper.Reporter.
 This defines a function `ingest/1` that receives spans in the form of `Tapper.Protocol.Span` structs,
 with timestamps and durations in microseconds. For JSON serialization, see `Tapper.Encoder.Json` which
 encodes to a format compatible with Zipkin server.
+
+
+<sup>[1]</sup> Tapper uses the [`DeferredConfig`](https://hexdocs.pm/deferred_config/readme.html) library to resolve all configuration under the `:tapper` key, so see its documention for more options.
 
 ## Why 'Tapper'?
 
