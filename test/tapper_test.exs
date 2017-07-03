@@ -164,7 +164,7 @@ defmodule TapperTest do
 
     Tapper.finish(id, async: true)
 
-    [{^t1, {:ok, _}}, {^t2, {:ok, _}}] = Task.yield_many([t1,t2], 400)
+    [{^t1, {:ok, _}}, {^t2, {:ok, _}}] = Task.yield_many([t1, t2], 500)
 
     assert_receive {^ref, spans}, 600
 
