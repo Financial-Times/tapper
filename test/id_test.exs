@@ -189,64 +189,6 @@ defmodule TapperIdTest do
     end
   end
 
-  describe "contextual ids" do
-
-    test "put/get in context" do
-      Tapper.Id.delete_in_context()
-
-      id = Tapper.Id.test_id()
-
-      ^id = Tapper.Id.in_context(id)
-
-      assert ^id = Tapper.Id.in_context()
-    end
-
-    test "put overrides existing value" do
-      Tapper.Id.delete_in_context()
-
-      id1 = Tapper.Id.test_id()
-
-      ^id1 = Tapper.Id.in_context(id1)
-
-      id2 = Tapper.Id.test_id()
-
-      ^id2 = Tapper.Id.in_context(id2)
-
-      assert ^id2 = Tapper.Id.in_context()
-    end
-
-    test "get in context when no id returns :ignore by default" do
-      Application.delete_env(:tapper, :debug_context)
-      Tapper.Id.delete_in_context()
-
-      assert :ignore = Tapper.Id.in_context
-    end
-
-    test "get in context when no id with debug :warn returns :ignore" do
-      Application.put_env(:tapper, :debug_context, :warn)
-      Tapper.Id.delete_in_context()
-
-      Logger.disable(self()) # suppress log output
-
-      assert :ignore = Tapper.Id.in_context()
-    end
-
-    test "get in context when no id with debug true raises" do
-      Application.put_env(:tapper, :debug_context, true)
-      Tapper.Id.delete_in_context()
-
-      assert_raise RuntimeError, fn -> Tapper.Id.in_context() end
-    end
-
-    test "get in context when no id with debug truthy raises" do
-      Application.put_env(:tapper, :debug_context, :anything)
-      Tapper.Id.delete_in_context()
-
-      assert_raise RuntimeError, fn -> Tapper.Id.in_context() end
-    end
-
-  end
-
   describe "destructure/1" do
     test "destructure main span with non-root origin parent span" do
       id = %Tapper.Id{
