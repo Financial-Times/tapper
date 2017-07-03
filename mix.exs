@@ -3,7 +3,7 @@ defmodule Tapper.Mixfile do
 
   def project do
     [app: :tapper,
-     version: "0.2.0",
+     version: "0.3.0-rc",
      elixir: "~> 1.4",
      elixirc_paths: elixirc_paths(Mix.env),
      build_embedded: Mix.env == :prod,
