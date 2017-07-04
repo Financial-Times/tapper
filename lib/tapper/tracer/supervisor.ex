@@ -11,7 +11,6 @@ defmodule Tapper.Tracer.Supervisor do
   end
 
   def init([config]) do
-    Logger.debug(fn -> "Tracer.Supervisor init #{:erlang.pid_to_list(self())}" end)
     supervise(
       [worker(Tapper.Tracer.Server, [config], restart: :transient)], # template for children, with config as first param
       strategy: :simple_one_for_one # i.e. on demand
@@ -27,7 +26,6 @@ defmodule Tapper.Tracer.Supervisor do
 
     case result do
       {:ok, _child} ->
-        Logger.debug(fn -> "Started tracer for #{inspect(trace_init)}" end)
         result
       _ ->
         Logger.error("Error starting child for #{inspect(result)}")
