@@ -35,6 +35,9 @@ defmodule Tapper.Tracer.Api do
 
   @type delta :: name_delta | async_delta | annotation_delta | binary_annotation_delta
 
+  @typedoc "Denote a client span or a server span; used to automatically add `:sr` or `:cs` annotation."
+  @type span_type :: :client | :server
+
   # operations
   @callback start(opts :: Keyword.t) :: Tapper.Id.t
   @callback join(trace_id :: Tapper.TraceId.t,

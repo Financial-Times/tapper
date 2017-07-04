@@ -54,11 +54,12 @@ defmodule Tapper.Tracer do
     timestamp = Timestamp.instant()
 
     # check type, and default to :client
-    opts = default_type_opts(opts, :client) # if we're starting a trace, we're a client
-    :ok = check_endpoint_opt(opts[:remote]) # if we're sending a remote endpoint, check it's an %Tapper.Endpoint{}
+    # opts = default_type_opts(opts, :client) # if we're starting a trace, we're a client
+    # :ok = check_endpoint_opt(opts[:remote]) # if we're sending a remote endpoint, check it's an %Tapper.Endpoint{}
+    {opts, sample, debug} = preflight_opts(opts, :client)
 
-    sample = Keyword.get(opts, :sample, false) === true
-    debug = Keyword.get(opts, :debug, false) === true
+    # sample = Keyword.get(opts, :sample, false) === true
+    # debug = Keyword.get(opts, :debug, false) === true
 
     id = Tapper.Id.init(trace_id, span_id, :root, sample, debug)
 
@@ -117,8 +118,9 @@ defmodule Tapper.Tracer do
     timestamp = Timestamp.instant()
 
     # check and default type to :server
-    opts = default_type_opts(opts, :server)
-    :ok = check_endpoint_opt(opts[:remote])
+    # opts = default_type_opts(opts, :server)
+    # :ok = check_endpoint_opt(opts[:remote])
+    {opts, _sample, _trace} = preflight_opts(opts, :server)
 
     id = Tapper.Id.init(trace_id, span_id, parent_id, sample, debug)
 
@@ -131,23 +133,33 @@ defmodule Tapper.Tracer do
     id
   end
 
-  defp default_type_opts(opts, default) when default in [:client, :server] do
-    {_, opts} = Keyword.get_and_update(opts, :type, fn(value) ->
-      case value do
-        nil -> {value, default}
-        :client -> {value, :client}
-        :server -> {value, :server}
-      end
-    end)
-    opts
-  end
+  @spec preflight_opts(opts :: Keyword.t, default_type :: Api.span_type) :: {opts :: Keyword.t, sample :: boolean, debug :: boolean}
+  def preflight_opts(opts, default_span_type) do
+    Enum.reduce(opts, {[{:type, default_span_type}], false, false}, fn
 
-  defp check_endpoint_opt(endpoint) do
-      case endpoint do
-        nil -> :ok
-        %Tapper.Endpoint{} -> :ok
-        _ -> {:error, "invalid endpoint: expected struct %Tapper.Endpoint{}"}
-      end
+      (elem = {:type, :client}, {new_opts, sample, debug}) ->
+        {[elem | new_opts], sample, debug}
+      (elem = {:type, :server}, {new_opts, sample, debug}) ->
+        {[elem | new_opts], sample, debug}
+      ({:type, other}, _) ->
+        raise ArgumentError, "type should be :client or :server, got #{inspect other}"
+
+      ({:sample, true}, {new_opts, _sample, debug}) ->
+        {new_opts, true, debug}
+
+      ({:debug, true}, {new_opts, sample, _debug}) ->
+        {new_opts, sample, true}
+
+      (elem = {:remote, %Tapper.Endpoint{}}, {new_opts, sample, debug}) ->
+        {[elem | new_opts], sample, debug}
+      (elem = {:remote, nil}, {new_opts, sample, debug}) ->
+        {[elem | new_opts], sample, debug}
+      ({:remote, other}, _) ->
+        raise ArgumentError, "endpoint if specified should be %Tapper.Endpoint{} or nil, got #{inspect other}"
+
+      (elem, {new_opts, sample, debug}) ->
+        {[elem | new_opts], sample, debug}
+    end)
   end
 
   @doc """
