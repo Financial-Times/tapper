@@ -53,13 +53,8 @@ defmodule Tapper.Tracer do
     span_id = elem(trace_id, 0) &&& 0xFFFFFFFFFFFFFFFF # lower 64 bits
     timestamp = Timestamp.instant()
 
-    # check type, and default to :client
-    # opts = default_type_opts(opts, :client) # if we're starting a trace, we're a client
-    # :ok = check_endpoint_opt(opts[:remote]) # if we're sending a remote endpoint, check it's an %Tapper.Endpoint{}
+    # check and default options
     {opts, sample, debug} = preflight_opts(opts, :client)
-
-    # sample = Keyword.get(opts, :sample, false) === true
-    # debug = Keyword.get(opts, :debug, false) === true
 
     id = Tapper.Id.init(trace_id, span_id, :root, sample, debug)
 
@@ -117,9 +112,7 @@ defmodule Tapper.Tracer do
 
     timestamp = Timestamp.instant()
 
-    # check and default type to :server
-    # opts = default_type_opts(opts, :server)
-    # :ok = check_endpoint_opt(opts[:remote])
+    # check and default options
     {opts, _sample, _trace} = preflight_opts(opts, :server)
 
     id = Tapper.Id.init(trace_id, span_id, parent_id, sample, debug)
@@ -133,6 +126,15 @@ defmodule Tapper.Tracer do
     id
   end
 
+  @doc false
+  # ensure options are correct or default them, and pickup sample and debug flags.
+  #
+  # NB this was previously performed by two functions and multiple Keyword.get/Access calls;
+  # this rolls it all together, so keyword list is only processed once, as an optimisation
+  # (but IMHO it actually reads better than the original too).
+  # A better optimisation would to not check/default opts at all on the client side,
+  # but we still need the sample and debug opts for start/1, unless we change the API
+  # to take them as parameters...
   @spec preflight_opts(opts :: Keyword.t, default_type :: Api.span_type) :: {opts :: Keyword.t, sample :: boolean, debug :: boolean}
   def preflight_opts(opts, default_span_type) do
     Enum.reduce(opts, {[{:type, default_span_type}], false, false}, fn
@@ -325,6 +327,8 @@ defmodule Tapper.Tracer do
   def update_span(id, deltas, opts \\ [])
 
   def update_span(:ignore, _deltas, _opts), do: :ignore
+
+  def update_span(id = %Tapper.Id{sampled: false}, _, _), do: id
 
   def update_span(id = %Tapper.Id{}, [], _opts), do: id
 

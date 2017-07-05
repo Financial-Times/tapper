@@ -9,7 +9,9 @@ defmodule TapperTest do
   test "start api" do
     {ref, reporter} = Test.Helper.Server.msg_reporter()
 
-    id = Tapper.start(name: "main", sample: true, reporter: reporter)
+    remote_endpoint = Test.Helper.Server.random_endpoint()
+
+    id = Tapper.start(name: "main", sample: true, remote: remote_endpoint, reporter: reporter)
 
     id = Tapper.start_span(id, name: "child-1", annotations: [
       Tapper.http_host("api.ft.com"),
@@ -43,6 +45,9 @@ defmodule TapperTest do
     child_2 = protocol_span_by_name(spans, "child-2")
 
     assert length(main_span.annotations) == 1
+    assert protocol_annotation_by_value(main_span, :cs)
+    assert protocol_binary_annotation_by_key(main_span, :sa)
+    assert protocol_binary_annotation_by_key(main_span, :sa).host == Tapper.Tracer.Trace.Convert.to_protocol_endpoint(remote_endpoint)
 
     assert length(child_1.annotations) == 0
     assert length(child_1.binary_annotations) == 8
@@ -88,6 +93,7 @@ defmodule TapperTest do
     assert main_span.parent_id == parent_span_id
 
     assert protocol_binary_annotation_by_key(main_span, :ca)
+    assert protocol_binary_annotation_by_key(main_span, :ca).host == Tapper.Tracer.Trace.Convert.to_protocol_endpoint(remote_endpoint)
   end
 
   test "parallel spans, with syncronous finish add up" do

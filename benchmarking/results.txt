@@ -1,0 +1,131 @@
+# Run benchmarks with following command:
+# MIX_ENV=bench mix bench
+
+# Run fprof with:
+# FPROF=1 MIX_ENV=bench mix profile.fprof --callers benchmarking/tapper_bench.exs
+#
+
+Operating System: macOS
+CPU Information: Intel(R) Core(TM) i7-5557U CPU @ 3.10GHz
+Number of Available Cores: 4
+Available memory: 17.179869184 GB
+Elixir 1.4.4
+Erlang 19.3
+
+Initial Runs
+============
+
+Estimated total run time: 4.13 min
+
+
+Benchmarking start, finish...
+Benchmarking two child spans...
+Benchmarking two child spans with some annotations...
+Benchmarking two child spans, contextual interface...
+
+Name                                            ips        average  deviation         median
+start, finish                               17.78 K       56.25 μs    ±52.84%       52.00 μs
+two child spans with some annotations       12.91 K       77.45 μs    ±47.27%       64.00 μs
+two child spans, contextual interface       12.32 K       81.15 μs    ±41.77%       82.00 μs
+two child spans                             12.05 K       83.02 μs    ±42.12%       83.00 μs
+
+Comparison:
+start, finish                               17.78 K
+two child spans with some annotations       12.91 K - 1.38x slower
+two child spans, contextual interface       12.32 K - 1.44x slower
+two child spans                             12.05 K - 1.48x slower
+
+fprof for Tapper.start/1:
+
+                                                                   CNT    ACC (ms)    OWN (ms)     
+Tapper.start/1                                                   10000    3289.497     269.873     
+  Tapper.Tracer.start/1                                          10000    3289.497     269.873  <--
+    Tapper.Tracer.Supervisor.start_tracer/3                      10000    1614.732      72.462     
+    Logger.metadata/1                                            10000     516.631      95.884     
+    Tapper.TraceId.generate/0                                    10000     236.224      73.865     
+    Tapper.Tracer.default_type_opts/2                            10000     211.353      45.378     
+    Access.get/2                                                 10000     157.366      24.656     
+    Keyword.get/3                                                20000     124.461      85.087     
+    Tapper.Timestamp.instant/0                                   10000     115.864      67.699     
+    Tapper.Id.init/5                                             10000      22.434      21.898     
+    Tapper.Tracer.check_endpoint_opt/1                           10000      19.290      19.290     
+    :garbage_collect                                                87       1.269       1.269     
+
+Tapper.Tracer.start/1                                            10000    1614.732      72.462     
+  Tapper.Tracer.Supervisor.start_tracer/3                        10000    1614.732      72.462  <--
+    Supervisor.start_child/2                                     10000    1206.848      25.100     
+    Logger.bare_log/3                                            10000     334.763      98.535     
+    :garbage_collect                                                59       0.659       0.659     
+
+
+
+After minor changes
+===================
+
+(remove logging in client side of Tracer start, use Keyword.get rather than get_and_update, 
+use Keyword.* rather than implicit Access.*)
+
+Name                    ips        average  deviation         median
+start, finish       19.05 K       52.50 μs    ±39.90%       49.00 μs
+
+~7% increase in ips over original (19.05 vs 17.78).
+
+fprof for Tapper.start/1 (ACC ~12 % faster than original):
+
+                                                                   CNT    ACC (ms)    OWN (ms)     
+Tapper.start/1                                                   10000    2871.790     271.138     
+  Tapper.Tracer.start/1                                          10000    2871.790     271.138  <--
+    Tapper.Tracer.Supervisor.start_tracer/3                      10000    1287.250      46.555     
+    Logger.metadata/1                                            10000     518.750      94.542     
+    Tapper.TraceId.generate/0                                    10000     235.292      72.885     
+    Access.get/2                                                 10000     157.574      24.935     
+    Keyword.get/3                                                20000     128.448      87.115     
+    Tapper.Timestamp.instant/0                                   10000     119.995      69.363     
+    Tapper.Tracer.default_type_opts/2                            10000     111.960      44.233     
+    Tapper.Id.init/5                                             10000      21.761      21.710     
+    Tapper.Tracer.check_endpoint_opt/1                           10000      19.241      19.241     
+    :garbage_collect                                                33       0.381       0.381     
+
+
+After refactoring options processing (preflight_opts/2)
+=======================================================
+
+Name                                            ips        average  deviation         median
+start, finish                               20.81 K       48.05 μs    ±26.16%       47.00 μs
+
+~12% increase in ips over original (20.05 vs 17.78).
+
+fprof for Tapper.start/1 (ACC ~30% faster than original):
+                                                                   
+                                                                   CNT    ACC (ms)    OWN (ms)     
+Tapper.start/1                                                   10000    2288.200     161.314     
+  Tapper.Tracer.start/1                                          10000    2288.200     161.314  <--
+    Tapper.Tracer.Supervisor.start_tracer/3                      10000    1145.693      42.902     
+    Logger.metadata/1                                            10000     485.551      90.416     
+    Tapper.TraceId.generate/0                                    10000     220.559      68.239     
+    Tapper.Tracer.preflight_opts/2                               10000     136.553      25.963     
+    Tapper.Timestamp.instant/0                                   10000     111.388      64.526     
+    Tapper.Id.init/5                                             10000      26.485      23.097     
+    :garbage_collect                                                76       0.657       0.657     
+
+
+Full run:
+
+Benchmark suite executing with the following configuration:
+warmup: 2.00 s
+time: 30.00 s
+parallel: 1
+inputs: none specified
+Estimated total run time: 2.13 min
+
+Name                                            ips        average  deviation         median
+start, finish                               20.81 K       48.05 μs    ±26.16%       47.00 μs
+two child spans                             14.29 K       70.00 μs    ±28.17%       76.00 μs
+two child spans with some annotations       14.05 K       71.19 μs    ±33.45%       61.00 μs
+two child spans, contextual interface       13.66 K       73.19 μs    ±27.97%       78.00 μs
+
+Comparison:
+start, finish                               20.81 K
+two child spans                             14.29 K - 1.46x slower
+two child spans with some annotations       14.05 K - 1.48x slower
+two child spans, contextual interface       13.66 K - 1.52x slower
