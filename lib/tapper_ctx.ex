@@ -64,7 +64,7 @@ defmodule Tapper.Ctx do
   ^id = Tapper.Ctx.context()
   ```
 
-  See `Tapper.start/1` for options.
+  See `Tapper.Tracer.start/1` for options.
   """
   @spec start(opts :: Keyword.t) :: Tapper.Id.t
   def start(opts \\ []) do
@@ -128,7 +128,7 @@ defmodule Tapper.Ctx do
   @doc """
   Add annotations to the current contextual span, returning the same `Tapper.Id`.
 
-  See `Tapper.update_span/3` for options.
+  See `Tapper.Tracer.update_span/3` for details.
   """
   @spec update_span(deltas :: Api.delta | [Api.delta], opts :: Keyword.t) :: Tapper.Id.t
   def update_span(deltas, opts \\ []), do: Tracer.update_span(context(), deltas, opts)
@@ -165,6 +165,7 @@ defmodule Tapper.Ctx do
     id
   end
 
+  @doc false
   def debug_context() do
     msg = "Reference to missing contextual Tapper.Id"
     case Application.get_env(:tapper, :debug_context, false) do

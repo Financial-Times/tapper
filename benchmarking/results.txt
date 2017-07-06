@@ -1,3 +1,6 @@
+Various results from benchmarking and optimisation exercise for 0.3.x
+=====================================================================
+
 # Run benchmarks with following command:
 # MIX_ENV=bench mix bench
 

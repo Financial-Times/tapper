@@ -5,9 +5,12 @@ defmodule Tapper.Tracer do
   Most functions in `Tapper` delegate to this module; `Tapper` also provides helper functions
   for creation of common annotations.
 
+  For protection against future API changes, prefer the higher-level interfaces.
+
   ## See also
 
   * `Tapper` - high-level client API.
+  * `Tapper.Ctx` - high-level contextual client API.
 
   """
 
@@ -33,20 +36,21 @@ defmodule Tapper.Tracer do
   ### Options
 
   * `name` - the name of the span.
-  * `sample` - boolean, whether to sample this trace or not.
-  * `debug` - boolean, the debugging flag, if `true` this turns sampling for this trace on, regardless of
+  * `sample` (boolean) - whether to sample this trace or not.
+  * `debug` (boolean) - the debugging flag, if `true` this turns sampling for this trace on, regardless of
     the value of `sample`.
   * `annotations` (list, atom or tuple) - a single annotation or list of annotations, specified by `Tapper.tag/3` etc.
-  * `type` - the type of the span, i.e.. `:client`, `:server`; defaults to `:client`.
-  * `remote` - the remote Endpoint: automatically creates a "sa" (client) or "ca" (server) binary annotation on this span.
+  * `type` (`:client` | `:server`) - the type of the span; defaults to `:client` <sup>1</sup>.
+  * `remote` - the remote `Tapper.Endpoint`: creates a "sa" (client) or "ca" (server) binary annotation on this span.
   * `ttl` - how long this span should live before automatically finishing it
     (useful for long-running async operations); milliseconds.
   * `reporter` (module atom or function) - override the configured reporter for this trace; useful for testing.
 
-  #### Notes
+  <sup>1</sup> determines the type of an automatically created `sr` (type `:server`) or `cs` (type `:client`) annotation, see also `Tapper.client_send/0` and `Tapper.server_receive/0`.
 
+  #### Notes
   * If neither `sample` nor `debug` are set, all operations on this trace become a no-op.
-  * `type` determines the type of an automatically created `sr` (`:server`) or `cs` (`:client`) annotation, see also `Tapper.client_send/0` and `Tapper.server_receive/0`.
+
   """
   def start(opts \\ []) when is_list(opts) do
     trace_id = Tapper.TraceId.generate()
@@ -176,9 +180,6 @@ defmodule Tapper.Tracer do
   id = Tapper.finish(id, async: true, annotations: [Tapper.http_status_code(401)])
   ```
 
-  ## See also
-  * `Tapper.Tracer.Timeout` - the time-out logic.
-
   ## Options
   * `async` (boolean) - mark the trace as asynchronous, allowing child spans to finish within the TTL.
   * `annotations` (list) - list of annotations to attach to main span.
@@ -186,7 +187,7 @@ defmodule Tapper.Tracer do
   ## See also
   * `Tapper.Tracer.Timeout` - timeout behaviour.
   * `Tapper.async/0` annotation.
-"""
+  """
   def finish(id, opts \\ [])
   def finish(%Tapper.Id{sampled: false}, _opts), do: :ok
   def finish(id = %Tapper.Id{}, opts) when is_list(opts) do
@@ -340,12 +341,14 @@ defmodule Tapper.Tracer do
     id
   end
 
+  @doc false
   def whereis(:ignore), do: []
   def whereis(%Tapper.Id{trace_id: trace_id}), do: whereis(trace_id)
   def whereis(trace_id) do
     Registry.lookup(Tapper.Tracers, trace_id)
   end
 
+  @doc false
   def check_endpoint(nil), do: nil
   def check_endpoint(endpoint = %Tapper.Endpoint{}), do: endpoint
 

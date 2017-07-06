@@ -119,7 +119,7 @@ directly to propagate the `Tapper.Id` across process boundaries.
 See the `Tapper.Ctx` module for details, including details of options for debugging the inevitable incorrect usage in your code!
 
 
-#### See also
+### See also
 [`Tapper.Plug`](https://github.com/Financial-Times/tapper_plug) - [Plug](https://github.com/elixir-lang/plug) integration: decodes incoming [B3](https://github.com/openzipkin/b3-propagation) trace headers, joining or sampling traces.
 
 The API documentation can be found at [https://hexdocs.pm/tapper](https://hexdocs.pm/tapper).
@@ -142,6 +142,8 @@ Trace ids have an additional, unique, identifier, so if a server receives parall
 
 The id returned from the API simply tracks the trace id, enabling messages to be sent to the right server, and span nesting, to ensure annotations are added to the correct span.
 
+See also [benchmarks](benchmarking/BENCHMARKS.md).
+
 ## Installation
 
 For the latest pre-release (and unstable) code, add github repo to your mix dependencies:
@@ -156,7 +158,7 @@ For release versions, the package can be installed by adding `tapper` to your li
 
 ```elixir
 def deps do
-  [{:tapper, "~> 0.2.0"}]
+  [{:tapper, "~> 0.3"}]
 end
 ```
 
@@ -188,13 +190,16 @@ All keys support the Phoenix-style `{:system, var}` format, to allow lookup from
 The default reporter is `Tapper.Reporter.Console` which just just logs JSON spans;
 `Tapper.Reporter.Zipkin` reports spans to a Zipkin server.
 
+<sup>[1]</sup> Tapper uses the [`DeferredConfig`](https://hexdocs.pm/deferred_config/readme.html) library to resolve all configuration under the `:tapper` key, so see its documention for more resolution options.
+
 ### Zipkin Reporter
 
 The Zipkin reporter (`Tapper.Reporter.Zipkin`) has its own configuration:
 
 | attribute | description |
 | --------- | ----------- |
-| `:collector_url` | full URL of Zipkin server api for reeiving spans |
+| `collector_url` | full URL of Zipkin server api for reeiving spans |
+| `client_opts` | additional options for `HTTPoison` client, see `HTTPoison.Base.request/5` |
 
 e.g. in `config.exs` (or `prod.exs` etc.)
 ```elixir
@@ -208,14 +213,11 @@ config :tapper, Tapper.Reporter.Zipkin,
 
 ### Custom Reporters
 
-You can implement your own reporter module by implementing the `Tapper.Reporter.Api` protocol.
+You can implement your own reporter module by implementing the `Tapper.Reporter.Api` behaviour.
 
 This defines a function `ingest/1` that receives spans in the form of `Tapper.Protocol.Span` structs,
 with timestamps and durations in microseconds. For JSON serialization, see `Tapper.Encoder.Json` which
 encodes to a format compatible with Zipkin server.
-
-
-<sup>[1]</sup> Tapper uses the [`DeferredConfig`](https://hexdocs.pm/deferred_config/readme.html) library to resolve all configuration under the `:tapper` key, so see its documention for more options.
 
 ## Why 'Tapper'?
 
