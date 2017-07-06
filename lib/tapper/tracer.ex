@@ -69,7 +69,7 @@ defmodule Tapper.Tracer do
       {:ok, _pid} = Tapper.Tracer.Supervisor.start_tracer(trace_init, timestamp, opts)
     end
 
-    Logger.metadata(tapper_id: id)
+    Logger.metadata(trace_id: %Tapper.TraceId{value: trace_id})
 
     id
   end
@@ -125,7 +125,7 @@ defmodule Tapper.Tracer do
       {:ok, _pid} = Tapper.Tracer.Supervisor.start_tracer(trace_init, timestamp, opts)
     end
 
-    Logger.metadata(tapper_id: id)
+    Logger.metadata(trace_id: %Tapper.TraceId{value: trace_id})
 
     id
   end

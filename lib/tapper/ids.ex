@@ -103,10 +103,8 @@ defmodule Tapper.Id do
   defimpl String.Chars do
     @doc false
     def to_string(id) do
-      sampled = if(id.sampled, do: "S+", else: "S-")
-      sample = if(id.sample, do: "s+", else: "s-")
-      debug = if(id.debug, do: "d+", else: "d-")
-      "T" <> Tapper.TraceId.to_hex(id.trace_id) <> ",S" <> Tapper.SpanId.to_hex(id.span_id) <> "," <> sampled <> "," <> sample <> "," <> debug
+      sampled = if(id.sampled, do: "SAMPLED", else: "-")
+      "#Tapper.Id<" <> Tapper.TraceId.format(id.trace_id) <> ":" <> Tapper.SpanId.format(id.span_id) <> "," <> sampled <> ">"
     end
   end
 
@@ -123,6 +121,8 @@ defmodule Tapper.TraceId do
   @type int128 :: integer()
 
   @type t :: {int128, integer()}
+
+  defstruct [:value]   # NB only used as wrapper for e.g. logging format
 
   @doc "generate a trace id"
   @spec generate() :: t
@@ -156,6 +156,22 @@ defmodule Tapper.TraceId do
   end
 
   defp uniq(), do: System.unique_integer([:monotonic, :positive])
+
+  defimpl Inspect do
+    import Inspect.Algebra
+    @doc false
+    def inspect(trace_id, _opts) do
+      concat [Tapper.TraceId.format(trace_id.value)]
+    end
+  end
+
+  defimpl String.Chars do
+    @doc false
+    def to_string(trace_id) do
+      Tapper.TraceId.to_hex(trace_id.value)
+    end
+  end
+
 end
 
 defmodule Tapper.SpanId do

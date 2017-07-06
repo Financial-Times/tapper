@@ -295,21 +295,21 @@ defmodule TapperIdTest do
       debug: false
     }
 
-    regex = ~r/T([0-9a-z]+),S([0-9a-z]+),(S[+-]),(s[+-]),(d[+-])/
+    regex = ~r/#Tapper.Id<#Tapper.TraceId<(.+)\.(.+)>:#Tapper.SpanId<(.+)>,(.+)>/
 
     chars = to_string(id)
 
     assert Regex.match?(regex, chars)
 
-    [_, trace_id, span_id, sampled, sample, debug] = Regex.run(regex, chars)
+    [_, trace_id, uniq, span_id, sampled] = Regex.run(regex, chars)
 
     {trace_id, ""} = Integer.parse(trace_id, 16)
+    {uniq, ""} = Integer.parse(uniq, 10)
     {span_id, ""} = Integer.parse(span_id, 16)
 
-    assert trace_id == elem(id.trace_id, 0)
+    assert trace_id == elem(id.trace_id,0)
+    assert uniq == elem(id.trace_id,1)
     assert span_id == id.span_id
-    assert sampled == "S+"
-    assert sample == "s+"
-    assert debug == "d-"
+    assert sampled == "SAMPLED"
   end
 end
