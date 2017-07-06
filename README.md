@@ -219,6 +219,26 @@ This defines a function `ingest/1` that receives spans in the form of `Tapper.Pr
 with timestamps and durations in microseconds. For JSON serialization, see `Tapper.Encoder.Json` which
 encodes to a format compatible with Zipkin server.
 
+### Logging
+
+Tapper adds a `trace_id` key to the `Logger` metadata on `Tapper.start/1` or `Tapper.join/6`, so if you want this in your logs, 
+configure your logger formatter/backend to output this key, e.g.
+
+```elixir
+config :logger,
+  format: "[$level] $metadata$message\n",
+  metadata: [:trace_id],
+```
+
+Will output something like:
+
+```
+[info] trace_id=b1db8e59c0f02152130c3fbb317d57fb  Something to log home about
+```
+
+Note that this ends up in the logs regardless of whether the trace is sampled, so when you propagate headers for unsampled traces,
+you can still at least see the trace id in the logs, which may be useful!
+
 ## Why 'Tapper'?
 
 Dapper (Dutch - original Google paper) - Brave (English - Java client library) - Tapper (Swedish - Elixir client library)
