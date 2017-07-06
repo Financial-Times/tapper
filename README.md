@@ -142,8 +142,6 @@ Trace ids have an additional, unique, identifier, so if a server receives parall
 
 The id returned from the API simply tracks the trace id, enabling messages to be sent to the right server, and span nesting, to ensure annotations are added to the correct span.
 
-See also [benchmarks](benchmarking/BENCHMARKS.md).
-
 ## Installation
 
 For the latest pre-release (and unstable) code, add github repo to your mix dependencies:
@@ -232,12 +230,12 @@ config :logger,
 
 Will output something like:
 
-```
+```log
 [info] trace_id=b1db8e59c0f02152130c3fbb317d57fb  Something to log home about
 ```
 
-Note that this ends up in the logs regardless of whether the trace is sampled, so when you propagate headers for unsampled traces,
-you can still at least see the trace id in the logs, which may be useful!
+Note that `trace_id` metadata is added regardless of whether the trace is sampled, so when you propagate the trace context for 
+unsampled traces, you can still at least see the trace id in the logs, and track it across your system, which may be useful!
 
 ## Why 'Tapper'?
 

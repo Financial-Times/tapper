@@ -3,7 +3,7 @@ defmodule Tapper.Mixfile do
 
   def project do
     [app: :tapper,
-     version: "0.3.0-rc",
+     version: "0.3.0",
      elixir: "~> 1.4",
      elixirc_paths: elixirc_paths(Mix.env),
      build_embedded: Mix.env == :prod,
@@ -41,7 +41,7 @@ defmodule Tapper.Mixfile do
 
   def docs do
     [main: "readme",
-     extras: ["README.md"]]
+     extras: ["README.md", "benchmarking/BENCHMARKS.md"]]
   end
 
   # Specifies which paths to compile per environment.
