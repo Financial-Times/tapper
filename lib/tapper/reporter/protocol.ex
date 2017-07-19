@@ -48,7 +48,7 @@ defmodule Tapper.Protocol do
       binary_annotations: [BinaryAnnotation.t],
       debug: boolean,
       timestamp: Protocol.timestamp(),
-      duration: Protocol.duration()
+      duration: Protocol.duration() | nil
     }
   end
 
