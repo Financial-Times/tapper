@@ -277,11 +277,9 @@ defmodule Tapper.Tracer do
 
     timestamp = Timestamp.instant()
 
-    updated_id = Tapper.Id.pop(id)
-
     GenServer.cast(via_tuple(id), {:finish_span, id.span_id, timestamp, opts})
 
-    updated_id
+    Tapper.Id.pop(id)
   end
 
   @doc "build an name-span action, suitable for passing to `annotations` option or `update_span/3`; see also `Tapper.name/1`."
@@ -345,7 +343,9 @@ defmodule Tapper.Tracer do
 
   def update_span(id = %Tapper.Id{}, [], _opts), do: id
 
-  def update_span(id = %Tapper.Id{span_id: span_id}, deltas, opts) when not is_nil(deltas) and is_list(opts) do
+  def update_span(id = %Tapper.Id{}, nil, _opts), do: id
+
+  def update_span(id = %Tapper.Id{span_id: span_id}, deltas, opts) do
     timestamp = opts[:timestamp] || Timestamp.instant()
 
     GenServer.cast(via_tuple(id), {:update, span_id, timestamp, deltas})
