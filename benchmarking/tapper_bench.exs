@@ -65,7 +65,7 @@ if System.get_env("FPROF") do
   # Use this instead of Benchee.run for fprof'ing
   Mix.shell.info("Running in fprof mode (10000 runs of start_finish/0)")
   for n <- 1..10000 do
-    start_finish.()
+    start_finish.([sample: true])
   end
 else
   Mix.shell.info("Running Benchee")
