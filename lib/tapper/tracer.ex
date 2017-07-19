@@ -241,10 +241,7 @@ defmodule Tapper.Tracer do
 
     updated_id = Tapper.Id.push(id, child_span_id)
 
-    name = Keyword.get(opts, :name, "unknown")
-
     span = %Trace.SpanInfo {
-      name: name,
       id: child_span_id,
       start_timestamp: timestamp,
       parent_id: span_id,

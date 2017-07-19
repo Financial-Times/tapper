@@ -159,6 +159,9 @@ defmodule Tapper.Tracer.Server do
 
     config_endpoint = Trace.endpoint_from_config(trace.config)
 
+    name = Keyword.get(opts, :name, "unknown")
+    span_info = %{span_info | name: name}
+
     span_info = case opts[:local] do
       val when not is_nil(val) ->
           annotation = Trace.BinaryAnnotation.new(:lc, val, :string, config_endpoint)
