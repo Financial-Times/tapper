@@ -43,7 +43,7 @@ defmodule Tapper.Protocol do
     @type t :: %__MODULE__{
       trace_id: trace_id(),
       id: span_id(),
-      parent_id: span_id(),
+      parent_id: span_id() | :root,
       annotations: [Annotation.t],
       binary_annotations: [BinaryAnnotation.t],
       debug: boolean,
