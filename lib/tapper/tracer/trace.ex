@@ -45,6 +45,7 @@ defmodule Tapper.Tracer.Trace do
       :name,
       :id,
       :parent_id,
+      :shared,
       :start_timestamp,
       :end_timestamp,
       :annotations,
@@ -56,6 +57,7 @@ defmodule Tapper.Tracer.Trace do
       name: String.t,
       id: Tapper.SpanId.t,
       parent_id: Tapper.SpanId.t,
+      shared: boolean, # did we start this span, or inherit it from another process?
       start_timestamp: Timestamp.timestamp(),
       end_timestamp: Timestamp.timestamp(),
       annotations: [Annotation.t],

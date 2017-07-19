@@ -247,7 +247,13 @@ defmodule Tapper.Tracer.Server do
   @doc "prepare the SpanInfo of the initial span in this Tracer"
   def initial_span_info(span_id, parent_id, timestamp, endpoint, opts) do
 
-    annotation_type = case Keyword.get(opts, :type, :client) do
+    type = Keyword.get(opts, :type, :client)
+
+    # a 'shared' root span was not started locally, i.e. we joined it, so we won't set the end_timestamp
+    # see http://zipkin.io/pages/instrumenting.html#timestamps-and-duration
+    shared = (type == :server)
+
+    annotation_type = case type do
       :server -> :sr
       :client -> :cs
     end
@@ -260,6 +266,7 @@ defmodule Tapper.Tracer.Server do
       name: name,
       id: span_id,
       parent_id: parent_id,
+      shared: shared,
       start_timestamp: timestamp,
       annotations: [%Trace.Annotation{
         timestamp: timestamp,

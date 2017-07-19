@@ -37,6 +37,7 @@ defmodule Tracer.Server.InitTest do
     assert span.start_timestamp == timestamp
     assert span.end_timestamp == nil
     assert span.name == "unknown"
+    refute span.shared
 
     annotations = span.annotations
     assert is_list(annotations)
@@ -64,10 +65,13 @@ defmodule Tracer.Server.InitTest do
     assert trace.ttl == ttl
   end
 
-  test "init, type: server; adds :sr annotation" do
+  test "init, type: server; is shared, adds :sr annotation" do
     {trace, span_id} = init_with_opts(type: :server)
 
     span = trace.spans[span_id]
+
+    assert span.shared, "expected server span to be shared"
+
     annotations = trace.spans[span_id].annotations
     assert length(annotations) == 1
 
@@ -80,10 +84,13 @@ defmodule Tracer.Server.InitTest do
     assert span.binary_annotations == []
   end
 
-  test "init, type: client; adds :cs annotation" do
+  test "init, type: client; is not shared, adds :cs annotation" do
     {trace, span_id} = init_with_opts(type: :client)
 
     span = trace.spans[span_id]
+
+    refute span.shared
+
     annotations = span.annotations
     assert length(annotations) == 1
 
@@ -101,6 +108,9 @@ defmodule Tracer.Server.InitTest do
     {trace, span_id} = init_with_opts(type: :client, remote: remote)
 
     span = trace.spans[span_id]
+
+    refute span.shared
+
     annotations = span.annotations
     assert length(annotations) == 1
 
@@ -125,6 +135,9 @@ defmodule Tracer.Server.InitTest do
     {trace, span_id} = init_with_opts(type: :server, remote: remote)
 
     span = trace.spans[span_id]
+
+    assert span.shared
+
     annotations = span.annotations
     assert length(annotations) == 1
 

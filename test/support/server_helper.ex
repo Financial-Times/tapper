@@ -85,7 +85,8 @@ defmodule Test.Helper.Server do
         start_timestamp: start_timestamp,
         end_timestamp: Timestamp.incr(start_timestamp, duration_us),
         annotations: [],
-        binary_annotations: []
+        binary_annotations: [],
+        shared: false
       }
   end
 

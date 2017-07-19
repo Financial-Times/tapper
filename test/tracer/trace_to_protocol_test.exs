@@ -208,7 +208,7 @@ defmodule Tracer.TraceToProtocolTest do
       assert protocol_span.timestamp === Timestamp.to_absolute(trace_span.start_timestamp)
     end
 
-    test "sets duration" do
+    test "sets duration for non-shared span with end_timestamp" do
       timestamp = Timestamp.instant()
 
       trace_span = span(1, timestamp, 1000)
@@ -220,7 +220,7 @@ defmodule Tracer.TraceToProtocolTest do
       assert_in_delta protocol_span.duration, Timestamp.duration(trace_span.start_timestamp, trace_span.end_timestamp), 2
     end
 
-    test "sets duration in span with missing end_timestamp to trace end_timestamp" do
+    test "sets duration in non-shared span with missing end_timestamp to trace end_timestamp" do
       timestamp = Timestamp.instant()
 
       trace_span = %{span(1, timestamp, 1000) | end_timestamp: nil}
@@ -230,6 +230,30 @@ defmodule Tracer.TraceToProtocolTest do
       protocol_span = Convert.to_protocol_span(trace_span, trace)
 
       assert_in_delta protocol_span.duration, Timestamp.duration(trace_span.start_timestamp, trace.end_timestamp), 2
+    end
+
+    test "does not set duration in shared span with end_timestamp" do
+      timestamp = Timestamp.instant()
+
+      trace_span = %{span(1, timestamp, 1000) | shared: true}
+
+      trace = trace([trace_span])
+
+      protocol_span = Convert.to_protocol_span(trace_span, trace)
+
+      assert protocol_span.duration == nil
+    end
+
+    test "does not set duration in shared span with missing end_timestamp" do
+      timestamp = Timestamp.instant()
+
+      trace_span = %{span(1, timestamp, 1000) | end_timestamp: nil, shared: true}
+
+      trace = trace([trace_span])
+
+      protocol_span = Convert.to_protocol_span(trace_span, trace)
+
+      assert protocol_span.duration == nil
     end
 
     test "converts annotations" do
