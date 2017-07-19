@@ -69,7 +69,8 @@ defmodule Tapper.Tracer do
       {:ok, _pid} = Tapper.Tracer.Supervisor.start_tracer(trace_init, timestamp, opts)
     end
 
-    Logger.metadata(trace_id: %Tapper.TraceId{value: trace_id})
+    # Logger.metadata(trace_id: %Tapper.TraceId{value: trace_id})
+    metadata(trace_id)
 
     id
   end
@@ -125,9 +126,23 @@ defmodule Tapper.Tracer do
       {:ok, _pid} = Tapper.Tracer.Supervisor.start_tracer(trace_init, timestamp, opts)
     end
 
-    Logger.metadata(trace_id: %Tapper.TraceId{value: trace_id})
+    # Logger.metadata(trace_id: %Tapper.TraceId{value: trace_id})
+    metadata(trace_id)
 
     id
+  end
+
+  # roll our own Logger.metadata since generic fn is too slow; this is 2x
+  defp metadata(trace_id) do
+    trace_meta = {:trace_id, %Tapper.TraceId{value: trace_id}}
+    case :erlang.get(:logger_metadata) do
+      :undefined -> :erlang.put(:logger_metadata, {true, [trace_meta]})
+      {enabled, metadata} ->
+        :erlang.put(:logger_metadata, {
+          enabled,
+          :lists.keystore(:trace_id, 1, metadata, trace_meta)
+        })
+    end
   end
 
   @doc false
