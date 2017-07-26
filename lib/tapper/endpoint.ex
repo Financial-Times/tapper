@@ -99,7 +99,7 @@ defmodule Tapper.Endpoint do
   end
 
   @doc "get the first non-loopback IP interface address tuple, preferring ipv4 over ip6"
-  @spec host_ip() :: Tapper.ip_address
+  @spec host_ip() :: ip_address
   def host_ip do
     {:ok, addresses} = :inet.getifaddrs()
 

@@ -38,6 +38,8 @@ defmodule Tapper.Tracer.Api do
   @typedoc "Denote a client span or a server span; used to automatically add `:sr` or `:cs` annotation."
   @type span_type :: :client | :server
 
+  @type trace_init :: {trace_id :: Tapper.TraceId.t, span_id :: Tapper.SpanId.t, parent_span_id :: Tapper.SpanId.t | :root, sample :: boolean, debug :: boolean}
+
   # operations
   @callback start(opts :: Keyword.t) :: Tapper.Id.t
   @callback join(trace_id :: Tapper.TraceId.t,

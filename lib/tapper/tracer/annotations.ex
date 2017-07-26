@@ -8,7 +8,7 @@ defmodule Tapper.Tracer.Annotations do
   alias Tapper.Tracer.Trace
   alias Tapper.Timestamp
 
-  @spec annotation(value :: atom() | String.t, timestamp :: Timestamp.timestamp(), Tapper.Endpoint.t) :: Trace.Annotation.t
+  @spec annotation(value :: atom() | String.t, timestamp :: Timestamp.t, Tapper.Endpoint.t) :: Trace.Annotation.t
   def annotation(value, timestamp, endpoint)
   def annotation(value, timestamp, endpoint = %Tapper.Endpoint{}) when is_atom(value) and is_tuple(timestamp) do
     Trace.Annotation.new(value, timestamp, endpoint)

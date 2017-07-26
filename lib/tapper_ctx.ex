@@ -52,6 +52,7 @@ defmodule Tapper.Ctx do
   require Logger
 
   alias Tapper.Tracer
+  alias Tapper.Tracer.Api
 
   @doc """
   Starts a new root trace, e.g. on originating a request.

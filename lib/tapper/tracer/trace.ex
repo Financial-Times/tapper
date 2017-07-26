@@ -28,9 +28,9 @@ defmodule Tapper.Tracer.Trace do
     config: map(),
     sample: boolean(),
     debug: boolean(),
-    timestamp: Timestamp.timestamp(),
-    end_timestamp: Timestamp.timestamp(),
-    last_activity: Timestamp.timestamp(),
+    timestamp: Timestamp.t,
+    end_timestamp: Timestamp.t,
+    last_activity: Timestamp.t,
     ttl: integer(),
     async: nil | true
   }
@@ -58,8 +58,8 @@ defmodule Tapper.Tracer.Trace do
       id: Tapper.SpanId.t,
       parent_id: Tapper.SpanId.t,
       shared: boolean, # did we start this span, or inherit it from another process?
-      start_timestamp: Timestamp.timestamp(),
-      end_timestamp: Timestamp.timestamp(),
+      start_timestamp: Timestamp.t,
+      end_timestamp: Timestamp.t,
       annotations: [Annotation.t],
       binary_annotations: [BinaryAnnotation.t]
     }
@@ -76,7 +76,7 @@ defmodule Tapper.Tracer.Trace do
     ]
 
     @type t :: %__MODULE__{
-      timestamp: Timestamp.timestamp(),
+      timestamp: Timestamp.t,
       value: atom() | String.t,
       host: Tapper.Endpoint.t | nil
     }
