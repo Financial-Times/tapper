@@ -103,28 +103,6 @@ defmodule Tapper.Tracer.Server do
     {:ok, trace, ttl}
   end
 
-  @doc """
-  Handles time-out.
-
-  Invoked if ttl expires between messages: automatically ends trace, annotating any un-finished spans.
-
-  ## See also
-  * `Tapper.start/1` and `Tapper.join/6` - setting the TTL for a trace using the `ttl` option.
-  * `Tapper.finish/2` and `Tapper.async/1` - declaring a trace or span asynchronous.
-  * `Tapper.Tracer.Timeout` - timeout behaviour.
-  """
-  def handle_info(:timeout, trace = %Trace{}) do
-    Logger.debug(fn -> inspect({trace.trace_id, :timeout}) end)
-    timestamp = Timestamp.instant()
-
-    trace = Tapper.Tracer.Timeout.timeout_trace(trace, timestamp)
-
-    :ok = report_trace(trace)
-
-    Logger.info(fn -> "End Trace #{Tapper.TraceId.format(trace.trace_id)} (timeout)" end)
-    {:stop, :normal, []}
-  end
-
   @doc "via Tapper.Tracer.finish/2"
   def handle_cast(msg = {:finish, timestamp, opts}, trace) do
     Logger.debug(fn -> inspect({trace.trace_id, msg}) end)
@@ -133,23 +111,9 @@ defmodule Tapper.Tracer.Server do
 
     case trace.async || opts[:async] do
       true ->
-        Logger.info(fn -> "Finish Trace #{Tapper.TraceId.format(trace.trace_id)} ASYNC" end)
-        trace = case Trace.has_annotation?(trace, trace.span_id, :async) do
-          false ->
-            async_annotation = Annotations.annotation(:async, timestamp, Trace.endpoint_from_config(trace.config))
-            update_span(trace, trace.span_id, fn(span) -> %{span | annotations: [async_annotation | span.annotations]} end)
-          true -> trace
-        end
-        trace = %Trace{trace | last_activity: timestamp, async: true}
-
-        {:noreply, trace, trace.ttl}
+        finish_async(trace, timestamp)
       _ ->
-        trace = %Trace{trace | end_timestamp: timestamp}
-
-        :ok = report_trace(trace)
-
-        Logger.info(fn -> "Finish Trace #{Tapper.TraceId.format(trace.trace_id)}" end)
-        {:stop, :normal, []}
+        finish_sync(trace, timestamp)
     end
   end
 
@@ -198,6 +162,52 @@ defmodule Tapper.Tracer.Server do
     trace = %Trace{trace | last_activity: timestamp}
 
     {:noreply, trace, trace.ttl}
+  end
+
+  @doc """
+  Handles time-out.
+
+  Invoked if ttl expires between messages: automatically ends trace, annotating any un-finished spans.
+
+  ## See also
+  * `Tapper.start/1` and `Tapper.join/6` - setting the TTL for a trace using the `ttl` option.
+  * `Tapper.finish/2` and `Tapper.async/1` - declaring a trace or span asynchronous.
+  * `Tapper.Tracer.Timeout` - timeout behaviour.
+  """
+  def handle_info(:timeout, trace = %Trace{}) do
+    Logger.debug(fn -> inspect({trace.trace_id, :timeout}) end)
+    timestamp = Timestamp.instant()
+
+    trace = Tapper.Tracer.Timeout.timeout_trace(trace, timestamp)
+
+    :ok = report_trace(trace)
+
+    Logger.info(fn -> "End Trace #{Tapper.TraceId.format(trace.trace_id)} (timeout)" end)
+    {:stop, :normal, []}
+  end
+
+  @doc "finishes the trace asynchronously: sets the async flag & annotation on the trace, and defers to the timeout mechanism to wrap up the asynchronous spans."
+  def finish_async(trace, timestamp) do
+    Logger.info(fn -> "Finish Trace #{Tapper.TraceId.format(trace.trace_id)} ASYNC" end)
+    trace = case Trace.has_annotation?(trace, trace.span_id, :async) do
+      false ->
+        async_annotation = Annotations.annotation(:async, timestamp, Trace.endpoint_from_config(trace.config))
+        update_span(trace, trace.span_id, fn(span) -> %{span | annotations: [async_annotation | span.annotations]} end)
+      true -> trace
+    end
+    trace = %Trace{trace | last_activity: timestamp, async: true}
+
+    {:noreply, trace, trace.ttl}
+  end
+
+  @doc "finishes the trace: sets the trace's end timestamp, calls the reporter and exits the tracer."
+  def finish_sync(trace, timestamp) do
+    trace = %Trace{trace | end_timestamp: timestamp}
+
+    :ok = report_trace(trace)
+
+    Logger.info(fn -> "Finish Trace #{Tapper.TraceId.format(trace.trace_id)}" end)
+    {:stop, :normal, []}
   end
 
   def apply_updates(trace, nil, _span_id, _timestamp, _endpoint), do: trace
