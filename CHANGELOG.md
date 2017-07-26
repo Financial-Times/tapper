@@ -1,3 +1,9 @@
+v0.3.1
+* DEFECT: joined traces (shared spans) should not set duration on root span.
+* use custom `Logger.metadata/1` implementation for small perf gain.
+* parse child span name from opts in server rather than client, for tiny perf gain.
+* tiny refactoring things.
+
 v0.3.0 
 
 * Use [`DeferredConfig`](https://hexdocs.pm/deferred_config/readme.html) for univeral application of `{:system, ENV_VAR}` style indirections in config.
