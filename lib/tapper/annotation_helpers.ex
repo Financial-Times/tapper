@@ -141,8 +141,9 @@ defmodule Tapper.AnnotationHelpers do
       def sql_query(query) when is_binary(query), do: Tracer.binary_annotation_delta(:string, "sql.query", query)
 
       @doc "Annotation helper: tag with an error message (`error` binary annotation)"
-      @spec error_message(message :: String.t) :: Api.binary_annotation_delta
+      @spec error_message(message :: any) :: Api.binary_annotation_delta
       def error_message(message) when is_binary(message), do: Tracer.binary_annotation_delta(:string, :error, message)
+      def error_message(message), do: Tracer.binary_annotation_delta(:string, :error, inspect(message))
 
       @doc "Annotation helper: tag with a general (key,value,host) binary annotation, determining type of annotation automatically"
       @spec tag(key :: Api.binary_annotation_key, value :: Api.binary_annotation_value, endpoint :: Api.maybe_endpoint) :: Api.binary_annotation_delta

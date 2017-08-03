@@ -32,7 +32,7 @@ defmodule TapperTest do
       Tapper.binary_annotation(:i16, "units", 233)
     ])
 
-    id = Tapper.finish_span(id)
+    id = Tapper.finish_span(id, annotations: [Tapper.error(), Tapper.error_message(%{message: "bang"})])
 
     :ok = Tapper.finish(id)
 
@@ -59,14 +59,16 @@ defmodule TapperTest do
     assert protocol_binary_annotation_by_key(child_1, "http.response.size").value == 1024
     assert protocol_binary_annotation_by_key(child_1, "cpu_temperature").value == 78.3
 
-    assert length(child_2.annotations) == 2
+    assert length(child_2.annotations) == 3
     assert protocol_annotation_by_value(child_2, :ws)
     assert protocol_annotation_by_value(child_2, :wr)
     assert protocol_annotation_by_value(child_2, :wr).host.service_name == "proto"
+    assert protocol_annotation_by_value(child_2, :error)
 
-    assert length(child_2.binary_annotations) == 2
+    assert length(child_2.binary_annotations) == 3
     assert protocol_binary_annotation_by_key(child_2, :lc).value == "local-algorithm"
     assert protocol_binary_annotation_by_key(child_2, "units").value == 233
+    assert protocol_binary_annotation_by_key(child_2, :error).value == inspect(%{message: "bang"})
   end
 
   test "join api" do
