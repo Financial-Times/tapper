@@ -1,3 +1,7 @@
+v0.3.2
+* `Tapper.error_message/1` (and `TapperCtx.error_message`) should take any term (and convert to a string) for convenience.
+* update `dialyxir`.
+
 v0.3.1
 * DEFECT: joined traces (shared spans) should not set duration on root span.
 * use custom `Logger.metadata/1` implementation for small perf gain.
