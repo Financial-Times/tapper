@@ -27,6 +27,7 @@ defmodule TracerTest do
 
       Tracer.finish(id)
 
+      assert Logger.metadata() == []
       assert_receive {:DOWN, ^ref, _, _, _}, 1000
   end
 
