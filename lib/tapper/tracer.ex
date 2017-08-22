@@ -208,6 +208,7 @@ defmodule Tapper.Tracer do
   def finish(id = %Tapper.Id{}, opts) when is_list(opts) do
     end_timestamp = Timestamp.instant()
 
+    Logger.metadata(trace_id: nil)
     GenServer.cast(via_tuple(id), {:finish, end_timestamp, opts})
   end
 
