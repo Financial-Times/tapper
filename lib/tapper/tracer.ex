@@ -145,6 +145,18 @@ defmodule Tapper.Tracer do
     end
   end
 
+  defp remove_metadata do
+    case :erlang.get(:logger_metadata) do
+      :undefined -> :ok
+      {enabled, metadata} ->
+        :erlang.put(:logger_metadata, {
+          enabled,
+          :lists.keydelete(:trace_id, 1, metadata)
+        })
+        :ok
+    end
+  end
+
   @doc false
   # ensure options are correct or default them, and pickup sample and debug flags.
   #
@@ -208,7 +220,7 @@ defmodule Tapper.Tracer do
   def finish(id = %Tapper.Id{}, opts) when is_list(opts) do
     end_timestamp = Timestamp.instant()
 
-    Logger.metadata(trace_id: nil)
+    remove_metadata()
     GenServer.cast(via_tuple(id), {:finish, end_timestamp, opts})
   end
 
