@@ -1,5 +1,9 @@
 defmodule Tapper.Encoder.Json do
-  @moduledoc "Encode protocol spans to JSON suitable for sending to Zipkin Server API"
+  @moduledoc """
+  Encode protocol spans to JSON suitable for sending to V1 Zipkin Server API.
+
+  V1 - [zipkin-api.yaml](https://github.com/openzipkin/zipkin-api/blob/682de48c7e1161f59d4e1ecfae0d631eea85ea44/zipkin-api.yaml)
+  """
 
   @spec encode!([%Tapper.Protocol.Span{}]) :: iodata | no_return
   def encode!(spans = [%Tapper.Protocol.Span{} | _spans]) do
@@ -92,12 +96,21 @@ defmodule Tapper.Encoder.Json do
   end
 
   def encode_endpoint(%Tapper.Protocol.Endpoint{ipv4: ipv4, ipv6: ipv6, port: port, service_name: service_name}) do
-    %{
-      serviceName: service_name || "unknown"
-    }
+    %{}
+    |> add_service_name(service_name)
     |> add_port(port)
     |> add_ipv4(ipv4)
     |> add_ipv6(ipv6)
+  end
+
+  def add_service_name(map, "unknown"), do: put_in(map, [:serviceName], "")
+  def add_service_name(map, :unknown), do: put_in(map, [:serviceName], "")
+  def add_service_name(map, nil), do: put_in(map, [:serviceName], "")
+  def add_service_name(map, "" <> serviceName) do
+    put_in(map, [:serviceName], String.downcase(serviceName))
+  end
+  def add_service_name(map, serviceName) when is_atom(serviceName) do
+    put_in(map, [:serviceName], String.downcase(Atom.to_string(serviceName)))
   end
 
   def add_port(map, port) when is_nil(port), do: map

@@ -53,24 +53,25 @@ defmodule Tracer.TraceToProtocolTest do
       assert %Protocol.Endpoint{service_name: "service-svc"} = protocol_endpoint
     end
 
-    test "missing service_name defaults to unknown" do
+    test "missing service_name defaults to :unknown" do
       endpoint = %Tapper.Endpoint{
       }
 
       protocol_endpoint = Convert.to_protocol_endpoint(endpoint)
 
-      assert %Protocol.Endpoint{service_name: "unknown"} = protocol_endpoint
+      assert %Protocol.Endpoint{service_name: :unknown} = protocol_endpoint
     end
 
 
-    test "missing service_name becomes hostname if set" do
+    test "missing service_name becomes :unknown even if hostname is set" do
+      # why? because we used to use the hostname if set, and that was a bug
       endpoint = %Tapper.Endpoint{
         hostname: "my-service.ft.com"
       }
 
       protocol_endpoint = Convert.to_protocol_endpoint(endpoint)
 
-      assert %Protocol.Endpoint{service_name: "my-service.ft.com"} = protocol_endpoint
+      assert %Protocol.Endpoint{service_name: :unknown} = protocol_endpoint
     end
 
     test "port copies" do

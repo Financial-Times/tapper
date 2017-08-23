@@ -1,6 +1,34 @@
 defmodule JsonTest do
   use ExUnit.Case
 
+  describe "endpoint serviceName encoding" do
+
+    test "serviceName is empty-string should encode as empty-string" do
+      assert %{serviceName: ""} =  Tapper.Encoder.Json.encode_endpoint(%Tapper.Protocol.Endpoint{service_name: ""})
+    end
+
+    test "serviceName is \"unknown\" should encode as empty-string" do
+      assert %{serviceName: ""} =  Tapper.Encoder.Json.encode_endpoint(%Tapper.Protocol.Endpoint{service_name: "unknown"})
+    end
+
+    test "serviceName is :unknown should encode as empty-string" do
+      assert %{serviceName: ""} =  Tapper.Encoder.Json.encode_endpoint(%Tapper.Protocol.Endpoint{service_name: :unknown})
+    end
+
+    test "serviceName is nil should encode as empty string" do
+      assert %{serviceName: ""} =  Tapper.Encoder.Json.encode_endpoint(%Tapper.Protocol.Endpoint{service_name: nil})
+    end
+
+    test "serviceName is non-empty string should encode as non-empty lower-case string" do
+      assert %{serviceName: "myservice"} =  Tapper.Encoder.Json.encode_endpoint(%Tapper.Protocol.Endpoint{service_name: "Myservice"})
+    end
+
+    test "serviceName is atom, but not nil, should encode as lower-case string" do
+      assert %{serviceName: "myservice"} =  Tapper.Encoder.Json.encode_endpoint(%Tapper.Protocol.Endpoint{service_name: :Myservice})
+    end
+
+  end
+
   test "encode with parent_id, no annotations" do
     {trace_id, _uniq} = Tapper.TraceId.generate()
     span_id = Tapper.SpanId.generate()

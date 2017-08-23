@@ -85,7 +85,7 @@ defmodule Tapper.Tracer.Trace.Convert do
   def to_protocol_endpoint(host = %Tapper.Endpoint{}) do
     endpoint = %Protocol.Endpoint{
       port: host.port || 0,
-      service_name: host.service_name || host.hostname || "unknown"
+      service_name: host.service_name || :unknown
     }
 
     host = Tapper.Endpoint.resolve(host)
