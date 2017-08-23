@@ -1,3 +1,8 @@
+v0.3.3
+* DEFECT: "unknown" being recorded as service name.
+* DEFECT: remove `trace_id` from Logger context (HT @TKasekamp)
+* suppress all server logging unless `server_trace` is set to a log level (HT @TKasekamp)
+
 v0.3.2
 * `Tapper.error_message/1` (and `TapperCtx.error_message`) should take any term (and convert to a string) for convenience.
 * update `dialyxir`.
@@ -8,7 +13,7 @@ v0.3.1
 * parse child span name from opts in server rather than client, for tiny perf gain.
 * tiny refactoring things.
 
-v0.3.0 
+v0.3.0
 
 * Use [`DeferredConfig`](https://hexdocs.pm/deferred_config/readme.html) for univeral application of `{:system, ENV_VAR}` style indirections in config.
 * Add `Tapper.Ctx` contextual API.
