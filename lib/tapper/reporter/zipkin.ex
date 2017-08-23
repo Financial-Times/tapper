@@ -36,7 +36,6 @@ defmodule Tapper.Reporter.Zipkin do
   @options ssl: [{:versions, [:'tlsv1.2']}], hackney: [pool: __MODULE__]
 
   def ingest(spans) when is_list(spans) do
-    Logger.debug(fn -> "Sending #{length(spans)} spans to Zipkin" end)
 
     # we did use HTTPoison.Base unfortunately, plays badly with Dialyzer & ExDoc
     url = url()
@@ -48,7 +47,7 @@ defmodule Tapper.Reporter.Zipkin do
 
     case result do
       {:ok, %HTTPoison.Response{status_code: 202}} ->
-        Logger.debug(fn -> "Spans sent OK." end)
+        :ok
       {:ok, response = %HTTPoison.Response{status_code: status}} ->
         Logger.warn(fn -> "Failed to send spans: status=#{status} #{inspect response}" end)
       {:error, %HTTPoison.Error{reason: reason}} ->
