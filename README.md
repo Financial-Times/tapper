@@ -6,6 +6,8 @@ Implements an interface for recording traces and sending them to a [Zipkin](http
 
 ## Synopsis
 
+See also [`tapper_demo`](https://github.com/Financial-Times/tapper_demo)
+
 ### A Client
 A client making a request:
 
@@ -118,11 +120,14 @@ directly to propagate the `Tapper.Id` across process boundaries.
 
 See the `Tapper.Ctx` module for details, including details of options for debugging the inevitable incorrect usage in your code!
 
+### API Documentation
+
+The API documentation can be found at [https://hexdocs.pm/tapper](https://hexdocs.pm/tapper).
 
 ### See also
 [`Tapper.Plug`](https://github.com/Financial-Times/tapper_plug) - [Plug](https://github.com/elixir-lang/plug) integration: decodes incoming [B3](https://github.com/openzipkin/b3-propagation) trace headers, joining or sampling traces.
 
-The API documentation can be found at [https://hexdocs.pm/tapper](https://hexdocs.pm/tapper).
+[`tapper_demo`](https://github.com/Financial-Times/tapper_demo) - a simple client-server application using Tapper.
 
 ## Implementation
 
