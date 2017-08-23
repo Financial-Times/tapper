@@ -29,7 +29,7 @@ defmodule Tapper.Tracer.Server do
   * `init/1`.
   """
   def start_link(config, trace_init = {trace_id, _, _, _, _}, pid, timestamp, opts) do
-    Logger.debug(fn -> inspect {"Tracer: start_link", trace_init} end)
+    debug(config, fn -> inspect {"Tracer: start_link", trace_init} end)
 
     GenServer.start_link(Tapper.Tracer.Server, [config, trace_init, pid, timestamp, opts], name: via_tuple(trace_id)) # calls Tapper.Tracer.Server.init/1
   end
@@ -62,9 +62,9 @@ defmodule Tapper.Tracer.Server do
   NB passed the list of arguments supplied by `Tapper.Tracer.Server.start_link/5` via `Tapper.Tracer.Supervisor.start_tracer/3`.
   """
   def init([config, trace_init = {trace_id, span_id, parent_id, sample, debug}, _pid, timestamp, opts]) do
-    Logger.debug(fn -> inspect {"Tracer: started tracer", trace_init} end)
+    debug(config, fn -> inspect {"Tracer: started tracer", trace_init} end)
 
-    Logger.info(fn -> "Start Trace #{Tapper.TraceId.format(trace_id)}" end)
+    server_trace(config, fn -> "Start Trace #{Tapper.TraceId.format(trace_id)}" end)
 
     # override the reporter config, if specified
     config = if(opts[:reporter], do: %{config | reporter: opts[:reporter]}, else: config)
@@ -105,7 +105,7 @@ defmodule Tapper.Tracer.Server do
 
   @doc "via Tapper.Tracer.finish/2"
   def handle_cast(msg = {:finish, timestamp, opts}, trace) do
-    Logger.debug(fn -> inspect({trace.trace_id, msg}) end)
+    debug(trace, fn -> inspect({trace.trace_id, msg}) end)
 
     trace = apply_updates(trace, opts[:annotations], trace.span_id, timestamp, Trace.endpoint_from_config(trace.config))
 
@@ -119,7 +119,7 @@ defmodule Tapper.Tracer.Server do
 
   @doc "via start_span/1"
   def handle_cast(msg = {:start_span, span_info, opts}, trace) do
-    Logger.debug(fn -> inspect({Tapper.TraceId.format(trace.trace_id), msg}) end)
+    debug(trace, fn -> inspect({Tapper.TraceId.format(trace.trace_id), msg}) end)
 
     config_endpoint = Trace.endpoint_from_config(trace.config)
 
@@ -142,7 +142,7 @@ defmodule Tapper.Tracer.Server do
 
   @doc "via Tapper.Tracer.finish_span/2"
   def handle_cast(msg = {:finish_span, span_id, timestamp, opts}, trace) do
-    Logger.debug(fn -> inspect({trace.trace_id, msg}) end)
+    debug(trace, fn -> inspect({trace.trace_id, msg}) end)
 
     trace = update_span(trace, span_id, fn(span) -> put_in(span.end_timestamp, timestamp) end)
 
@@ -154,7 +154,7 @@ defmodule Tapper.Tracer.Server do
 
   @doc "via Tapper.Tracer.update/3"
   def handle_cast(msg = {:update, span_id, timestamp, deltas}, trace) do
-    Logger.debug(fn -> inspect({trace.trace_id, msg}) end)
+    debug(trace, fn -> inspect({trace.trace_id, msg}) end)
 
     endpoint = Trace.endpoint_from_config(trace.config)
 
@@ -175,20 +175,21 @@ defmodule Tapper.Tracer.Server do
   * `Tapper.Tracer.Timeout` - timeout behaviour.
   """
   def handle_info(:timeout, trace = %Trace{}) do
-    Logger.debug(fn -> inspect({trace.trace_id, :timeout}) end)
+    debug(trace, fn -> inspect({trace.trace_id, :timeout}) end)
     timestamp = Timestamp.instant()
 
     trace = Tapper.Tracer.Timeout.timeout_trace(trace, timestamp)
 
     :ok = report_trace(trace)
 
-    Logger.info(fn -> "End Trace #{Tapper.TraceId.format(trace.trace_id)} (timeout)" end)
+    server_trace(trace.config, fn -> "Finish Trace #{Tapper.TraceId.format(trace.trace_id)} (timeout)" end)
     {:stop, :normal, []}
   end
 
   @doc "finishes the trace asynchronously: sets the async flag & annotation on the trace, and defers to the timeout mechanism to wrap up the asynchronous spans."
   def finish_async(trace, timestamp) do
-    Logger.info(fn -> "Finish Trace #{Tapper.TraceId.format(trace.trace_id)} ASYNC" end)
+    server_trace(trace.config, fn -> "Finish Trace #{Tapper.TraceId.format(trace.trace_id)} ASYNC" end)
+
     trace = case Trace.has_annotation?(trace, trace.span_id, :async) do
       false ->
         async_annotation = Annotations.annotation(:async, timestamp, Trace.endpoint_from_config(trace.config))
@@ -206,7 +207,7 @@ defmodule Tapper.Tracer.Server do
 
     :ok = report_trace(trace)
 
-    Logger.info(fn -> "Finish Trace #{Tapper.TraceId.format(trace.trace_id)}" end)
+    server_trace(trace.config, fn -> "Finish Trace #{Tapper.TraceId.format(trace.trace_id)}" end)
     {:stop, :normal, []}
   end
 
@@ -305,7 +306,7 @@ defmodule Tapper.Tracer.Server do
 
   @doc "convert trace to protocol spans, and invoke reporter module or function."
   def report_trace(trace = %Trace{}) do
-    Logger.debug(fn -> "Sending trace #{inspect trace}" end)
+    debug(trace, fn -> "Sending trace #{inspect trace}" end)
 
     spans = Trace.Convert.to_protocol_spans(trace)
 
@@ -317,4 +318,20 @@ defmodule Tapper.Tracer.Server do
     :ok
   end
 
+  def server_trace(%{server_trace: false}, _), do: :ok
+  def server_trace(%{server_trace: level}, fun) when is_function(fun, 0) and level in [:debug, :info, :warn, :error] do
+    Logger.log(level, fun)
+  end
+  def server_trace(%{server_trace: level}, "" <> message) when level in [:debug, :info, :warn, :error] do
+    Logger.log(level, message)
+  end
+  def server_trace(_, _), do: :ok
+
+  if Mix.env in [:dev, :test] do
+    def debug(%{config: config}, message), do: debug(config, message)
+    def debug(%{server_trace: :debug}, message) do
+      Logger.debug(message)
+    end
+  end
+  def debug(_, _), do: :ok
 end

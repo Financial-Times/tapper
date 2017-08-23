@@ -10,7 +10,8 @@ defmodule Test.Helper.Server do
       host_info: %{
         ip: {2,1,1,2},
         system_id: "default-host"
-      }
+      },
+      server_trace: false
     }
   end
 

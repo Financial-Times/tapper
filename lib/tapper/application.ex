@@ -27,6 +27,7 @@ defmodule Tapper.Application do
   | `ip`        | tuple    | This application's principle IPV4 or IPV6 address, as 4- or 8-tuple of ints; defaults to IP of first non-loopback interface, or `{127.0.0.1}` if none. |
   | `port`      | integer  | The application's principle port, e.g. HTTP port 80; defaults to 0 |
   | `reporter`  | atom     | Module implementing `Tapper.Reporter.Api` to use for reporting spans, defaults to `Tapper.Reporter.Console`. |
+  | `server_trace` | atom | Logger level to log server traces at, or `false` (default `false`) |
 
   All keys support the Phoenix-style `{:system, var}` format<sup>[1]</sup>, to allow lookup from shell environment variables, e.g. `{:system, "PORT"}` to read `PORT` environment variable.
 
@@ -66,7 +67,8 @@ defmodule Tapper.Application do
         port: to_int(Application.get_env(:tapper, :port, 0)),
         system_id: Application.get_env(:tapper, :system_id, "unknown")
       },
-      reporter: Application.get_env(:tapper, :reporter, Tapper.Reporter.Console)
+      reporter: Application.get_env(:tapper, :reporter, Tapper.Reporter.Console),
+      server_trace: Application.get_env(:tapper, :server_trace, false),
     }
 
     Logger.info("Starting Tapper Application")
