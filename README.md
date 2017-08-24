@@ -186,7 +186,8 @@ Tapper looks for the following application configuration settings under the `:ta
 All keys support the Phoenix-style `{:system, var}` format, to allow lookup from shell environment variables, e.g. `{:system, "PORT"}` to read `PORT` environment variable<sup>[1]</sup>.
 
 The default reporter is `Tapper.Reporter.Console` which just just logs JSON spans;
-`Tapper.Reporter.Zipkin` reports spans to a Zipkin server.
+`Tapper.Reporter.Zipkin` reports spans to a Zipkin server; 
+`Tapper.Reporter.Null` reports and logs nothing.
 
 <sup>[1]</sup> Tapper uses the [`DeferredConfig`](https://hexdocs.pm/deferred_config/readme.html) library to resolve all configuration under the `:tapper` key, so see its documention for more resolution options.
 
