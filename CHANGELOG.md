@@ -1,3 +1,8 @@
+v0.3.4
+* Add `Tapper.Reporter.Null` (HT @TKasekamp)
+* Doc fixes.
+* Update deps.
+
 v0.3.3
 * DEFECT: "unknown" being recorded as service name.
 * DEFECT: remove `trace_id` from Logger context (HT @TKasekamp)
