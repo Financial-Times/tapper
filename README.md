@@ -165,19 +165,10 @@ def deps do
 end
 ```
 
+Under Elixir 1.4+ the `:tapper` application will be auto-discovered from your dependencies, so
+there is no need to add `:tapper` to your application's `extra_applications` etc.
+
 ## Configuration
-
-Add the `:tapper` application to your mix project's applications:
-
-```elixir
-  # Configuration for the OTP application.
-  #
-  # Type `mix help compile.app` for more information.
-  def application do
-    [mod: {MyApp, []},
-     applications: [:tapper]]
-  end
-```
 
 Tapper looks for the following application configuration settings under the `:tapper` key:
 
