@@ -28,7 +28,7 @@ defmodule Tapper.Tracer.Server do
   ## See also
   * `init/1`.
   """
-  def start_link(config, trace_init = {trace_id, _, _, _, _}, pid, timestamp, opts) do
+  def start_link(config, trace_init = {trace_id, _span_id, _parent_id, _sample, _debug, _shared}, pid, timestamp, opts) do
     debug(config, fn -> inspect {"Tracer: start_link", trace_init} end)
 
     GenServer.start_link(Tapper.Tracer.Server, [config, trace_init, pid, timestamp, opts], name: via_tuple(trace_id)) # calls Tapper.Tracer.Server.init/1
@@ -45,7 +45,7 @@ defmodule Tapper.Tracer.Server do
 
   ## Arguments (as list)
   * `config` - worker config from Tapper.Tracer.Supervisor's worker spec.
-  * `trace_init` - trace parameters i.e. `{trace_id, span_id, parent_span_id, sample, debug}`
+  * `trace_init` - trace parameters i.e. `{trace_id, span_id, parent_span_id, sample, debug, shared}`
   * `pid` - pid of process that called `Tapper.start/1` or `Tapper.join/6`.
   * `timestamp` (`Tapper.Timestamp.t`) - timestamp of trace receive/start event.
   * `opts` - options passed to start or join, see below.
@@ -61,7 +61,7 @@ defmodule Tapper.Tracer.Server do
 
   NB passed the list of arguments supplied by `Tapper.Tracer.Server.start_link/5` via `Tapper.Tracer.Supervisor.start_tracer/3`.
   """
-  def init([config, trace_init = {trace_id, span_id, parent_id, sample, debug}, _pid, timestamp, opts]) do
+  def init([config, trace_init = {trace_id, span_id, parent_id, sample, debug, shared}, _pid, timestamp, opts]) do
     debug(config, fn -> inspect {"Tracer: started tracer", trace_init} end)
 
     server_trace(config, fn -> "Start Trace #{Tapper.TraceId.format(trace_id)}" end)
@@ -80,7 +80,7 @@ defmodule Tapper.Tracer.Server do
         _ -> 30_000
     end
 
-    span_info = initial_span_info(span_id, parent_id, timestamp, endpoint, opts)
+    span_info = initial_span_info(span_id, parent_id, shared, timestamp, endpoint, opts)
 
     trace = %Trace{
         config: config,
@@ -259,13 +259,9 @@ defmodule Tapper.Tracer.Server do
   end
 
   @doc "prepare the SpanInfo of the initial span in this Tracer"
-  def initial_span_info(span_id, parent_id, timestamp, endpoint, opts) do
+  def initial_span_info(span_id, parent_id, shared, timestamp, endpoint, opts) do
 
     type = Keyword.get(opts, :type, :client)
-
-    # a 'shared' root span was not started locally, i.e. we joined it, so we won't set the end_timestamp
-    # see http://zipkin.io/pages/instrumenting.html#timestamps-and-duration
-    shared = (type == :server)
 
     annotation_type = case type do
       :server -> :sr

@@ -13,7 +13,7 @@ defmodule Tracer.Server.InitTest do
     span_id = Tapper.SpanId.generate()
     timestamp = Timestamp.instant()
 
-    {:ok, trace, ttl} = Tapper.Tracer.Server.init([config, {trace_id, span_id, :root, true, false}, self(), timestamp, []])
+    {:ok, trace, ttl} = Tapper.Tracer.Server.init([config, {trace_id, span_id, :root, true, false, false}, self(), timestamp, []])
 
     assert trace.trace_id == trace_id
     assert trace.span_id == span_id
@@ -60,17 +60,17 @@ defmodule Tracer.Server.InitTest do
     span_id = Tapper.SpanId.generate()
     timestamp = Timestamp.instant()
 
-    {:ok, trace, ^ttl} = Tapper.Tracer.Server.init([config, {trace_id, span_id, :root, true, false}, self(), timestamp, [ttl: ttl]])
+    {:ok, trace, ^ttl} = Tapper.Tracer.Server.init([config, {trace_id, span_id, :root, true, false, false}, self(), timestamp, [ttl: ttl]])
 
     assert trace.ttl == ttl
   end
 
-  test "init, type: server; is shared, adds :sr annotation" do
+  test "init, type: server; adds :sr annotation" do
     {trace, span_id} = init_with_opts(type: :server)
 
     span = trace.spans[span_id]
 
-    assert span.shared, "expected server span to be shared"
+    refute span.shared, "expected server span not to be shared by default"
 
     annotations = trace.spans[span_id].annotations
     assert length(annotations) == 1
@@ -132,11 +132,9 @@ defmodule Tracer.Server.InitTest do
 
   test "init, type: server, remote: endpoint adds client address binary annotation" do
     remote = random_endpoint()
-    {trace, span_id} = init_with_opts(type: :server, remote: remote)
+    {trace, span_id} = init_with_opts(type: :server, remote: remote, shared: true)
 
     span = trace.spans[span_id]
-
-    assert span.shared
 
     annotations = span.annotations
     assert length(annotations) == 1

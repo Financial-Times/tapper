@@ -64,7 +64,7 @@ defmodule Tapper.Tracer do
 
     # don't even start tracer if sampled is false
     if id.sampled do
-      trace_init = {trace_id, span_id, :root, sample, debug}
+      trace_init = {trace_id, span_id, :root, sample, debug, false}
 
       {:ok, _pid} = Tapper.Tracer.Supervisor.start_tracer(trace_init, timestamp, opts)
     end
@@ -113,7 +113,7 @@ defmodule Tapper.Tracer do
   * `type` determines the type of an automatically created `sr` (`:server`) or `cs` (`:client`) annotation, see also `Tapper.client_send/0` and `Tapper.server_receive/0`.
   """
   def join(trace_id, span_id, parent_id, sample, debug, opts \\ []), do: join({trace_id, span_id, parent_id, sample, debug}, opts)
-  def join(trace_init = {trace_id, span_id, parent_id, sample, debug}, opts \\ []) when is_list(opts) do
+  def join({trace_id, span_id, parent_id, sample, debug}, opts \\ []) when is_list(opts) do
 
     timestamp = Timestamp.instant()
 
@@ -121,6 +121,8 @@ defmodule Tapper.Tracer do
     {opts, _sample, _trace} = preflight_opts(opts, :server)
 
     id = Tapper.Id.init(trace_id, span_id, parent_id, sample, debug)
+
+    trace_init = {trace_id, span_id, parent_id, sample, debug, true}
 
     if id.sampled do
       {:ok, _pid} = Tapper.Tracer.Supervisor.start_tracer(trace_init, timestamp, opts)

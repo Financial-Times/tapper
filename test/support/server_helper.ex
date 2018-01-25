@@ -32,8 +32,9 @@ defmodule Test.Helper.Server do
     trace_id = Tapper.TraceId.generate()
     span_id = Tapper.SpanId.generate()
     timestamp = Timestamp.instant()
+    shared = opts[:shared] || false
 
-    {:ok, trace, _ttl} = Tapper.Tracer.Server.init([config, {trace_id, span_id, :root, true, false}, self(), timestamp, opts])
+    {:ok, trace, _ttl} = Tapper.Tracer.Server.init([config, {trace_id, span_id, :root, true, false, shared}, self(), timestamp, opts])
     {trace, span_id}
   end
 
