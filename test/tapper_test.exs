@@ -44,6 +44,10 @@ defmodule TapperTest do
     child_1 = protocol_span_by_name(spans, "child-1")
     child_2 = protocol_span_by_name(spans, "child-2")
 
+    assert child_1.parent_id == main_span.id
+    assert child_2.parent_id == main_span.id
+
+    assert main_span.duration
     assert length(main_span.annotations) == 1
     assert protocol_annotation_by_value(main_span, :cs)
     assert protocol_binary_annotation_by_key(main_span, :sa)
@@ -93,6 +97,7 @@ defmodule TapperTest do
     assert main_span.id == span_id
     assert main_span.trace_id == elem(trace_id, 0)
     assert main_span.parent_id == parent_span_id
+    assert main_span.duration == nil
 
     assert protocol_binary_annotation_by_key(main_span, :ca)
     assert protocol_binary_annotation_by_key(main_span, :ca).host == Tapper.Tracer.Trace.Convert.to_protocol_endpoint(remote_endpoint)

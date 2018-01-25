@@ -1,3 +1,6 @@
+v0.3.5
+* DEFECT: shared span flag should only be true for joined traces, not all `:server` traces.
+
 v0.3.4
 * Add `Tapper.Reporter.Null` (HT @TKasekamp)
 * Doc fixes.

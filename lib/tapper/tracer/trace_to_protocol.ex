@@ -41,10 +41,14 @@ defmodule Tapper.Tracer.Trace.Convert do
     * calculated durations < 1 microsecond, which we round up to 1 microsecond
   """
   @spec span_duration(span :: Trace.SpanInfo.t, trace :: Trace.t) :: nil | pos_integer()
+  def span_duration(span, trace)
+
   def span_duration(%Trace.SpanInfo{shared: true}, _trace), do: nil
+
   def span_duration(%Trace.SpanInfo{start_timestamp: start_timestamp, end_timestamp: nil}, %Trace{end_timestamp: trace_end_timestamp}) do
     max(Timestamp.duration(start_timestamp, trace_end_timestamp), 1)
   end
+
   def span_duration(%Trace.SpanInfo{start_timestamp: start_timestamp, end_timestamp: end_timestamp}, _trace) do
     max(Timestamp.duration(start_timestamp, end_timestamp), 1)
   end
