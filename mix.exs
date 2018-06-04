@@ -3,7 +3,7 @@ defmodule Tapper.Mixfile do
 
   def project do
     [app: :tapper,
-     version: "0.3.5",
+     version: "0.3.6",
      elixir: "~> 1.4",
      elixirc_paths: elixirc_paths(Mix.env),
      build_embedded: Mix.env == :prod,
@@ -60,7 +60,7 @@ defmodule Tapper.Mixfile do
   defp deps do
     [
       {:poison, "~> 3.1"},
-      {:httpoison, "~> 0.12"},
+      {:httpoison, "~> 0.12 or ~> 1.0"},
       {:deferred_config, "~> 0.1"},
       {:credo, "~> 0.5", only: [:dev, :test]},
       {:benchee, "~> 0.1", only: :bench},
