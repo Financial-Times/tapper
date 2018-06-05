@@ -1,3 +1,6 @@
+v0.3.6
+* Allow 1.x versions of HTTPoison.
+
 v0.3.5
 * DEFECT: shared span flag should only be true for joined traces, not all `:server` traces.
 
