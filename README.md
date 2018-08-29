@@ -200,7 +200,11 @@ e.g. in `config.exs` (or `prod.exs` etc.)
 ```elixir
 config :tapper,
     system_id: "my-application",
-    reporter: Tapper.Reporter.Zipkin
+    reporter: Tapper.Reporter.AsyncReporter
+
+config :tapper, Tapper.Reporter.AsyncReporter,
+    flush_interval: 10000,
+    sender: Tapper.Reporter.Zipkin
 
 config :tapper, Tapper.Reporter.Zipkin,
     collector_url: "http://localhost:9411/api/v1/spans"

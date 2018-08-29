@@ -72,11 +72,19 @@ defmodule Tapper.Application do
     }
 
     Logger.info("Starting Tapper Application")
+
     # Define workers and child supervisors to be supervised
     children = [
       supervisor(Registry, [:unique, Tapper.Tracers]),
       supervisor(Tapper.Tracer.Supervisor, [config]),
     ]
+
+    children =
+      if config[:reporter] == Tapper.Reporter.AsyncReporter do
+        [worker(Tapper.Reporter.AsyncReporter, [], restart: :transient) | children]
+      else
+        children
+      end
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
     # for other strategies and supported options

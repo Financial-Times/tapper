@@ -3,7 +3,7 @@ defmodule Tapper.Reporter.Zipkin do
   Reporter that sends spans to Zipkin Server API.
 
   * Currently supports only JSON encoding.
-  * Does not batch spans: would probably be done with an intermediate.
+  * Use AsyncReporter with this module as a sender to send spans in batches
 
   ## See also
 
