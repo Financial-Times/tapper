@@ -2,20 +2,24 @@ defmodule Tapper.Reporter.AsyncReporter do
   @moduledoc """
   Reporter that collects spans and forwards them periodically to another reporter.
 
+  Sending every sampled trace separately can create a lot of traffic between the application
+  and the Zipkin server when the server is handling a lot of client traffic. Instead this reporter
+  collects the spans and sends them in batches.
+
   ## Configuration
 
   | key | purpose | default/required |
   | - | - | - |
-  | `flush_interval` | Milliseconds to wait between reporting a new batch of spans | 10000 |
   | `sender` | Reporter to use when reporting a batch; see `Tapper.Application` for possible `reporter` forms | Required |
-  | `max_concurrent_flush_count` | Number of flushes that can work concurrently before we start discarding new spans | 5 |
+  | `flush_interval` | Milliseconds to wait between reporting a new batch of spans | 10000 |
   | `max_spans_threshold` | Reaching this number of spans will reset the flush_interval timer and will flush the spans | 1000 |
+  | `max_concurrent_flush_count` | Number of flushes that can work concurrently before we start discarding new spans | 5 |
 
   e.g.
   ```
   config :tapper,
     system_id: "my-application",
-    reporter: {Tapper.Reporter.AsyncReporter, []} # NB started under Tapper supervisor
+    reporter: {Tapper.Reporter.AsyncReporter, []} # start under Tapper supervisor
 
   config :tapper, Tapper.Reporter.AsyncReporter,
     flush_interval: 10000,
@@ -28,7 +32,6 @@ defmodule Tapper.Reporter.AsyncReporter do
     collector_url: "https://my-zipkin.domain.com:9411/api/v1/spans",
     client_opts: [timeout: 10000]
   ```
-
   """
 
   require Logger
@@ -44,6 +47,7 @@ defmodule Tapper.Reporter.AsyncReporter do
     GenServer.cast(__MODULE__.Server, {:ingest, spans})
   end
 
+  @doc "Flushes collected spans to reporter immediately."
   def flush do
     GenServer.call(__MODULE__.Server, :flush_now)
   end
@@ -56,6 +60,12 @@ defmodule Tapper.Reporter.AsyncReporter do
 
   @default_sender Tapper.Reporter.Console
 
+  @doc """
+  Starts this module under a supervisor.
+
+  Normally this is called by the `Tapper` application when this module is configured
+  as the `reporter`, using the `{Tapper.Reporter.AsyncReporter, []}` syntax.
+  """
   def start_link(opts) do
     Supervisor.start_link(__MODULE__, opts, name: __MODULE__)
   end

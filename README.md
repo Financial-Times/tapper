@@ -161,7 +161,7 @@ For release versions, the package can be installed by adding `tapper` to your li
 
 ```elixir
 def deps do
-  [{:tapper, "~> 0.3"}]
+  [{:tapper, "~> 0.4"}]
 end
 ```
 
@@ -177,15 +177,12 @@ Tapper looks for the following application configuration settings under the `:ta
 | `system_id` | String.t | This application's id; used for `service_name` in default endpoint host used in annotations. |
 | `ip`        | tuple    | This application's principle IPV4 or IPV6 address, as 4- or 8-tuple of ints; defaults to IP of first non-loopback interface, or `{127.0.0.1}` if none. |
 | `port`      | integer  | This application's principle service port, for endpoint port in annotations; defaults to 0 |
-| `reporter`  | atom     | Module implementing `Tapper.Reporter.Api` to use for reporting spans, defaults to `Tapper.Reporter.Console`. |
+| `reporter`  | `atom` \| `{atom, any}` \| `function/1` | Module implementing `Tapper.Reporter.Api` <sup>[1]</sup>, or function of arity 1 to use for reporting spans; defaults to `Tapper.Reporter.Console`. |
 
-All keys support the Phoenix-style `{:system, var}` format, to allow lookup from shell environment variables, e.g. `{:system, "PORT"}` to read `PORT` environment variable<sup>[1]</sup>.
+All keys support the Phoenix-style `{:system, var}` format, to allow lookup from shell environment variables, e.g. `{:system, "PORT"}` to read `PORT` environment variable<sup>[2]</sup>.
 
-The default reporter is `Tapper.Reporter.Console` which just just logs JSON spans;
-`Tapper.Reporter.Zipkin` reports spans to a Zipkin server; 
-`Tapper.Reporter.Null` reports and logs nothing.
-
-<sup>[1]</sup> Tapper uses the [`DeferredConfig`](https://hexdocs.pm/deferred_config/readme.html) library to resolve all configuration under the `:tapper` key, so see its documention for more resolution options.
+<sup>[1]</sup> If the reporter is given as `{module, arg}` it is expected to specify an OTP server to be started under Tapper's main supervisor.<br/>
+<sup>[2]</sup> Tapper uses the [`DeferredConfig`](https://hexdocs.pm/deferred_config/readme.html) library to resolve all configuration under the `:tapper` key, so see its documention for more resolution options.
 
 ### Zipkin Reporter
 
@@ -200,15 +197,19 @@ e.g. in `config.exs` (or `prod.exs` etc.)
 ```elixir
 config :tapper,
     system_id: "my-application",
-    reporter: Tapper.Reporter.AsyncReporter
-
-config :tapper, Tapper.Reporter.AsyncReporter,
-    flush_interval: 10000,
-    sender: Tapper.Reporter.Zipkin
+    reporter: Tapper.Reporter.Zipkin
 
 config :tapper, Tapper.Reporter.Zipkin,
     collector_url: "http://localhost:9411/api/v1/spans"
 ```
+
+### Other Reporters
+
+| Module | Description |
+| - | - |
+| `Tapper.Reporter.AsyncReporter` | collects spans before sending them to another reporter |
+| `Tapper.Reporter.Console` | just logs JSON spans |
+| `Tapper.Reporter.Null` | reports and logs *nothing* |
 
 ### Custom Reporters
 
@@ -217,6 +218,10 @@ You can implement your own reporter module by implementing the `Tapper.Reporter.
 This defines a function `ingest/1` that receives spans in the form of `Tapper.Protocol.Span` structs,
 with timestamps and durations in microseconds. For JSON serialization, see `Tapper.Encoder.Json` which
 encodes to a format compatible with Zipkin server.
+
+The configuration's `reporter` property is usually either an `atom` specifying a simple module, or a 
+supervisor-child-style `{module, args}` tuple specifying an OTP server to be started under Tapper's main 
+supervisor. Additionally, it may be a 1-argument function which is useful for testing.
 
 ### Logging
 
