@@ -53,7 +53,7 @@ defmodule TapperTest do
     assert protocol_binary_annotation_by_key(main_span, :sa)
     assert protocol_binary_annotation_by_key(main_span, :sa).host == Tapper.Tracer.Trace.Convert.to_protocol_endpoint(remote_endpoint)
 
-    assert length(child_1.annotations) == 0
+    assert child_1.annotations == []
     assert length(child_1.binary_annotations) == 8
     assert protocol_binary_annotation_by_key(child_1, "http.host").value == "api.ft.com"
     assert protocol_binary_annotation_by_key(child_1, "http.path").value == "my/api"
@@ -121,7 +121,7 @@ defmodule TapperTest do
         Tapper.finish_span(id_2)
       end)
 
-    [{^t1, {:ok, _}}, {^t2, {:ok, _}}] = Task.yield_many([t1,t2], 500)
+    [{^t1, {:ok, _}}, {^t2, {:ok, _}}] = Task.yield_many([t1, t2], 500)
 
     Tapper.finish(id)
 

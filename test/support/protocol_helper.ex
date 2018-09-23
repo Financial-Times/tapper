@@ -1,4 +1,5 @@
 defmodule Test.Helper.Protocol do
+  @moduledoc false
 
   @spec protocol_span_by_name([%Tapper.Protocol.Span{}], String.t) :: %Tapper.Protocol.Span{} | nil
   def protocol_span_by_name(spans, name) do

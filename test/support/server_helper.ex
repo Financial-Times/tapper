@@ -1,4 +1,5 @@
 defmodule Test.Helper.Server do
+  @moduledoc false
 
   alias Tapper.Timestamp
   alias Tapper.Tracer.Trace
@@ -8,7 +9,7 @@ defmodule Test.Helper.Server do
   def config() do
     %{
       host_info: %{
-        ip: {2,1,1,2},
+        ip: {2, 1, 1, 2},
         system_id: "default-host"
       },
       server_trace: false
@@ -66,9 +67,7 @@ defmodule Test.Helper.Server do
   def trace(spans \\ []) do
     timestamp = Timestamp.instant()
 
-    spans =
-      Enum.map(spans, fn(span) -> {span.id, span} end)
-      |> Enum.into(Map.new)
+    spans = Enum.into(spans, Map.new, fn(span) -> {span.id, span} end)
 
     %Trace{
       parent_id: :root,

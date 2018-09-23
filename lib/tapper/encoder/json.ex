@@ -109,8 +109,8 @@ defmodule Tapper.Encoder.Json do
   def add_service_name(map, "" <> serviceName) do
     put_in(map, [:serviceName], String.downcase(serviceName))
   end
-  def add_service_name(map, serviceName) when is_atom(serviceName) do
-    put_in(map, [:serviceName], String.downcase(Atom.to_string(serviceName)))
+  def add_service_name(map, service_name) when is_atom(service_name) do
+    put_in(map, [:serviceName], String.downcase(Atom.to_string(service_name)))
   end
 
   def add_port(map, port) when is_nil(port), do: map

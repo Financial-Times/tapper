@@ -48,7 +48,7 @@ defmodule Tapper.Reporter.AsyncReporter do
     GenServer.call(__MODULE__.Server, :flush_now)
   end
 
-  @default_flush_interval 10000
+  @default_flush_interval 10_000
 
   @default_max_concurrent_flush_count 5
 
@@ -110,6 +110,8 @@ defmodule Tapper.Reporter.AsyncReporter do
 
   # Server
   defmodule Server do
+    @moduledoc false
+
     use GenServer
 
     def start_link(config) do
@@ -128,7 +130,7 @@ defmodule Tapper.Reporter.AsyncReporter do
     @impl true
     def handle_cast(
           {:ingest, new_spans},
-          %{spans: spans, max_spans_threshold: max_spans_threshold} = state
+          state = %{spans: spans, max_spans_threshold: max_spans_threshold}
         ) do
       state = %{state | spans: spans ++ new_spans}
 
@@ -149,9 +151,9 @@ defmodule Tapper.Reporter.AsyncReporter do
       {:noreply, flush(state)}
     end
 
-    defp flush(%{spans: []} = state), do: schedule_flush(state)
+    defp flush(state = %{spans: []}), do: schedule_flush(state)
 
-    defp flush(%{spans: spans, sender: sender} = state) do
+    defp flush(state = %{spans: spans, sender: sender}) do
       case maybe_send_spans(sender, spans) do
         {:ok, _task} ->
           %{schedule_flush(state) | spans: []}
@@ -162,7 +164,7 @@ defmodule Tapper.Reporter.AsyncReporter do
       end
     end
 
-    defp schedule_flush(%{flush_interval: flush_interval} = state) do
+    defp schedule_flush(state = %{flush_interval: flush_interval}) do
       if state[:timer] do
         Process.cancel_timer(state[:timer])
       end

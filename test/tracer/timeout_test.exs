@@ -48,12 +48,12 @@ defmodule Tracer.TimeoutTest do
   describe "all_finished/1" do
 
     test "returns true when all finished" do
-      spans = [%Trace.SpanInfo{end_timestamp: 1},%Trace.SpanInfo{end_timestamp: 2}]
+      spans = [%Trace.SpanInfo{end_timestamp: 1}, %Trace.SpanInfo{end_timestamp: 2}]
       assert Timeout.all_finished?(spans)
     end
 
     test "returns false when one unfinished" do
-      spans = [%Trace.SpanInfo{end_timestamp: 1},%Trace.SpanInfo{end_timestamp: nil}]
+      spans = [%Trace.SpanInfo{end_timestamp: 1}, %Trace.SpanInfo{end_timestamp: nil}]
       refute Timeout.all_finished?(spans)
     end
 

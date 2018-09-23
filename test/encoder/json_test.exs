@@ -2,31 +2,43 @@ defmodule JsonTest do
   use ExUnit.Case
 
   describe "endpoint serviceName encoding" do
-
     test "serviceName is empty-string should encode as empty-string" do
-      assert %{serviceName: ""} =  Tapper.Encoder.Json.encode_endpoint(%Tapper.Protocol.Endpoint{service_name: ""})
+      assert %{serviceName: ""} =
+               Tapper.Encoder.Json.encode_endpoint(%Tapper.Protocol.Endpoint{service_name: ""})
     end
 
     test "serviceName is \"unknown\" should encode as empty-string" do
-      assert %{serviceName: ""} =  Tapper.Encoder.Json.encode_endpoint(%Tapper.Protocol.Endpoint{service_name: "unknown"})
+      assert %{serviceName: ""} =
+               Tapper.Encoder.Json.encode_endpoint(%Tapper.Protocol.Endpoint{
+                 service_name: "unknown"
+               })
     end
 
     test "serviceName is :unknown should encode as empty-string" do
-      assert %{serviceName: ""} =  Tapper.Encoder.Json.encode_endpoint(%Tapper.Protocol.Endpoint{service_name: :unknown})
+      assert %{serviceName: ""} =
+               Tapper.Encoder.Json.encode_endpoint(%Tapper.Protocol.Endpoint{
+                 service_name: :unknown
+               })
     end
 
     test "serviceName is nil should encode as empty string" do
-      assert %{serviceName: ""} =  Tapper.Encoder.Json.encode_endpoint(%Tapper.Protocol.Endpoint{service_name: nil})
+      assert %{serviceName: ""} =
+               Tapper.Encoder.Json.encode_endpoint(%Tapper.Protocol.Endpoint{service_name: nil})
     end
 
     test "serviceName is non-empty string should encode as non-empty lower-case string" do
-      assert %{serviceName: "myservice"} =  Tapper.Encoder.Json.encode_endpoint(%Tapper.Protocol.Endpoint{service_name: "Myservice"})
+      assert %{serviceName: "myservice"} =
+               Tapper.Encoder.Json.encode_endpoint(%Tapper.Protocol.Endpoint{
+                 service_name: "Myservice"
+               })
     end
 
     test "serviceName is atom, but not nil, should encode as lower-case string" do
-      assert %{serviceName: "myservice"} =  Tapper.Encoder.Json.encode_endpoint(%Tapper.Protocol.Endpoint{service_name: :Myservice})
+      assert %{serviceName: "myservice"} =
+               Tapper.Encoder.Json.encode_endpoint(%Tapper.Protocol.Endpoint{
+                 service_name: :Myservice
+               })
     end
-
   end
 
   test "encode with parent_id, no annotations" do
@@ -47,15 +59,46 @@ defmodule JsonTest do
     json = Tapper.Encoder.Json.encode!([proto_span])
 
     assert is_list(json)
-    assert json == [91,
-        [[123,
-        [[34, ["traceId"], 34], 58, [34, [Tapper.Id.Utils.to_hex(trace_id)], 34],
-          44, [34, ["timestamp"], 34], 58, "1234", 44, [34, ["parentId"], 34], 58,
-          [34, [Tapper.SpanId.to_hex(parent_span_id)], 34], 44, [34, ["name"], 34], 58,
-          [34, ["test"], 34], 44, [34, ["id"], 34], 58,
-          [34, [Tapper.SpanId.to_hex(span_id)], 34], 44, [34, ["duration"], 34], 58, "100", 44,
-          [34, ["debug"], 34], 58, "true"], 125]],
-    93]
+
+    assert json == [
+             91,
+             [
+               [
+                 123,
+                 [
+                   [34, ["traceId"], 34],
+                   58,
+                   [34, [Tapper.Id.Utils.to_hex(trace_id)], 34],
+                   44,
+                   [34, ["timestamp"], 34],
+                   58,
+                   "1234",
+                   44,
+                   [34, ["parentId"], 34],
+                   58,
+                   [34, [Tapper.SpanId.to_hex(parent_span_id)], 34],
+                   44,
+                   [34, ["name"], 34],
+                   58,
+                   [34, ["test"], 34],
+                   44,
+                   [34, ["id"], 34],
+                   58,
+                   [34, [Tapper.SpanId.to_hex(span_id)], 34],
+                   44,
+                   [34, ["duration"], 34],
+                   58,
+                   "100",
+                   44,
+                   [34, ["debug"], 34],
+                   58,
+                   "true"
+                 ],
+                 125
+               ]
+             ],
+             93
+           ]
   end
 
   test "encode parent_id with root parent_id" do
@@ -69,7 +112,8 @@ defmodule JsonTest do
   end
 
   test "encode 128-bit trace_id" do
-    <<trace_id :: size(128)>> = <<0,255,255,255,255,255,255,255,0,255,255,255,255,255,255,255>>
+    <<trace_id::size(128)>> =
+      <<0, 255, 255, 255, 255, 255, 255, 255, 0, 255, 255, 255, 255, 255, 255, 255>>
 
     map = Tapper.Encoder.Json.encode_trace_id(%{}, %Tapper.Protocol.Span{trace_id: trace_id})
     assert map == %{traceId: "ffffffffffffff00ffffffffffffff"}
@@ -93,7 +137,7 @@ defmodule JsonTest do
           value: :cs,
           timestamp: 1000,
           host: %Tapper.Protocol.Endpoint{
-            ipv4: {10,1,1,100},
+            ipv4: {10, 1, 1, 100},
             service_name: "my-service",
             port: 443
           }
@@ -102,7 +146,7 @@ defmodule JsonTest do
           value: :cr,
           timestamp: 2000,
           host: %Tapper.Protocol.Endpoint{
-            ipv4: {10,1,1,100},
+            ipv4: {10, 1, 1, 100},
             service_name: "my-service",
             port: 443
           }
@@ -124,7 +168,7 @@ defmodule JsonTest do
           key: "http.path",
           value: "/foo/bar",
           host: %Tapper.Protocol.Endpoint{
-            ipv4: {10,1,1,100},
+            ipv4: {10, 1, 1, 100},
             service_name: "my-server",
             port: 443
           }

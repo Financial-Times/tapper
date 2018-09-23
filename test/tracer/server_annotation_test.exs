@@ -23,7 +23,7 @@ defmodule Tracer.Server.AnnotationTest do
     assert is_list(span.annotations)
     assert length(span.annotations) == 2
     assert is_list(span.binary_annotations)
-    assert length(span.binary_annotations) == 0
+    assert span.binary_annotations == []
 
     assert %Trace.Annotation{
       value: value,
@@ -89,7 +89,7 @@ defmodule Tracer.Server.AnnotationTest do
     assert is_list(span.annotations)
     assert length(span.annotations) == 2
     assert is_list(span.binary_annotations)
-    assert length(span.binary_annotations) == 0
+    assert span.binary_annotations == []
 
     assert %Trace.Annotation{
       value: value,
@@ -120,7 +120,7 @@ defmodule Tracer.Server.AnnotationTest do
     span = state_2.spans[span_id]
 
     assert is_list(span.binary_annotations)
-    assert length(span.binary_annotations) == 0
+    assert span.binary_annotations == []
 
     [annotation_2, annotation_1, _] = span.annotations
 
