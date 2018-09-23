@@ -306,10 +306,7 @@ defmodule Tapper.Tracer.Server do
 
     spans = Trace.Convert.to_protocol_spans(trace)
 
-    case trace.config.reporter do
-      fun when is_function(fun, 1) -> fun.(spans)
-      mod when is_atom(mod) -> apply(mod, :ingest, [spans])
-    end
+    Tapper.Reporter.send(trace.config.reporter, spans)
 
     :ok
   end

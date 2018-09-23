@@ -3,8 +3,7 @@ elixir:
     - 1.6.6
     - 1.7.3
 opt_release:
-    - 19.3
+    - 20.3
 after_script:
   - cd $TRAVIS_BUILD_DIR
   - mix deps.get --only docs
-  - MIX_ENV=docs mix inch.report

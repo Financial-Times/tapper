@@ -26,7 +26,7 @@ defmodule Tapper.Id do
   @type t :: %__MODULE__{trace_id: Tapper.TraceId.t, span_id: Tapper.SpanId.t, parent_ids: [Tapper.SpanId.t], sampled: boolean(), origin_parent_id: Tapper.SpanId.t | :root, sample: boolean(), debug: boolean()} | :ignore
 
   @doc "Create id from trace context"
-  @spec init(trace_id :: TraceId.t, span_id :: SpanId.t, parent_span_id :: SpanId.t, sample :: boolean, debug :: boolean) :: t
+  @spec init(trace_id :: TraceId.t, span_id :: SpanId.t, parent_span_id :: SpanId.t | :root, sample :: boolean, debug :: boolean) :: t
   def init(trace_id, span_id, parent_span_id, sample, debug) do
     %Tapper.Id{
       trace_id: trace_id,

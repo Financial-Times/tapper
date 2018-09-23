@@ -1,3 +1,9 @@
+v0.4.0
+* Requires Elixir 1.6+
+* `Tapper.Reporter.AsyncReporter` (thanks to @indrekj)
+* Tapper will now start reporters under its supervision tree if given as `{module, args}` supervisor-style tuple.
+* Enforces that reporters are a module implementing `Tapper.Api.Reporter`, or a function with arity-1.
+
 v0.3.6
 * Allow 1.x versions of HTTPoison.
 

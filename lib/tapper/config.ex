@@ -21,4 +21,12 @@ defmodule Tapper.Config do
   def to_atom(val = <<c::utf8, _rest::binary>>) when is_binary(val) and c >= ?a and c <= ?z, do: String.to_atom(val)
   def to_atom(val) when is_binary(val), do: String.to_atom("Elixir." <> val)
 
+  def behaves_as?(module, behaviour) do
+    Code.ensure_loaded?(module)
+    &&
+    module.module_info[:attributes]
+    |> Keyword.get_values(:behaviour)
+    |> Enum.flat_map(&(&1))
+    |> Enum.member?(behaviour)
+  end
 end

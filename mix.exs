@@ -3,8 +3,8 @@ defmodule Tapper.Mixfile do
 
   def project do
     [app: :tapper,
-     version: "0.3.6",
-     elixir: "~> 1.4",
+     version: "0.4.0",
+     elixir: "~> 1.6",
      elixirc_paths: elixirc_paths(Mix.env),
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
@@ -59,7 +59,7 @@ defmodule Tapper.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:poison, "~> 3.1"},
+      {:poison, "~> 3.1 or ~> 4.0"},
       {:httpoison, "~> 0.12 or ~> 1.0"},
       {:deferred_config, "~> 0.1"},
       {:credo, "~> 0.5", only: [:dev, :test]},
@@ -67,8 +67,7 @@ defmodule Tapper.Mixfile do
       {:mix_test_watch, "~> 0.3", only: :dev, runtime: false},
       {:ex_doc, "~> 0.14", only: :dev, runtime: false},
       {:dialyxir, "~> 0.5", only: [:dev]},
-      {:inch_ex, ">= 0.0.0", only: :docs},
-      {:mox, "~> 0.4", only: :test}
+      {:inch_ex, ">= 0.0.0", only: :docs, optional: true}
     ]
   end
 end
