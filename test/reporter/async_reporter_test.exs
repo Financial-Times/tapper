@@ -107,7 +107,7 @@ defmodule Tapper.Reporter.AsyncReporterTest do
 
       AsyncReporter.flush()
 
-      assert_receive [first_span, second_span]
+      assert_receive [^first_span, ^second_span]
     end
 
     test "supervises a reporter specified as {module, args}" do
