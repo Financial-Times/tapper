@@ -37,8 +37,8 @@ defmodule Tapper.Protocol do
       :duration
     ]
 
-    @type trace_id :: integer()
-    @type span_id :: integer()
+    @type trace_id :: binary()
+    @type span_id :: binary()
 
     @type t :: %__MODULE__{
       trace_id: trace_id(),

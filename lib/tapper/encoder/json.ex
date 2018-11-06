@@ -32,17 +32,17 @@ defmodule Tapper.Encoder.Json do
   end
 
   def encode_trace_id(map, %Tapper.Protocol.Span{trace_id: trace_id}) do
-    put_in(map, [:traceId], Tapper.Id.Utils.to_hex(trace_id))
+    put_in(map, [:traceId], trace_id)
   end
 
   def encode_span_id(map, span) do
-    put_in(map, [:id], Tapper.Id.Utils.to_hex(span.id))
+    put_in(map, [:id], span.id)
   end
 
   def encode_parent_id(map, span) do
     case span.parent_id do
       :root -> map
-      _ -> put_in(map, [:parentId], Tapper.Id.Utils.to_hex(span.parent_id))
+      _ -> put_in(map, [:parentId], span.parent_id)
     end
   end
 

@@ -3,7 +3,7 @@ defmodule ZipkinTest do
   use ExUnit.Case
 
   test "encodes spans using Json encoder" do
-    {trace_id, _} = Tapper.TraceId.generate()
+    trace_id = Tapper.TraceId.generate()
 
     annotations = []
     binary_annotations = []

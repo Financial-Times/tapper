@@ -95,7 +95,7 @@ defmodule TapperTest do
 
     main_span = protocol_span_by_name(spans, "main")
     assert main_span.id == span_id
-    assert main_span.trace_id == elem(trace_id, 0)
+    assert main_span.trace_id == trace_id
     assert main_span.parent_id == parent_span_id
     assert main_span.duration == nil
 

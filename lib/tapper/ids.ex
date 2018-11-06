@@ -110,52 +110,87 @@ defmodule Tapper.Id do
 
 end
 
+defmodule Tapper.Id.Utils do
+  @moduledoc false
+
+  @doc "Lower-case base-16 conversion"
+  defmacro gen_inline_hex() do
+    for val <- 0..255 do
+      b = <<val::8>>
+      h = Base.encode16(b, case: :lower)
+      quote do
+        defp hex(unquote(val)), do: unquote(h)
+      end
+    end
+  end
+end
+
+
 defmodule Tapper.TraceId do
   @moduledoc """
   Generate, parse or format a top-level trace id.
 
-  The TraceId comprises the 128-bit Zipkin id, with a second component which is generated using a
-  per-VM unique number sequence, to disambiguate parallel requests to the same server, so each request
-  gets it's own trace server, which prevents lifecycle confusion.
+  The TraceId comprises the 128-bit Zipkin id encoded as a lower-case hex string.
   """
-  @type int128 :: integer()
-
-  @type t :: {int128, integer()}
+  @type t :: binary()
 
   defstruct [:value]   # NB only used as wrapper for e.g. logging format
+
+  require Tapper.Id.Utils
+  Tapper.Id.Utils.gen_inline_hex()
 
   @doc "generate a trace id"
   @spec generate() :: t
   def generate() do
-    <<id :: size(128)>> = :crypto.strong_rand_bytes(16)
-    {id, uniq()}
+    <<c1, c2, c3, c4, c5, c6, c7, c8, c9 ,c10, c11, c12, c13, c14, c15, c16>> = :crypto.strong_rand_bytes(16)
+    <<
+      hex(c1)::bytes,
+      hex(c2)::bytes,
+      hex(c3)::bytes,
+      hex(c4)::bytes,
+      hex(c5)::bytes,
+      hex(c6)::bytes,
+      hex(c7)::bytes,
+      hex(c8)::bytes,
+      hex(c9)::bytes,
+      hex(c10)::bytes,
+      hex(c11)::bytes,
+      hex(c12)::bytes,
+      hex(c13)::bytes,
+      hex(c14)::bytes,
+      hex(c15)::bytes,
+      hex(c16)::bytes
+    >>
   end
 
   @doc "format a trace id for logs etc."
   @spec format(trace_id :: t) :: String.t
   def format(trace_id)
-  def format({id, unique}) do
-    "#Tapper.TraceId<" <> Tapper.Id.Utils.to_hex(id) <> "." <> Integer.to_string(unique) <> ">"
+  def format(trace_id) do
+    "#Tapper.TraceId<" <> trace_id <> ">"
   end
 
   @doc "format a trace id to a hex string, for propagation etc."
   @spec to_hex(trace_id :: t) :: String.t
-  def to_hex(trace_id)
-  def to_hex({id, _unique}) do
-    Tapper.Id.Utils.to_hex(id)
-  end
+  def to_hex(trace_id), do: trace_id
 
   @doc "parse a trace id from a hex string, for propagation etc."
   @spec parse(String.t) :: {:ok, t} | :error
-  def parse(s) do
-    case Integer.parse(s, 16) do
+  def parse(<<trace_id::bytes-size(32)>>) do
+    case Integer.parse(trace_id, 16) do
       :error -> :error
-      {integer, remaining} when byte_size(remaining) == 0 -> {:ok, {integer, uniq()}}
+      {_, remaining} when byte_size(remaining) == 0 -> {:ok, trace_id}
       _ -> :error
     end
   end
-
-  defp uniq(), do: System.unique_integer([:monotonic, :positive])
+  def parse(<<trace_id::bytes-size(16)>>) do
+    case Integer.parse(trace_id, 16) do
+      :error -> :error
+      {_, remaining} when byte_size(remaining) == 0 -> {:ok, trace_id}
+      _ -> :error
+    end
+  end
+  def parse(_), do: :error
 
   defimpl Inspect do
     import Inspect.Algebra
@@ -178,49 +213,49 @@ defmodule Tapper.SpanId do
   @moduledoc """
   Generate, format or parse a span id.
 
-  A span id is a 64-bit integer.
+  A span id is a 64-bit integer encoded as a lower-case hex string.
   """
-  @type int64 :: integer()
-  @type t :: int64()
+  @type t :: binary()
+
+  require Tapper.Id.Utils
+  Tapper.Id.Utils.gen_inline_hex()
 
   @doc "generate a span id"
   @spec generate() :: t
   def generate() do
-    <<id :: size(64)>> = :crypto.strong_rand_bytes(8)
-    id
+    <<c1, c2, c3, c4, c5, c6, c7, c8>> = :crypto.strong_rand_bytes(8)
+    <<
+      hex(c1)::bytes,
+      hex(c2)::bytes,
+      hex(c3)::bytes,
+      hex(c4)::bytes,
+      hex(c5)::bytes,
+      hex(c6)::bytes,
+      hex(c7)::bytes,
+      hex(c8)::bytes,
+    >>
   end
 
   @doc "format a span id for logs etc."
   @spec format(span_id :: t) :: String.t
   def format(span_id) do
-    "#Tapper.SpanId<" <> Tapper.Id.Utils.to_hex(span_id) <> ">"
+    "#Tapper.SpanId<" <> span_id <> ">"
   end
 
   @doc "format a span id as a hex string, for propagation etc."
   @spec to_hex(span_id :: t) :: String.t
   def to_hex(span_id) do
-    Tapper.Id.Utils.to_hex(span_id)
+    span_id
   end
 
   @doc "parse a span id from a hex string, for propagation etc."
   @spec parse(String.t) :: {:ok, t} | :error
-  def parse(s) do
-    case Integer.parse(s, 16) do
+  def parse(<<span_id::bytes-size(16)>>) do
+    case Integer.parse(span_id, 16) do
       :error -> :error
-      {integer, remaining} when byte_size(remaining) == 0 -> {:ok, integer}
+      {_, remaining} when byte_size(remaining) == 0 -> {:ok, span_id}
       _ -> :error
     end
   end
-end
-
-defmodule Tapper.Id.Utils do
-  @moduledoc false
-
-  @doc "Lower-case base-16 conversion"
-  def to_hex(val) when is_integer(val) do
-    val
-    |> Integer.to_string(16)
-    |> String.downcase
-  end
-
+  def parse(_), do: :error
 end

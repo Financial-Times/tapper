@@ -44,7 +44,7 @@ defmodule JsonTest do
   end
 
   test "encode with parent_id, no annotations" do
-    {trace_id, _uniq} = Tapper.TraceId.generate()
+    trace_id = Tapper.TraceId.generate()
     span_id = Tapper.SpanId.generate()
     parent_span_id = Tapper.SpanId.generate()
 
@@ -83,20 +83,21 @@ defmodule JsonTest do
   end
 
   test "encode 64-bit trace_id" do
-    map = Tapper.Encoder.Json.encode_trace_id(%{}, %Tapper.Protocol.Span{trace_id: 1234})
-    assert map == %{traceId: "4d2"}
+    {:ok, trace_id} = Tapper.TraceId.parse("00ffffffffffffff")
+
+    map = Tapper.Encoder.Json.encode_trace_id(%{}, %Tapper.Protocol.Span{trace_id: trace_id})
+    assert map == %{traceId: "00ffffffffffffff"}
   end
 
   test "encode 128-bit trace_id" do
-    <<trace_id::size(128)>> =
-      <<0, 255, 255, 255, 255, 255, 255, 255, 0, 255, 255, 255, 255, 255, 255, 255>>
+    {:ok, trace_id} = Tapper.TraceId.parse("00ffffffffffffff00ffffffffffffff")
 
     map = Tapper.Encoder.Json.encode_trace_id(%{}, %Tapper.Protocol.Span{trace_id: trace_id})
-    assert map == %{traceId: "ffffffffffffff00ffffffffffffff"}
+    assert map == %{traceId: "00ffffffffffffff00ffffffffffffff"}
   end
 
   test "encode with annotations" do
-    {trace_id, _uniq} = Tapper.TraceId.generate()
+    trace_id = Tapper.TraceId.generate()
     span_id = Tapper.SpanId.generate()
     parent_span_id = Tapper.SpanId.generate()
 
@@ -187,7 +188,7 @@ defmodule JsonTest do
   end
 
   test "encode multiple spans" do
-    {trace_id, _uniq} = Tapper.TraceId.generate()
+    trace_id = Tapper.TraceId.generate()
     span_id_1 = Tapper.SpanId.generate()
     span_id_2 = Tapper.SpanId.generate()
 
@@ -218,7 +219,7 @@ defmodule JsonTest do
 
     assert [span_1, span_2] = json
 
-    assert span_1["traceId"] == Tapper.TraceId.to_hex({trace_id, 0})
+    assert span_1["traceId"] == Tapper.TraceId.to_hex(trace_id)
     assert span_1["traceId"] == span_2["traceId"]
     assert span_1["id"] == Tapper.SpanId.to_hex(span_id_1)
     assert span_2["id"] == Tapper.SpanId.to_hex(span_id_2)

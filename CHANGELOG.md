@@ -1,3 +1,7 @@
+v0.6.0
+* Trace and span ids are now treated as a hex string (binary) throughout:
+  * avoids multiple places where previous representation converted to hex string, e.g. in logging, propagation and reporting.
+
 v0.5.0
 * Use [`Jason`](https://github.com/michalmuskala/jason) as default JSON encoder, remove `Poison`. 
   * Can be overriden by setting `:tapper` Application var `:json_codec` to the name of the preferred module.

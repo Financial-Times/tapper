@@ -248,7 +248,7 @@ defmodule Tapper.Tracer.Server do
 
   @doc "update a span (identified by span id) in a trace with an updater function, taking care of case where span does not exist."
   @spec update_span(Trace.t, Tapper.SpanId.t, (Trace.SpanInfo.t -> Trace.SpanInfo.t)) :: Trace.t
-  def update_span(trace = %Trace{}, span_id, span_updater) when is_integer(span_id) and is_function(span_updater, 1) do
+  def update_span(trace = %Trace{}, span_id, span_updater) when is_function(span_updater, 1) do
     case trace.spans[span_id] do
       nil ->
         # if we've been restarted by our supervisor, we may have no record of the span...

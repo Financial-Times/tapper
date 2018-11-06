@@ -53,8 +53,7 @@ defmodule Tapper.Tracer do
 
   """
   def start(opts \\ []) when is_list(opts) do
-    trace_id = Tapper.TraceId.generate()
-    span_id = elem(trace_id, 0) &&& 0xFFFFFFFFFFFFFFFF # lower 64 bits
+    trace_id = <<span_id :: bytes-size(16), _rest::bytes>> = Tapper.TraceId.generate()
     timestamp = Timestamp.instant()
 
     # check and default options

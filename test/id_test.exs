@@ -3,15 +3,16 @@ defmodule TraceIdTest do
   doctest Tapper.TraceId
 
   test "can generate id" do
-    {id, uniq} = Tapper.TraceId.generate()
-    assert is_integer(id)
-    assert is_integer(uniq)
+    id = Tapper.TraceId.generate()
+    assert is_binary(id)
+    assert byte_size(id) == 32
 
-    assert {id, uniq} != Tapper.TraceId.generate()
+    assert id != Tapper.TraceId.generate()
   end
 
   test "format" do
-    assert Tapper.TraceId.format({100, 200}) == "#Tapper.TraceId<64.200>"
+    trace_id = Tapper.TraceId.generate()
+    assert Tapper.TraceId.format(trace_id) == "#Tapper.TraceId<#{Tapper.TraceId.to_hex(trace_id)}>"
   end
 
   test "parse" do
@@ -19,8 +20,10 @@ defmodule TraceIdTest do
     assert :error == Tapper.TraceId.parse("xxx")
     assert :error == Tapper.TraceId.parse("123x")
     assert :error == Tapper.TraceId.parse("x123")
-    assert {:ok, {291, u}} = Tapper.TraceId.parse("123")
-    assert is_integer(u)
+    assert :error = Tapper.TraceId.parse("11223344556677889900aabbccddee")
+
+    assert {:ok, "11223344556677889900aabbccddeeff"} == Tapper.TraceId.parse("11223344556677889900aabbccddeeff")
+    assert {:ok, "1122334455667788"} == Tapper.TraceId.parse("1122334455667788")
   end
 end
 
@@ -30,13 +33,14 @@ defmodule SpanIdTest do
 
   test "can generate id" do
     span_id = Tapper.SpanId.generate()
-    assert is_integer(span_id)
+    assert Tapper.SpanId.parse(Tapper.SpanId.to_hex(span_id)) == {:ok, span_id}
 
     assert span_id != Tapper.SpanId.generate()
   end
 
   test "format" do
-    assert Tapper.SpanId.format(1024) == "#Tapper.SpanId<400>"
+    span_id = Tapper.SpanId.generate()
+    assert Tapper.SpanId.format(span_id) == "#Tapper.SpanId<#{Tapper.SpanId.to_hex(span_id)}>"
   end
 
   test "parse" do
@@ -44,7 +48,9 @@ defmodule SpanIdTest do
     assert :error == Tapper.SpanId.parse("xxx")
     assert :error == Tapper.SpanId.parse("123x")
     assert :error == Tapper.SpanId.parse("x123")
-    assert {:ok, 291} = Tapper.SpanId.parse("123")
+    assert :error == Tapper.SpanId.parse("123")
+
+    assert {:ok, "1122334455667788"} == Tapper.SpanId.parse("1122334455667788")
   end
 end
 
@@ -277,18 +283,13 @@ defmodule TapperIdTest do
       sampled: true
     }
 
-    regex = ~r/#Tapper.Id<#Tapper.TraceId<(.+)\.(.+)>:#Tapper.SpanId<(.+)>,(.+)>/
+    regex = ~r/#Tapper.Id<#Tapper.TraceId<(.+)>:#Tapper.SpanId<(.+)>,(.+)>/
     assert Regex.match?(regex, inspect(id))
 
-    [_, trace_id, uniq, span_id, sampled] = Regex.run(regex, inspect(id))
+    [_, trace_id, span_id, sampled] = Regex.run(regex, inspect(id))
 
-    {trace_id, ""} = Integer.parse(trace_id, 16)
-    {uniq, ""} = Integer.parse(uniq, 10)
-    {span_id, ""} = Integer.parse(span_id, 16)
+    assert {^trace_id, ^span_id, _, _, _} = Tapper.Id.destructure(id)
 
-    assert trace_id == elem(id.trace_id, 0)
-    assert uniq == elem(id.trace_id, 1)
-    assert span_id == id.span_id
     assert sampled == "SAMPLED"
   end
 
@@ -302,21 +303,16 @@ defmodule TapperIdTest do
       debug: false
     }
 
-    regex = ~r/#Tapper.Id<#Tapper.TraceId<(.+)\.(.+)>:#Tapper.SpanId<(.+)>,(.+)>/
+    regex = ~r/#Tapper.Id<#Tapper.TraceId<(.+)>:#Tapper.SpanId<(.+)>,(.+)>/
 
     chars = to_string(id)
 
     assert Regex.match?(regex, chars)
 
-    [_, trace_id, uniq, span_id, sampled] = Regex.run(regex, chars)
+    [_, trace_id, span_id, sampled] = Regex.run(regex, chars)
 
-    {trace_id, ""} = Integer.parse(trace_id, 16)
-    {uniq, ""} = Integer.parse(uniq, 10)
-    {span_id, ""} = Integer.parse(span_id, 16)
+    assert {^trace_id, ^span_id, _, _, _} = Tapper.Id.destructure(id)
 
-    assert trace_id == elem(id.trace_id, 0)
-    assert uniq == elem(id.trace_id, 1)
-    assert span_id == id.span_id
     assert sampled == "SAMPLED"
   end
 end

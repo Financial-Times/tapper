@@ -15,7 +15,7 @@ defmodule Tapper.Tracer.Trace.Convert do
   end
 
   @doc "convert an internal span to a protocol span, setting duration"
-  def to_protocol_span(span, trace = %Trace{trace_id: {trace_id, _}, debug: debug}) do
+  def to_protocol_span(span, trace = %Trace{trace_id: trace_id, debug: debug}) do
 
     duration = span_duration(span, trace)
 
