@@ -8,7 +8,7 @@ defmodule Tapper.Mixfile do
      elixirc_paths: elixirc_paths(Mix.env),
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
-     aliases: [bench: "run benchmarking/tapper_bench.exs"],
+     aliases: [bench: "run benchmarking/tapper_bench.exs", hex_bench: "run benchmarking/tapper_hex_bench.exs"],
      name: "Tapper",
      source_url: "https://github.com/Financial-Times/tapper",
      description: description(),

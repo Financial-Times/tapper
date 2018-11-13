@@ -1,0 +1,448 @@
+Warmup...
+Running hex_bench in fprof mode (10000 runs of generate_trace_id/0)
+Reading trace data...
+Running hex_bench in fprof mode (10000 runs of generate_trace_id/0)
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+..................................................
+.................................................,
+...
+End of trace!
+Processing data...
+Creating output...
+Done!
+
+                                                                   CNT    ACC (ms)    OWN (ms)     
+Total                                                          2301691    9533.064    9490.071     
+
+:undefined                                                           0    9533.064       0.022     
+  :fprof.apply_start_stop/4                                          0    9533.064       0.022  <--
+    anonymous fn/0 in :elixir_compiler_1.__FILE__/1                  1    9533.033       0.015     
+    :fprof."-apply_start_stop/4-after$^1/0-0-"/3                     1       0.009       0.009     
+
+:fprof.apply_start_stop/4                                            1    9533.033       0.015     
+  anonymous fn/0 in :elixir_compiler_1.__FILE__/1                    1    9533.033       0.015  <--
+    Enum.reduce/3                                                    1    9515.387       0.002     
+    :lists.reverse/1                                                 1      17.117       0.053     
+    Logger.configure/1                                               1       0.254       0.004     
+    Mix.Shell.IO.info/1                                              1       0.145       0.005     
+    Mix.shell/0                                                      1       0.067       0.002     
+    System.get_env/1                                                 1       0.048       0.012     
+
+anonymous fn/0 in :elixir_compiler_1.__FILE__/1                      1    9515.387       0.002     
+  Enum.reduce/3                                                      1    9515.387       0.002  <--
+    Enum.reduce_range_inc/4                                          1    9515.385       0.005     
+
+Enum.reduce/3                                                        1    9515.385       0.005     
+Enum.reduce_range_inc/4                                          99999       0.000     503.605     
+  Enum.reduce_range_inc/4                                       100000    9515.385     503.610  <--
+    anonymous fn/4 in :elixir_compiler_1.__FILE__/1             100000    9010.068     653.723     
+    :suspend                                                        61       1.707       0.000     
+    Enum.reduce_range_inc/4                                      99999       0.000     503.605     
+
+Enum.reduce_range_inc/4                                         100000    9010.068     653.723     
+  anonymous fn/4 in :elixir_compiler_1.__FILE__/1               100000    9010.068     653.723  <--
+    anonymous fn/1 in :elixir_compiler_1.__FILE__/1             100000    8077.104     249.583     
+    :erlang.binary_to_atom/2                                    100000     196.450     196.450     
+    :garbage_collect                                                16      80.123      80.123     
+    :suspend                                                       105       2.668       0.000     
+
+anonymous fn/4 in :elixir_compiler_1.__FILE__/1                 100000    8077.104     249.583     
+  anonymous fn/1 in :elixir_compiler_1.__FILE__/1               100000    8077.104     249.583  <--
+    Tapper.TraceId.generate/1                                   100000    7826.276    4070.270     
+    :suspend                                                        18       1.245       0.000     
+
+anonymous fn/1 in :elixir_compiler_1.__FILE__/1                 100000    7826.276    4070.270     
+  Tapper.TraceId.generate/1                                     100000    7826.276    4070.270  <--
+    Tapper.TraceId.hex/1                                       1600000    2572.520    2475.870     
+    :crypto.strong_rand_bytes/1                                 100000     883.946     392.421     
+    :garbage_collect                                               105     279.161     279.161     
+    :suspend                                                       642      20.379       0.000     
+
+Tapper.TraceId.generate/1                                      1600000    2572.520    2475.870     
+  Tapper.TraceId.hex/1                                         1600000    2572.520    2475.870  <--
+    :garbage_collect                                                60      82.468      82.468     
+    :suspend                                                       503      14.182       0.000     
+
+Tapper.TraceId.generate/1                                       100000     883.946     392.421     
+  :crypto.strong_rand_bytes/1                                   100000     883.946     392.421  <--
+    :crypto.strong_rand_bytes_nif/1                             100000     444.484     442.766     
+    :garbage_collect                                                11      44.513      44.513     
+    :suspend                                                        73       2.528       0.000     
+
+Tapper.TraceId.generate/1                                          105     279.161     279.161     
+Tapper.TraceId.hex/1                                                60      82.468      82.468     
+anonymous fn/4 in :elixir_compiler_1.__FILE__/1                     16      80.123      80.123     
+:crypto.strong_rand_bytes/1                                         11      44.513      44.513     
+:lists.reverse/1                                                     1      14.842      14.842     
+:crypto.strong_rand_bytes_nif/1                                      5       1.718       1.718     
+  :garbage_collect                                                 198     502.825     502.825  <--
+
+:crypto.strong_rand_bytes/1                                     100000     444.484     442.766     
+  :crypto.strong_rand_bytes_nif/1                               100000     444.484     442.766  <--
+    :garbage_collect                                                 5       1.718       1.718     
+
+anonymous fn/4 in :elixir_compiler_1.__FILE__/1                 100000     196.450     196.450     
+  :erlang.binary_to_atom/2                                      100000     196.450     196.450  <--
+
+Tapper.TraceId.generate/1                                          642      20.379       0.000     
+Tapper.TraceId.hex/1                                               503      14.182       0.000     
+anonymous fn/4 in :elixir_compiler_1.__FILE__/1                    105       2.668       0.000     
+:crypto.strong_rand_bytes/1                                         73       2.528       0.000     
+Enum.reduce_range_inc/4                                             61       1.707       0.000     
+anonymous fn/1 in :elixir_compiler_1.__FILE__/1                     18       1.245       0.000     
+:gen.do_call/4                                                       3       0.191       0.000     
+:lists.reverse/1                                                     2       0.085       0.000     
+:io.execute_request/2                                                1       0.008       0.000     
+:fprof."-apply_start_stop/4-after$^1/0-0-"/3                         1       0.000       0.000     
+  :suspend                                                        1409      42.993       0.000  <--
+
+anonymous fn/0 in :elixir_compiler_1.__FILE__/1                      1      17.117       0.053     
+  :lists.reverse/1                                                   1      17.117       0.053  <--
+    :garbage_collect                                                 1      14.842      14.842     
+    :lists.reverse/2                                                 1       2.137       2.137     
+    :suspend                                                         2       0.085       0.000     
+
+:lists.reverse/1                                                     1       2.137       2.137     
+  :lists.reverse/2                                                   1       2.137       2.137  <--
+
+:gen.call/3                                                          1       0.224       0.009     
+GenServer.call/3                                                     2       0.072       0.003     
+  :gen.call/4                                                        3       0.296       0.012  <--
+    :gen.do_for_proc/2                                               1       0.215       0.006     
+    :gen.do_call/4                                                   2       0.069       0.021     
+
+anonymous fn/4 in :gen.call/4                                        1       0.206       0.017     
+:gen.call/4                                                          2       0.069       0.021     
+  :gen.do_call/4                                                     3       0.275       0.038  <--
+    :suspend                                                         3       0.191       0.000     
+    :erlang.send/3                                                   3       0.032       0.032     
+    :erlang.demonitor/2                                              3       0.008       0.008     
+    :erlang.monitor/2                                                3       0.006       0.006     
+
+anonymous fn/0 in :elixir_compiler_1.__FILE__/1                      1       0.254       0.004     
+  Logger.configure/1                                                 1       0.254       0.004  <--
+    Logger.Config.configure/1                                        1       0.233       0.002     
+    Keyword.take/2                                                   1       0.017       0.003     
+
+Logger.configure/1                                                   1       0.233       0.002     
+  Logger.Config.configure/1                                          1       0.233       0.002  <--
+    :gen_event.call/3                                                1       0.231       0.002     
+
+Logger.Config.configure/1                                            1       0.231       0.002     
+  :gen_event.call/3                                                  1       0.231       0.002  <--
+    :gen_event.call1/3                                               1       0.229       0.003     
+
+:gen_event.call/3                                                    1       0.229       0.003     
+  :gen_event.call1/3                                                 1       0.229       0.003  <--
+    :gen.call/3                                                      1       0.226       0.002     
+
+:gen_event.call1/3                                                   1       0.226       0.002     
+  :gen.call/3                                                        1       0.226       0.002  <--
+    :gen.call/4                                                      1       0.224       0.009     
+
+:gen.call/4                                                          1       0.215       0.006     
+  :gen.do_for_proc/2                                                 1       0.215       0.006  <--
+    anonymous fn/4 in :gen.call/4                                    1       0.207       0.001     
+    :erlang.whereis/1                                                1       0.002       0.002     
+
+:gen.do_for_proc/2                                                   1       0.207       0.001     
+  anonymous fn/4 in :gen.call/4                                      1       0.207       0.001  <--
+    :gen.do_call/4                                                   1       0.206       0.017     
+
+anonymous fn/0 in :elixir_compiler_1.__FILE__/1                      1       0.145       0.005     
+  Mix.Shell.IO.info/1                                                1       0.145       0.005  <--
+    IO.puts/1                                                        1       0.062       0.002     
+    Mix.Shell.IO.print_app/0                                         1       0.054       0.003     
+    IO.ANSI.format/1                                                 1       0.024       0.004     
+
+Agent.get/5                                                          1       0.060       0.006     
+Agent.get_and_update/3                                               1       0.043       0.005     
+  GenServer.call/3                                                   2       0.103       0.011  <--
+    :gen.call/4                                                      2       0.072       0.003     
+    GenServer.whereis/1                                              2       0.020       0.003     
+
+anonymous fn/0 in :elixir_compiler_1.__FILE__/1                      1       0.067       0.002     
+  Mix.shell/0                                                        1       0.067       0.002  <--
+    Mix.State.get/2                                                  1       0.065       0.002     
+
+Mix.shell/0                                                          1       0.065       0.002     
+  Mix.State.get/2                                                    1       0.065       0.002  <--
+    Agent.get/4                                                      1       0.063       0.001     
+
+Mix.State.get/2                                                      1       0.063       0.001     
+  Agent.get/4                                                        1       0.063       0.001  <--
+    Agent.get/5                                                      1       0.062       0.002     
+
+Mix.Shell.IO.info/1                                                  1       0.062       0.002     
+  IO.puts/1                                                          1       0.062       0.002  <--
+    IO.puts/2                                                        1       0.060       0.003     
+
+Agent.get/4                                                          1       0.062       0.002     
+  Agent.get/5                                                        1       0.062       0.002  <--
+    GenServer.call/3                                                 1       0.060       0.006     
+
+IO.puts/1                                                            1       0.060       0.003     
+  IO.puts/2                                                          1       0.060       0.003  <--
+    :io.put_chars/2                                                  1       0.057       0.001     
+
+IO.puts/2                                                            1       0.057       0.001     
+  :io.put_chars/2                                                    1       0.057       0.001  <--
+    :io.put_chars/3                                                  1       0.056       0.012     
+
+:io.put_chars/2                                                      1       0.056       0.012     
+  :io.put_chars/3                                                    1       0.056       0.012  <--
+    :io.o_request/3                                                  1       0.044       0.003     
+
+Mix.Shell.IO.info/1                                                  1       0.054       0.003     
+  Mix.Shell.IO.print_app/0                                           1       0.054       0.003  <--
+    Mix.Shell.printable_app_name/0                                   1       0.051       0.002     
+
+Mix.Shell.IO.print_app/0                                             1       0.051       0.002     
+  Mix.Shell.printable_app_name/0                                     1       0.051       0.002  <--
+    Mix.ProjectStack.printable_app_name/0                            1       0.049       0.002     
+
+Mix.Shell.printable_app_name/0                                       1       0.049       0.002     
+  Mix.ProjectStack.printable_app_name/0                              1       0.049       0.002  <--
+    Mix.ProjectStack.get_and_update/1                                1       0.047       0.002     
+
+anonymous fn/0 in :elixir_compiler_1.__FILE__/1                      1       0.048       0.012     
+  System.get_env/1                                                   1       0.048       0.012  <--
+    String.to_charlist/1                                             1       0.019       0.004     
+    List.to_string/1                                                 1       0.009       0.003     
+    :os.getenv/1                                                     1       0.008       0.004     
+
+Mix.ProjectStack.printable_app_name/0                                1       0.047       0.002     
+  Mix.ProjectStack.get_and_update/1                                  1       0.047       0.002  <--
+    Agent.get_and_update/3                                           1       0.045       0.002     
+
+Mix.ProjectStack.get_and_update/1                                    1       0.045       0.002     
+  Agent.get_and_update/3                                             1       0.045       0.002  <--
+    GenServer.call/3                                                 1       0.043       0.005     
+
+:io.put_chars/3                                                      1       0.044       0.003     
+  :io.o_request/3                                                    1       0.044       0.003  <--
+    :io.request/2                                                    1       0.041       0.003     
+
+:io.o_request/3                                                      1       0.041       0.003     
+:io.request/2                                                        1       0.000       0.009     
+  :io.request/2                                                      2       0.041       0.012  <--
+    :io.execute_request/2                                            1       0.020       0.009     
+    :io.io_request/2                                                 1       0.007       0.004     
+    :erlang.group_leader/0                                           1       0.002       0.002     
+    :io.request/2                                                    1       0.000       0.009     
+
+:gen.do_call/4                                                       3       0.032       0.032     
+  :erlang.send/3                                                     3       0.032       0.032  <--
+
+Mix.Shell.IO.info/1                                                  1       0.024       0.004     
+  IO.ANSI.format/1                                                   1       0.024       0.004  <--
+    IO.ANSI.enabled?/0                                               1       0.014       0.003     
+    IO.ANSI.format/2                                                 1       0.006       0.002     
+
+:io.request/2                                                        1       0.020       0.009     
+  :io.execute_request/2                                              1       0.020       0.009  <--
+    :suspend                                                         1       0.008       0.000     
+    :erlang.demonitor/2                                              1       0.002       0.002     
+    :erlang.monitor/2                                                1       0.001       0.001     
+
+GenServer.call/3                                                     2       0.020       0.003     
+  GenServer.whereis/1                                                2       0.020       0.003  <--
+    Process.whereis/1                                                2       0.017       0.007     
+
+System.get_env/1                                                     1       0.019       0.004     
+  String.to_charlist/1                                               1       0.019       0.004  <--
+    :unicode.characters_to_list/1                                    1       0.015       0.013     
+
+GenServer.whereis/1                                                  2       0.017       0.007     
+  Process.whereis/1                                                  2       0.017       0.007  <--
+    :erlang.whereis/1                                                2       0.010       0.010     
+
+Logger.configure/1                                                   1       0.017       0.003     
+  Keyword.take/2                                                     1       0.017       0.003  <--
+    Keyword."-take/2-lists^filter/1-0-"/2                            1       0.014       0.005     
+
+String.to_charlist/1                                                 1       0.015       0.013     
+  :unicode.characters_to_list/1                                      1       0.015       0.013  <--
+    :unicode.characters_to_list/2                                    1       0.002       0.002     
+
+Keyword.take/2                                                       1       0.014       0.005     
+Keyword."-take/2-lists^filter/1-0-"/2                                1       0.000       0.002     
+  Keyword."-take/2-lists^filter/1-0-"/2                              2       0.014       0.007  <--
+    anonymous fn/2 in Keyword.take/2                                 1       0.007       0.002     
+    Keyword."-take/2-lists^filter/1-0-"/2                            1       0.000       0.002     
+
+IO.ANSI.format/1                                                     1       0.014       0.003     
+  IO.ANSI.enabled?/0                                                 1       0.014       0.003  <--
+    Application.get_env/3                                            1       0.011       0.001     
+
+Process.whereis/1                                                    2       0.010       0.010     
+:gen.do_for_proc/2                                                   1       0.002       0.002     
+  :erlang.whereis/1                                                  3       0.012       0.012  <--
+
+IO.ANSI.enabled?/0                                                   1       0.011       0.001     
+  Application.get_env/3                                              1       0.011       0.001  <--
+    :application.get_env/3                                           1       0.010       0.003     
+
+:gen.do_call/4                                                       3       0.008       0.008     
+:io.execute_request/2                                                1       0.002       0.002     
+  :erlang.demonitor/2                                                4       0.010       0.010  <--
+
+Application.get_env/3                                                1       0.010       0.003     
+  :application.get_env/3                                             1       0.010       0.003  <--
+    :application.get_env/2                                           1       0.007       0.002     
+
+:fprof.apply_start_stop/4                                            1       0.009       0.009     
+  :fprof."-apply_start_stop/4-after$^1/0-0-"/3                       1       0.009       0.009  <--
+    :suspend                                                         1       0.000       0.000     
+
+System.get_env/1                                                     1       0.009       0.003     
+  List.to_string/1                                                   1       0.009       0.003  <--
+    :unicode.characters_to_binary/1                                  1       0.006       0.003     
+
+System.get_env/1                                                     1       0.008       0.004     
+  :os.getenv/1                                                       1       0.008       0.004  <--
+    :os.get_env_var/1                                                1       0.004       0.004     
+
+:io.request/2                                                        1       0.007       0.004     
+  :io.io_request/2                                                   1       0.007       0.004  <--
+    :unicode.characters_to_binary/2                                  1       0.003       0.003     
+
+:gen.do_call/4                                                       3       0.006       0.006     
+:io.execute_request/2                                                1       0.001       0.001     
+  :erlang.monitor/2                                                  4       0.007       0.007  <--
+
+:application.get_env/3                                               1       0.007       0.002     
+  :application.get_env/2                                             1       0.007       0.002  <--
+    :application_controller.get_env/2                                1       0.005       0.003     
+
+Keyword."-take/2-lists^filter/1-0-"/2                                1       0.007       0.002     
+  anonymous fn/2 in Keyword.take/2                                   1       0.007       0.002  <--
+    Enum.member?/2                                                   1       0.005       0.004     
+
+:unicode.characters_to_binary/1                                      1       0.003       0.003     
+:io.io_request/2                                                     1       0.003       0.003     
+  :unicode.characters_to_binary/2                                    2       0.006       0.006  <--
+
+List.to_string/1                                                     1       0.006       0.003     
+  :unicode.characters_to_binary/1                                    1       0.006       0.003  <--
+    :unicode.characters_to_binary/2                                  1       0.003       0.003     
+
+IO.ANSI.format/1                                                     1       0.006       0.002     
+  IO.ANSI.format/2                                                   1       0.006       0.002  <--
+    IO.ANSI.do_format/5                                              1       0.004       0.002     
+
+:application.get_env/2                                               1       0.005       0.003     
+  :application_controller.get_env/2                                  1       0.005       0.003  <--
+    :ets.lookup/2                                                    1       0.002       0.002     
+
+anonymous fn/2 in Keyword.take/2                                     1       0.005       0.004     
+  Enum.member?/2                                                     1       0.005       0.004  <--
+    :lists.member/2                                                  1       0.001       0.001     
+
+:os.getenv/1                                                         1       0.004       0.004     
+  :os.get_env_var/1                                                  1       0.004       0.004  <--
+
+IO.ANSI.format/2                                                     1       0.004       0.002     
+IO.ANSI.do_format/5                                                  1       0.000       0.002     
+  IO.ANSI.do_format/5                                                2       0.004       0.004  <--
+    IO.ANSI.do_format/5                                              1       0.000       0.002     
+
+:unicode.characters_to_list/1                                        1       0.002       0.002     
+  :unicode.characters_to_list/2                                      1       0.002       0.002  <--
+
+:application_controller.get_env/2                                    1       0.002       0.002     
+  :ets.lookup/2                                                      1       0.002       0.002  <--
+
+:io.request/2                                                        1       0.002       0.002     
+  :erlang.group_leader/0                                             1       0.002       0.002  <--
+
+Enum.member?/2                                                       1       0.001       0.001     
+  :lists.member/2                                                    1       0.001       0.001  <--
+
+  :undefined                                                         0       0.000       0.000  <--
+    :fprof.apply_start_stop/4                                        0    9533.064       0.022     

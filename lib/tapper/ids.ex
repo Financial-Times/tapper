@@ -136,12 +136,46 @@ defmodule Tapper.TraceId do
 
   defstruct [:value]   # NB only used as wrapper for e.g. logging format
 
+  import Bitwise, only: [<<<: 2]
   require Tapper.Id.Utils
   Tapper.Id.Utils.gen_inline_hex()
 
   @doc "generate a trace id"
   @spec generate() :: t
-  def generate() do
+  def generate(), do: generate(:inline_hex)
+
+  def generate(:'0_4_0') do
+    <<id :: size(128)>> = :crypto.strong_rand_bytes(16)
+    {id, uniq()}
+  end
+
+  def generate(:base_mod) do
+    Base.encode16(:crypto.strong_rand_bytes(16), case: :lower)
+  end
+
+  def generate(:inline_hex) do
+    <<c1, c2, c3, c4, c5, c6, c7, c8, c9 ,c10, c11, c12, c13, c14, c15, c16>> = :crypto.strong_rand_bytes(16)
+    <<
+      hex(c1)::bytes-size(2),
+      hex(c2)::bytes-size(2),
+      hex(c3)::bytes-size(2),
+      hex(c4)::bytes-size(2),
+      hex(c5)::bytes-size(2),
+      hex(c6)::bytes-size(2),
+      hex(c7)::bytes-size(2),
+      hex(c8)::bytes-size(2),
+      hex(c9)::bytes-size(2),
+      hex(c10)::bytes-size(2),
+      hex(c11)::bytes-size(2),
+      hex(c12)::bytes-size(2),
+      hex(c13)::bytes-size(2),
+      hex(c14)::bytes-size(2),
+      hex(c15)::bytes-size(2),
+      hex(c16)::bytes-size(2)
+  >>
+  end
+
+  def generate(:inline_hex_no_size) do
     <<c1, c2, c3, c4, c5, c6, c7, c8, c9 ,c10, c11, c12, c13, c14, c15, c16>> = :crypto.strong_rand_bytes(16)
     <<
       hex(c1)::bytes,
@@ -162,6 +196,48 @@ defmodule Tapper.TraceId do
       hex(c16)::bytes
     >>
   end
+
+
+  def generate(:inline_hex_bl) do
+    l = :binary.bin_to_list(:crypto.strong_rand_bytes(16))
+    :binary.list_to_bin(:lists.map(&hex/1, l))
+  end
+
+  def generate(:lookup_table) do
+    <<c1, c2, c3, c4, c5, c6, c7, c8, c9 ,c10, c11, c12, c13, c14, c15, c16>> = :crypto.strong_rand_bytes(16)
+    # t = "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff"
+    t = lookup_table()
+    <<
+      :binary.part(t, c1 <<< 1, 2)::binary-size(2),
+      :binary.part(t, c2 <<< 1, 2)::binary-size(2),
+      :binary.part(t, c3 <<< 1, 2)::binary-size(2),
+      :binary.part(t, c4 <<< 1, 2)::binary-size(2),
+      :binary.part(t, c5 <<< 1, 2)::binary-size(2),
+      :binary.part(t, c6 <<< 1, 2)::binary-size(2),
+      :binary.part(t, c7 <<< 1, 2)::binary-size(2),
+      :binary.part(t, c8 <<< 1, 2)::binary-size(2),
+      :binary.part(t, c9 <<< 1, 2)::binary-size(2),
+      :binary.part(t, c10 <<< 1, 2)::binary-size(2),
+      :binary.part(t, c11 <<< 1, 2)::binary-size(2),
+      :binary.part(t, c12 <<< 1, 2)::binary-size(2),
+      :binary.part(t, c13 <<< 1, 2)::binary-size(2),
+      :binary.part(t, c14 <<< 1, 2)::binary-size(2),
+      :binary.part(t, c15 <<< 1, 2)::binary-size(2),
+      :binary.part(t, c16 <<< 1, 2)::binary-size(2)
+    >>
+  end
+
+  def generate(:lookup_table_comprehension) do
+    t = "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff"
+    # t = lookup_table()
+    for <<c <- :crypto.strong_rand_bytes(16)>>, into: <<>>, do: :binary.part(t, c <<< 1, 2)
+  end
+
+  l = for i <- 0..255, into: <<>> do
+    Base.encode16(<<i::8>>, case: :lower)
+  end
+  defp lookup_table(), do: unquote(l)
+  defp uniq(), do: System.unique_integer([:monotonic, :positive])
 
   @doc "format a trace id for logs etc."
   @spec format(trace_id :: t) :: String.t
