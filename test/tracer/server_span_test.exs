@@ -35,7 +35,7 @@ defmodule Tracer.Server.SpanTest do
 
     {:noreply, state, _ttl} = Tapper.Tracer.Server.handle_cast({:start_span, child_span, []}, trace)
 
-    child_end_timestamp = Timestamp.incr(timestamp, 100, :milliseconds)
+    child_end_timestamp = Timestamp.incr(timestamp, 100, :millisecond)
     {:noreply, state, _ttl} = Tapper.Tracer.Server.handle_cast({:finish_span, child_span.id, child_end_timestamp, annotations: [Tapper.Tracer.annotation_delta(:xx)]}, state)
 
     assert state.spans[child_span.id]

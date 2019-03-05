@@ -17,14 +17,14 @@ defmodule Tapper.Timestamp do
   @spec to_absolute(t :: t) :: microseconds_timestamp()
   def to_absolute(timestamp)
   def to_absolute({timestamp, offset}) do
-    System.convert_time_unit(timestamp + offset, :native, :microseconds)
+    System.convert_time_unit(timestamp + offset, :native, :microsecond)
   end
 
   @doc "Calculate the different between two timestamp, in microseconds."
   @spec duration(t1 :: t, t2 :: t) :: microseconds_timestamp()
   def duration(t1, t2)
   def duration({timestamp1, _}, {timestamp2, _}) do
-    System.convert_time_unit(timestamp2 - timestamp1, :native, :microseconds)
+    System.convert_time_unit(timestamp2 - timestamp1, :native, :microsecond)
   end
 
   @doc false
