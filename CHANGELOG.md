@@ -1,3 +1,7 @@
+v0.5.0
+* Use [`Jason`](https://github.com/michalmuskala/jason) as default JSON encoder, remove `Poison`. 
+  * Can be overriden by setting `:tapper` Application var `:json_codec` to the name of the preferred module.
+
 v0.4.1
 * Fix deprecation warnings from System.convert_time_unit/3 (thanks to @indrekj)
 * Lock max `poison` version to 4.0.0 since its API was changed in 4.0.1 removing `Poison.encode_to_iodata/2` (https://github.com/devinus/poison/commit/a4208a6252f4e58fbcc8d9fd2f4f64c99e974cc8#r26410188)
