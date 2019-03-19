@@ -59,7 +59,7 @@ defmodule Tapper.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:poison, "~> 3.1 or 4.0.0"},
+      {:jason, "~> 1.1"},
       {:httpoison, "~> 0.12 or ~> 1.0"},
       {:deferred_config, "~> 0.1"},
       {:credo, "~> 0.5", only: [:dev, :test]},

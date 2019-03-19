@@ -5,6 +5,8 @@ defmodule Tapper.Encoder.Json do
   V1 - [zipkin-api.yaml](https://github.com/openzipkin/zipkin-api/blob/682de48c7e1161f59d4e1ecfae0d631eea85ea44/zipkin-api.yaml)
   """
 
+  @json_codec Application.get_env(:tapper, :json_codec, Jason)
+
   @spec encode!([%Tapper.Protocol.Span{}]) :: iodata | no_return
   def encode!(spans = [%Tapper.Protocol.Span{} | _spans]) do
     [?[, Enum.intersperse(Enum.map(spans, &encode(&1)), ?,), ?]]
@@ -26,7 +28,7 @@ defmodule Tapper.Encoder.Json do
       |> encode_annotations(span)
       |> encode_binary_annotations(span)
 
-    Poison.encode_to_iodata!(map)
+    @json_codec.encode_to_iodata!(map)
   end
 
   def encode_trace_id(map, %Tapper.Protocol.Span{trace_id: trace_id}) do

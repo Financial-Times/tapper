@@ -1,6 +1,8 @@
 defmodule JsonTest do
   use ExUnit.Case
 
+  @json_codec Application.get_env(:tapper, :json_codec, Jason)
+
   describe "endpoint serviceName encoding" do
     test "serviceName is empty-string should encode as empty-string" do
       assert %{serviceName: ""} =
@@ -59,46 +61,20 @@ defmodule JsonTest do
     json = Tapper.Encoder.Json.encode!([proto_span])
 
     assert is_list(json)
+    assert [91 | _] = json, "iodata starting with ["
+    assert [93 | _] = Enum.reverse(json), "iodata ending with ]"
 
-    assert json == [
-             91,
-             [
-               [
-                 123,
-                 [
-                   [34, ["traceId"], 34],
-                   58,
-                   [34, [Tapper.Id.Utils.to_hex(trace_id)], 34],
-                   44,
-                   [34, ["timestamp"], 34],
-                   58,
-                   "1234",
-                   44,
-                   [34, ["parentId"], 34],
-                   58,
-                   [34, [Tapper.SpanId.to_hex(parent_span_id)], 34],
-                   44,
-                   [34, ["name"], 34],
-                   58,
-                   [34, ["test"], 34],
-                   44,
-                   [34, ["id"], 34],
-                   58,
-                   [34, [Tapper.SpanId.to_hex(span_id)], 34],
-                   44,
-                   [34, ["duration"], 34],
-                   58,
-                   "100",
-                   44,
-                   [34, ["debug"], 34],
-                   58,
-                   "true"
-                 ],
-                 125
-               ]
-             ],
-             93
-           ]
+    assert @json_codec.decode!(json) == [
+      %{
+        "traceId" => Tapper.Id.Utils.to_hex(trace_id),
+        "timestamp" => 1234,
+        "parentId" => Tapper.SpanId.to_hex(parent_span_id),
+        "name" => "test",
+        "id" => Tapper.SpanId.to_hex(span_id),
+        "duration" => 100,
+        "debug" => true
+      }
+    ]
   end
 
   test "encode parent_id with root parent_id" do
@@ -180,7 +156,7 @@ defmodule JsonTest do
 
     assert is_list(json_iolist)
 
-    json = Poison.decode!(IO.iodata_to_binary(json_iolist))
+    json = @json_codec.decode!(IO.iodata_to_binary(json_iolist))
 
     assert is_list(json)
 
@@ -238,7 +214,7 @@ defmodule JsonTest do
 
     iolist_json = Tapper.Encoder.Json.encode!(spans)
 
-    json = Poison.decode!(IO.iodata_to_binary(iolist_json))
+    json = @json_codec.decode!(IO.iodata_to_binary(iolist_json))
 
     assert [span_1, span_2] = json
 
