@@ -1,9 +1,11 @@
 language: elixir
 elixir:
     - 1.6.6
-    - 1.7.3
+    - 1.7.4
+    - 1.8.1
 otp_release:
     - 20.3
+    - 21.2
 after_script:
   - cd $TRAVIS_BUILD_DIR
   - mix deps.get --only docs
