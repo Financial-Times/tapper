@@ -51,6 +51,66 @@ child span with some annotations, via update      280.81 K        3.56 μs   ±4
 
 Note that the deviation for unsampled traces is so high because there's really very little to measure, so any jitter makes a big difference.
 
+### Results for Tapper 0.5.0
+```
+March 2019
+Tapper 0.5.0
+commit: 46d0ebafc64e4cbd5be01ad457405889b885311e
+```
+
+The previous benchmark suite didn't include a representation of encoding the trace
+to HTTP headers, which is a typical activity of clients, and one that might be
+optimised, as its currently doing a number to hex conversion every time.
+
+For this reason the benchmarks now include a `child span, with destructuring`
+benchmark, which uses a `Tapper.Id.destructure/1` call within a child span; 
+you can see how this negatively effects the IPS.
+
+We also now benchmark unsampled spans, which is critical to median performance 
+when using sampling, since it turns off much of the functionality.
+
+Finally, there's now a benchmark for decoding trace headers, which is 
+implemented in `tapper_plug`, but most of the hard work is performed by 
+`Tapper.TraceId.parse/1` and `Tapper.SpanId.parse/1`, so we combine those
+to parallel the work done.
+
+With these extra benchmarks, we have some more realistic outcomes, and
+some more targets to optimisation.
+
+> The benchmarking software, Erlang and Elixir have changed too, and we now
+have (possibly ineffective) OS patches for [Meltdown and Spectre](https://meltdownattack.com/) 
+which slow nearly everything down.
+
+```
+Running Benchee
+Operating System: macOS
+CPU Information: Intel(R) Core(TM) i7-2635QM CPU @ 2.00GHz
+Number of Available Cores: 8
+Available memory: 16 GB
+Elixir 1.8.1
+Erlang 21.2.4
+
+##### With input sampled #####
+Name                                                   ips        average  deviation         median         99th %
+decode_trace_headers                              323.43 K        3.09 μs   ±957.70%        2.97 μs        6.97 μs
+start, finish                                      16.39 K       61.00 μs    ±31.11%       54.97 μs      131.97 μs
+child span with some annotations                   16.38 K       61.04 μs    ±31.78%       55.97 μs      148.97 μs
+child span with some annotations, via update       15.00 K       66.69 μs    ±30.78%       60.97 μs      150.90 μs
+child span                                         14.31 K       69.89 μs    ±32.82%       59.97 μs      147.97 μs
+child span, contextual interface                   13.58 K       73.62 μs    ±34.93%       62.97 μs      159.97 μs
+child span, with destructuring                     10.17 K       98.36 μs    ±30.09%       84.97 μs      199.97 μs
+
+##### With input unsampled #####
+Name                                                   ips        average  deviation         median         99th %
+decode_trace_headers                              322.25 K        3.10 μs   ±857.30%        2.97 μs        6.97 μs
+start, finish                                     211.33 K        4.73 μs   ±413.71%        3.97 μs        9.97 μs
+child span                                        208.11 K        4.81 μs   ±465.87%        3.97 μs       10.97 μs
+child span with some annotations, via update      187.28 K        5.34 μs   ±374.50%        4.97 μs       11.97 μs
+child span with some annotations                  176.54 K        5.66 μs   ±257.49%        4.97 μs       11.97 μs
+child span, contextual interface                  173.16 K        5.78 μs   ±219.45%        4.97 μs       12.97 μs
+child span, with destructuring                     53.68 K       18.63 μs    ±34.07%       17.97 μs       33.97 μs
+```
+
 ## Some Performance Tips
 
 To get the last drop out of the current implementation:

@@ -23,6 +23,16 @@ child_span = fn(opts) ->
   Tapper.finish(id)
 end
 
+child_span_with_destructuring = fn(opts) ->
+  id = Tapper.start(opts)
+
+  id = Tapper.start_span(id, name: "span-1")
+  Tapper.Id.destructure(id)
+  id = Tapper.finish_span(id)
+
+  Tapper.finish(id)
+end
+
 child_span_ctx = fn(opts) ->
   Tapper.Ctx.start(opts)
 
@@ -60,11 +70,18 @@ child_span_with_annotations_via_update = fn(opts) ->
   Tapper.finish(id)
 end
 
+raw_trace_id = "ba50b795b208fffbb3724d69ddc34e56"
+raw_span_id = "b4f20245e9a2a297"
+
+decode_trace_headers = fn(opts) ->
+  {:ok, _} = Tapper.TraceId.parse(raw_trace_id)
+  {:ok, _} = Tapper.SpanId.parse(raw_span_id)
+end
 
 if System.get_env("FPROF") do
   # Use this instead of Benchee.run for fprof'ing
   Mix.shell.info("Running in fprof mode (10000 runs of start_finish/0)")
-  for n <- 1..10000 do
+  for _ <- 1..10000 do
     start_finish.([sample: true])
   end
 else
@@ -74,7 +91,9 @@ else
     "start, finish" => start_finish,
     "child span" => child_span,
     "child span, contextual interface" => child_span_ctx,
+    "child span, with destructuring" => child_span_with_destructuring,
     "child span with some annotations" => child_span_with_annotations,
     "child span with some annotations, via update" => child_span_with_annotations_via_update,
+    "decode_trace_headers" => decode_trace_headers,
   }, time: 5, inputs: inputs
 end
