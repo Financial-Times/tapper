@@ -69,13 +69,13 @@ defmodule Tapper.Id do
   """
   @spec destructure(Tapper.Id.t) :: {String.t, String.t, String.t, boolean, boolean}
   def destructure(%Tapper.Id{trace_id: trace_id, span_id: span_id, origin_parent_id: :root, parent_ids: [], sample: sample, debug: debug}) do
-    {TraceId.to_hex(trace_id), SpanId.to_hex(span_id), "", sample, debug}
+    {trace_id, span_id, "", sample, debug}
   end
   def destructure(%Tapper.Id{trace_id: trace_id, span_id: span_id, origin_parent_id: origin_parent_id, parent_ids: [], sample: sample, debug: debug}) do
-    {TraceId.to_hex(trace_id), SpanId.to_hex(span_id), SpanId.to_hex(origin_parent_id), sample, debug}
+    {trace_id, span_id, origin_parent_id, sample, debug}
   end
   def destructure(%Tapper.Id{trace_id: trace_id, span_id: span_id, origin_parent_id: _origin_parent_id, parent_ids: [parent_id | _rest], sample: sample, debug: debug}) do
-    {TraceId.to_hex(trace_id), SpanId.to_hex(span_id), SpanId.to_hex(parent_id), sample, debug}
+    {trace_id, span_id, parent_id, sample, debug}
   end
 
   @doc "Generate a TraceId for testing; sample is true"
@@ -279,7 +279,7 @@ defmodule Tapper.TraceId do
   defimpl String.Chars do
     @doc false
     def to_string(trace_id) do
-      Tapper.TraceId.to_hex(trace_id.value)
+      trace_id.value
     end
   end
 

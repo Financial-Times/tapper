@@ -66,11 +66,11 @@ defmodule JsonTest do
 
     assert @json_codec.decode!(json) == [
       %{
-        "traceId" => Tapper.Id.Utils.to_hex(trace_id),
+        "traceId" => trace_id,
         "timestamp" => 1234,
-        "parentId" => Tapper.SpanId.to_hex(parent_span_id),
+        "parentId" => parent_span_id,
         "name" => "test",
-        "id" => Tapper.SpanId.to_hex(span_id),
+        "id" => span_id,
         "duration" => 100,
         "debug" => true
       }
