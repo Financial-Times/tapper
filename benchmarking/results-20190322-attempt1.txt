@@ -1,0 +1,19 @@
+##### With input sampled #####
+Name                                                   ips        average  deviation         median         99th %
+decode_trace_headers                              224.56 K        4.45 μs   ±334.99%        3.97 μs        8.97 μs
+start, finish                                      16.46 K       60.75 μs    ±31.58%       53.97 μs      133.97 μs
+child span                                         13.73 K       72.81 μs    ±33.58%       62.97 μs      154.97 μs
+child span with some annotations, via update       15.18 K       65.89 μs    ±28.78%       59.97 μs      146.97 μs
+child span with some annotations                   15.80 K       63.28 μs    ±32.79%       56.97 μs      157.97 μs
+child span, contextual interface                   13.42 K       74.52 μs    ±31.91%       63.97 μs      155.97 μs
+child span, with destructuring                     13.74 K       72.78 μs    ±31.53%       62.97 μs      151.97 μs
+
+##### With input unsampled #####
+Name                                                   ips        average  deviation         median         99th %
+decode_trace_headers                              223.05 K        4.48 μs   ±325.49%        3.97 μs        8.97 μs
+start, finish                                     172.48 K        5.80 μs   ±296.52%        4.97 μs       11.97 μs
+child span                                        190.74 K        5.24 μs   ±296.25%        3.97 μs       11.97 μs
+child span with some annotations, via update      173.48 K        5.76 μs   ±357.92%        4.97 μs       12.97 μs
+child span with some annotations                  175.48 K        5.70 μs   ±295.54%        4.97 μs       12.97 μs
+child span, contextual interface                  164.05 K        6.10 μs   ±279.36%        4.97 μs       13.97 μs
+child span, with destructuring                    181.86 K        5.50 μs   ±299.79%        4.97 μs       11.97 μs
