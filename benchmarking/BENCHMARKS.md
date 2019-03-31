@@ -44,8 +44,8 @@ child span with some annotations, via update       13.88 K       72.07 μs    ±
 Name                                                   ips        average  deviation         median
 child span                                        311.53 K        3.21 μs   ±446.82%        3.00 μs
 start, finish                                     306.84 K        3.26 μs   ±459.05%        3.00 μs
-child span with some annotations                  297.41 K        3.36 μs   ±351.59%        3.00 μs
 child span, contextual interface                  291.43 K        3.43 μs   ±398.55%        3.00 μs
+child span with some annotations                  297.41 K        3.36 μs   ±351.59%        3.00 μs
 child span with some annotations, via update      280.81 K        3.56 μs   ±481.33%        3.00 μs
 ```
 
@@ -82,7 +82,6 @@ have (possibly ineffective) OS patches for [Meltdown and Spectre](https://meltdo
 which slow nearly everything down.
 
 ```
-Running Benchee
 Operating System: macOS
 CPU Information: Intel(R) Core(TM) i7-2635QM CPU @ 2.00GHz
 Number of Available Cores: 8
@@ -94,10 +93,10 @@ Erlang 21.2.4
 Name                                                   ips        average  deviation         median         99th %
 decode_trace_headers                              323.43 K        3.09 μs   ±957.70%        2.97 μs        6.97 μs
 start, finish                                      16.39 K       61.00 μs    ±31.11%       54.97 μs      131.97 μs
-child span with some annotations                   16.38 K       61.04 μs    ±31.78%       55.97 μs      148.97 μs
-child span with some annotations, via update       15.00 K       66.69 μs    ±30.78%       60.97 μs      150.90 μs
 child span                                         14.31 K       69.89 μs    ±32.82%       59.97 μs      147.97 μs
 child span, contextual interface                   13.58 K       73.62 μs    ±34.93%       62.97 μs      159.97 μs
+child span with some annotations                   16.38 K       61.04 μs    ±31.78%       55.97 μs      148.97 μs
+child span with some annotations, via update       15.00 K       66.69 μs    ±30.78%       60.97 μs      150.90 μs
 child span, with destructuring                     10.17 K       98.36 μs    ±30.09%       84.97 μs      199.97 μs
 
 ##### With input unsampled #####
@@ -105,10 +104,57 @@ Name                                                   ips        average  devia
 decode_trace_headers                              322.25 K        3.10 μs   ±857.30%        2.97 μs        6.97 μs
 start, finish                                     211.33 K        4.73 μs   ±413.71%        3.97 μs        9.97 μs
 child span                                        208.11 K        4.81 μs   ±465.87%        3.97 μs       10.97 μs
-child span with some annotations, via update      187.28 K        5.34 μs   ±374.50%        4.97 μs       11.97 μs
-child span with some annotations                  176.54 K        5.66 μs   ±257.49%        4.97 μs       11.97 μs
 child span, contextual interface                  173.16 K        5.78 μs   ±219.45%        4.97 μs       12.97 μs
+child span with some annotations                  176.54 K        5.66 μs   ±257.49%        4.97 μs       11.97 μs
+child span with some annotations, via update      187.28 K        5.34 μs   ±374.50%        4.97 μs       11.97 μs
 child span, with destructuring                     53.68 K       18.63 μs    ±34.07%       17.97 μs       33.97 μs
+```
+
+### Results for Tapper 0.6.0
+
+Late March 2019
+commit: 8e28e74710faa0730f8c8fb57993a5d8ccb7ffe2
+
+Tapper now keeps the trace ids as binaries, rather than integers. This means that any decoding or 
+encoding of trace headers doesn't need to convert an integer to/from hex format every time, which 
+should reduce real-world overhead. Significant effort has been put in to optimising the generation 
+and parsing of the ids, applying many of the binary pattern-matching tricks from the core Elixir
+`Base.encode16/2` and `Integer.parse/1` functions, but optimised further for this specific use-case. 
+Yes, I've looked at the BEAM code, and it was good. ☺️
+
+> Note that if you were relying on directly interpreting the previous `Tapper.TraceId` or `Tapper.SpanId` 
+internal representations outside of the official Tapper API functions, your code may break!
+
+The benchmark below shows the significant improvement in decoding trace headers and destructuring the
+`Tapper.Id` over the previous version, while other benchmarks remain stable.
+
+```
+Operating System: macOS
+CPU Information: Intel(R) Core(TM) i7-2635QM CPU @ 2.00GHz
+Number of Available Cores: 8
+Available memory: 16 GB
+Elixir 1.8.1
+Erlang 21.2.4
+
+##### With input sampled #####
+Name                                                   ips        average  deviation         median         99th %
+decode_trace_headers                              529.22 K        1.89 μs  ±1439.96%        1.97 μs        3.97 μs
+start, finish                                      16.02 K       62.43 μs    ±32.56%       55.97 μs      135.97 μs
+child span                                         13.81 K       72.40 μs    ±31.97%       62.97 μs      149.97 μs
+child span, contextual interface                   13.37 K       74.82 μs    ±31.96%       64.97 μs      156.97 μs
+child span with some annotations                   15.69 K       63.72 μs    ±34.56%       57.97 μs      160.97 μs
+child span with some annotations, via update       15.22 K       65.69 μs    ±29.15%       59.97 μs      144.97 μs
+child span, with destructuring                     13.64 K       73.31 μs    ±30.72%       63.97 μs      148.97 μs
+
+##### With input unsampled #####
+Name                                                   ips        average  deviation         median         99th %
+decode_trace_headers                              533.58 K        1.87 μs  ±1500.12%        1.97 μs        3.97 μs
+start, finish                                     211.20 K        4.73 μs   ±400.76%        3.97 μs       10.97 μs
+child span                                        203.86 K        4.91 μs   ±410.36%        3.97 μs       10.97 μs
+child span, contextual interface                  181.08 K        5.52 μs   ±158.93%        4.97 μs       12.97 μs
+child span with some annotations                  163.21 K        6.13 μs   ±212.32%        4.97 μs       12.97 μs
+child span with some annotations, via update      176.83 K        5.66 μs   ±307.06%        4.97 μs       12.97 μs
+child span, with destructuring                    193.98 K        5.16 μs   ±362.21%        4.97 μs       11.97 μs
 ```
 
 ## Some Performance Tips
