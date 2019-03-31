@@ -80,9 +80,10 @@ defmodule Tapper.Id do
 
   @doc "Generate a TraceId for testing; sample is true"
   def test_id(parent_span_id \\ :root) do
+    trace_id = <<span_id :: bytes-size(16), _rest::bits>> = Tapper.TraceId.generate()
     %Tapper.Id{
-      trace_id: Tapper.TraceId.generate(),
-      span_id: Tapper.SpanId.generate(),
+      trace_id: trace_id,
+      span_id: span_id,
       parent_ids: [],
       origin_parent_id: parent_span_id,
       sample: true,
@@ -176,25 +177,34 @@ defmodule Tapper.TraceId do
 
   @doc "parse a trace id from a hex string, for propagation etc."
   def parse(<<trace_id::bytes-size(32)>>) do
-    if not_valid_lower_case_hex?(trace_id) do
-      :error
-    else
+    if valid_lower_case_hex?(trace_id, 32) do
       {:ok, trace_id}
+    else
+      :error
     end
   end
   def parse(<<trace_id::bytes-size(16)>>) do
-    if not_valid_lower_case_hex?(trace_id) do
-      :error
-    else
+    if valid_lower_case_hex?(trace_id, 16) do
       {:ok, trace_id}
+    else
+      :error
     end
   end
   def parse(_), do: :error
 
-  defp not_valid_lower_case_hex?(b) do
-    # we care not for Unicode here, so hit the metal...
-    :lists.any(fn x -> (x < ?0 or x > ?9) and (x < ?a or x > ?f) end, :binary.bin_to_list(b))
+  defp valid_lower_case_hex?(b, expected_digits) do
+    count_digits(b, 0) === expected_digits
   end
+
+  for chars <- [?0..?9, ?a..?f],
+      char <- chars do
+
+    defp count_digits(<<unquote(char), rest::bits>>, count) do
+      count_digits(rest, count + 1)
+    end
+  end
+
+  defp count_digits(_, count), do: count
 
   defimpl Inspect do
     import Inspect.Algebra
@@ -227,7 +237,7 @@ defmodule Tapper.SpanId do
   @doc "generate a span id"
   @spec generate() :: t
   def generate() do
-    <<c1, c2, c3, c4, c5, c6, c7, c8>> = :crypto.strong_rand_bytes(8)
+    <<c1, c2, c3, c4, c5, c6, c7, c8, _ :: bits>> = :crypto.strong_rand_bytes(8)
     <<
       hex(c1)::bytes-size(2),
       hex(c2)::bytes-size(2),
@@ -254,17 +264,26 @@ defmodule Tapper.SpanId do
 
   @doc "parse a span id from a hex string, for propagation etc."
   @spec parse(String.t) :: {:ok, t} | :error
-  def parse(<<trace_id::bytes-size(16)>>) do
-    if not_valid_lower_case_hex?(trace_id) do
-      :error
+  def parse(<<span_id::bytes-size(16)>>) do
+    if valid_lower_case_hex?(span_id) do
+      {:ok, span_id}
     else
-      {:ok, trace_id}
+      :error
     end
   end
   def parse(_), do: :error
 
-  defp not_valid_lower_case_hex?(b) do
-    # we care not for Unicode here, so hit the metal...
-    :lists.any(fn x -> (x < ?0 or x > ?9) and (x < ?a or x > ?f) end, :binary.bin_to_list(b))
+  defp valid_lower_case_hex?(b) do
+    count_digits(b, 0) === 16
   end
+
+  for chars <- [?0..?9, ?a..?f],
+      char <- chars do
+
+    defp count_digits(<<unquote(char), rest::bits>>, count) do
+      count_digits(rest, count + 1)
+    end
+  end
+
+  defp count_digits(_, count), do: count
 end

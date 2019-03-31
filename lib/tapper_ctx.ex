@@ -103,8 +103,7 @@ defmodule Tapper.Ctx do
   """
   @spec finish(opts :: Keyword.t) :: :ok
   def finish(opts \\ []) do
-    id = context()
-    ^id = delete_context()
+    id = delete_context()
     Tracer.finish(id, opts)
   end
 
@@ -192,7 +191,7 @@ defmodule Tapper.Ctx do
     !!Process.get(__MODULE__, false)
   end
 
-  @doc "delete the in-context `Tapper.Id` (for testing)"
+  @doc "delete the in-context `Tapper.Id`"
   def delete_context do
     Process.delete(__MODULE__)
   end
