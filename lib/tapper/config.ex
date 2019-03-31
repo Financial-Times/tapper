@@ -16,6 +16,7 @@ defmodule Tapper.Config do
     ip
   end
 
+  @deprecated "Unused: will be removed in a future version."
   def to_atom(val) when is_atom(val), do: val
   def to_atom(val = "Elixir." <> _rest) when is_binary(val), do: String.to_atom(val)
   def to_atom(val = <<c::utf8, _rest::binary>>) when is_binary(val) and c >= ?a and c <= ?z, do: String.to_atom(val)
