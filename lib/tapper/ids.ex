@@ -143,7 +143,7 @@ defmodule Tapper.TraceId do
   @doc "generate a trace id"
   @spec generate() :: t
   def generate() do
-    <<c1, c2, c3, c4, c5, c6, c7, c8, c9 ,c10, c11, c12, c13, c14, c15, c16, _ :: bits>> = :crypto.strong_rand_bytes(16)
+    <<c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, _ :: bits>> = :crypto.strong_rand_bytes(16)
     <<
       hex(c1)::bytes-size(2),
       hex(c2)::bytes-size(2),
