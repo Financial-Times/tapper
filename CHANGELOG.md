@@ -1,6 +1,7 @@
 v0.6.0
-* Trace and span ids are now treated as a hex string (binary) throughout:
-  * avoids multiple places where previous representation converted to hex string, e.g. in logging, propagation and reporting.
+* Trace and span ids are now treated as hex strings (binaries) throughout:
+  * avoids multiple places where previous representation was converted from integer to hex string, e.g. in logging, propagation and reporting.
+* Trace context encoding and decoding vastly optimised over previous benchmark (60% faster decoding, 40% faster encoding).
 
 v0.5.0
 * Use [`Jason`](https://github.com/michalmuskala/jason) as default JSON encoder, remove `Poison`. 

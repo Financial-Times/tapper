@@ -112,8 +112,8 @@ child span, with destructuring                     53.68 K       18.63 μs    ±
 
 ### Results for Tapper 0.6.0
 
-Late March 2019
-commit: 8e28e74710faa0730f8c8fb57993a5d8ccb7ffe2
+April 2019
+commit: 1aa4884648fd6cc826a90912e94318809719d39b
 
 Tapper now keeps the trace ids as binaries, rather than integers. This means that any decoding or 
 encoding of trace headers doesn't need to convert an integer to/from hex format every time, which 
@@ -138,23 +138,23 @@ Erlang 21.2.4
 
 ##### With input sampled #####
 Name                                                   ips        average  deviation         median         99th %
-decode_trace_headers                              529.22 K        1.89 μs  ±1439.96%        1.97 μs        3.97 μs
-start, finish                                      16.02 K       62.43 μs    ±32.56%       55.97 μs      135.97 μs
-child span                                         13.81 K       72.40 μs    ±31.97%       62.97 μs      149.97 μs
-child span, contextual interface                   13.37 K       74.82 μs    ±31.96%       64.97 μs      156.97 μs
-child span with some annotations                   15.69 K       63.72 μs    ±34.56%       57.97 μs      160.97 μs
-child span with some annotations, via update       15.22 K       65.69 μs    ±29.15%       59.97 μs      144.97 μs
-child span, with destructuring                     13.64 K       73.31 μs    ±30.72%       63.97 μs      148.97 μs
+decode_trace_headers                              535.67 K        1.87 μs  ±1556.89%        1.90 μs        3.90 μs
+start, finish                                      15.92 K       62.80 μs    ±31.60%       57.90 μs      136.90 μs
+child span                                         14.45 K       69.22 μs    ±33.90%       59.90 μs      149.90 μs
+child span, contextual interface                   14.05 K       71.15 μs    ±32.57%       60.90 μs      153.90 μs
+child span with some annotations                   16.31 K       61.31 μs    ±31.21%       56.90 μs      142.90 μs
+child span with some annotations, via update       15.04 K       66.49 μs    ±31.12%       60.90 μs      149.90 μs
+child span, with destructuring                     14.18 K       70.54 μs    ±33.18%       60.90 μs      151.90 μs
 
 ##### With input unsampled #####
 Name                                                   ips        average  deviation         median         99th %
-decode_trace_headers                              533.58 K        1.87 μs  ±1500.12%        1.97 μs        3.97 μs
-start, finish                                     211.20 K        4.73 μs   ±400.76%        3.97 μs       10.97 μs
-child span                                        203.86 K        4.91 μs   ±410.36%        3.97 μs       10.97 μs
-child span, contextual interface                  181.08 K        5.52 μs   ±158.93%        4.97 μs       12.97 μs
-child span with some annotations                  163.21 K        6.13 μs   ±212.32%        4.97 μs       12.97 μs
-child span with some annotations, via update      176.83 K        5.66 μs   ±307.06%        4.97 μs       12.97 μs
-child span, with destructuring                    193.98 K        5.16 μs   ±362.21%        4.97 μs       11.97 μs
+decode_trace_headers                              544.80 K        1.84 μs   ±996.76%        1.90 μs        3.90 μs
+start, finish                                     206.53 K        4.84 μs   ±426.57%        3.90 μs       10.90 μs
+child span                                        196.10 K        5.10 μs   ±392.41%        4.90 μs       11.90 μs
+child span, contextual interface                  174.98 K        5.72 μs   ±306.46%        4.90 μs       12.90 μs
+child span with some annotations                  171.34 K        5.84 μs   ±396.31%        4.90 μs       12.90 μs
+child span with some annotations, via update      167.21 K        5.98 μs   ±364.75%        4.90 μs       13.90 μs
+child span, with destructuring                    179.33 K        5.58 μs   ±270.04%        4.90 μs       11.90 μs
 ```
 
 ## Some Performance Tips

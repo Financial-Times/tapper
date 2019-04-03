@@ -161,7 +161,7 @@ For release versions, the package can be installed by adding `tapper` to your li
 
 ```elixir
 def deps do
-  [{:tapper, "~> 0.5"}]
+  [{:tapper, "~> 0.6"}]
 end
 ```
 

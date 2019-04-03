@@ -3,12 +3,12 @@ defmodule Tapper.Mixfile do
 
   def project do
     [app: :tapper,
-     version: "0.5.0",
+     version: "0.6.0",
      elixir: "~> 1.6",
      elixirc_paths: elixirc_paths(Mix.env),
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
-     aliases: [bench: "run benchmarking/tapper_bench.exs", hex_bench: "run benchmarking/tapper_hex_bench.exs"],
+     aliases: [bench: "run benchmarking/tapper_bench.exs"],
      name: "Tapper",
      source_url: "https://github.com/Financial-Times/tapper",
      description: description(),
