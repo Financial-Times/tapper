@@ -16,14 +16,15 @@ defmodule Tapper.Id do
     parent_ids: [],          # stack of child spans
     sample: false,           # incoming trace sampled flag, or sample decision
     debug: false,            # incoming trace debug flag, or debug option
-    sampled: false           # i.e. sample || debug
+    sampled: false,          # i.e. sample || debug
+    k: nil
   ]
 
   alias Tapper.TraceId
   alias Tapper.SpanId
 
   @typedoc false
-  @type t :: %__MODULE__{trace_id: Tapper.TraceId.t, span_id: Tapper.SpanId.t, parent_ids: [Tapper.SpanId.t], sampled: boolean(), origin_parent_id: Tapper.SpanId.t | :root, sample: boolean(), debug: boolean()} | :ignore
+  @type t :: %__MODULE__{trace_id: Tapper.TraceId.t, span_id: Tapper.SpanId.t, parent_ids: [Tapper.SpanId.t], sampled: boolean(), origin_parent_id: Tapper.SpanId.t | :root, sample: boolean(), debug: boolean(), k: integer()} | :ignore
 
   @doc "Create id from trace context"
   @spec init(trace_id :: TraceId.t, span_id :: SpanId.t, parent_span_id :: SpanId.t | :root, sample :: boolean, debug :: boolean) :: t
@@ -35,7 +36,8 @@ defmodule Tapper.Id do
       parent_ids: [],
       sample: sample,
       debug: debug,
-      sampled: sample || debug
+      sampled: sample || debug,
+      k: :erlang.unique_integer()
     }
   end
 
@@ -88,7 +90,8 @@ defmodule Tapper.Id do
       origin_parent_id: parent_span_id,
       sample: true,
       debug: false,
-      sampled: true
+      sampled: true,
+      k: :erlang.unique_integer()
     }
   end
 

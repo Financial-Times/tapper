@@ -9,11 +9,10 @@ defmodule Tracer.Server.InitTest do
 
   test "init, no options" do
     config = config()
-    trace_id = Tapper.TraceId.generate()
-    span_id = Tapper.SpanId.generate()
+    id = %{trace_id: trace_id, span_id: span_id} = Tapper.Id.test_id()
     timestamp = Timestamp.instant()
 
-    {:ok, trace, ttl} = Tapper.Tracer.Server.init([config, {trace_id, span_id, :root, true, false, false}, self(), timestamp, []])
+    {:ok, trace, ttl} = Tapper.Tracer.Server.init([config, id, false, self(), timestamp, []])
 
     assert trace.trace_id == trace_id
     assert trace.span_id == span_id
@@ -56,11 +55,10 @@ defmodule Tracer.Server.InitTest do
     ttl = :rand.uniform(1000)
 
     config = config()
-    trace_id = Tapper.TraceId.generate()
-    span_id = Tapper.SpanId.generate()
+    id = Tapper.Id.test_id()
     timestamp = Timestamp.instant()
 
-    {:ok, trace, ^ttl} = Tapper.Tracer.Server.init([config, {trace_id, span_id, :root, true, false, false}, self(), timestamp, [ttl: ttl]])
+    {:ok, trace, ^ttl} = Tapper.Tracer.Server.init([config, id, false, self(), timestamp, [ttl: ttl]])
 
     assert trace.ttl == ttl
   end

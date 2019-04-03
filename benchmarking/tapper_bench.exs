@@ -73,7 +73,7 @@ end
 raw_trace_id = "ba50b795b208fffbb3724d69ddc34e56"
 raw_span_id = "b4f20245e9a2a297"
 
-decode_trace_headers = fn(opts) ->
+decode_trace_headers = fn(_opts) ->
   {:ok, _} = Tapper.TraceId.parse(raw_trace_id)
   {:ok, _} = Tapper.SpanId.parse(raw_span_id)
 end

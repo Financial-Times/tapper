@@ -63,9 +63,7 @@ defmodule Tapper.Tracer do
 
     # don't even start tracer if sampled is false
     if id.sampled do
-      trace_init = {trace_id, span_id, :root, sample, debug, false}
-
-      {:ok, _pid} = Tapper.Tracer.Supervisor.start_tracer(trace_init, timestamp, opts)
+      {:ok, _pid} = Tapper.Tracer.Supervisor.start_tracer(id, false, timestamp, opts)
     end
 
     # Logger.metadata(trace_id: %Tapper.TraceId{value: trace_id})
@@ -112,6 +110,8 @@ defmodule Tapper.Tracer do
   * `type` determines the type of an automatically created `sr` (`:server`) or `cs` (`:client`) annotation, see also `Tapper.client_send/0` and `Tapper.server_receive/0`.
   """
   def join(trace_id, span_id, parent_id, sample, debug, opts \\ []), do: join({trace_id, span_id, parent_id, sample, debug}, opts)
+  @spec join({binary(), binary(), :root | binary(), boolean(), boolean()}, keyword()) ::
+          Tapper.Id.t()
   def join({trace_id, span_id, parent_id, sample, debug}, opts \\ []) when is_list(opts) do
 
     timestamp = Timestamp.instant()
@@ -121,10 +121,8 @@ defmodule Tapper.Tracer do
 
     id = Tapper.Id.init(trace_id, span_id, parent_id, sample, debug)
 
-    trace_init = {trace_id, span_id, parent_id, sample, debug, true}
-
     if id.sampled do
-      {:ok, _pid} = Tapper.Tracer.Supervisor.start_tracer(trace_init, timestamp, opts)
+      {:ok, _pid} = Tapper.Tracer.Supervisor.start_tracer(id, true, timestamp, opts)
     end
 
     # Logger.metadata(trace_id: %Tapper.TraceId{value: trace_id})
@@ -368,10 +366,10 @@ defmodule Tapper.Tracer do
   end
 
   @doc false
+  def whereis(id)
   def whereis(:ignore), do: []
-  def whereis(%Tapper.Id{trace_id: trace_id}), do: whereis(trace_id)
-  def whereis(trace_id) do
-    Registry.lookup(Tapper.Tracers, trace_id)
+  def whereis(%Tapper.Id{k: k}) do
+    Registry.lookup(Tapper.Tracers, k)
   end
 
   @doc false

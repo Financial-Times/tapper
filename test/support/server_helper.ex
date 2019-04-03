@@ -30,12 +30,12 @@ defmodule Test.Helper.Server do
   # initialise a Tapper.Tracer.Server outside of GenServer, in sample mode, passing `opts`
   def init_with_opts(opts \\ []) do
     config = opts[:config] || config()
-    trace_id = Tapper.TraceId.generate()
-    span_id = Tapper.SpanId.generate()
+    id = %{span_id: span_id} = Tapper.Id.test_id()
     timestamp = Timestamp.instant()
+
     shared = opts[:shared] || false
 
-    {:ok, trace, _ttl} = Tapper.Tracer.Server.init([config, {trace_id, span_id, :root, true, false, shared}, self(), timestamp, opts])
+    {:ok, trace, _ttl} = Tapper.Tracer.Server.init([config, id, shared, self(), timestamp, opts])
     {trace, span_id}
   end
 

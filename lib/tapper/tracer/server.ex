@@ -18,7 +18,8 @@ defmodule Tapper.Tracer.Server do
 
   ## Arguments
   * `config` - worker config from `Tapper.Tracer.Supervisor` worker spec.
-  * `trace_init` - trace parameters (trace_id, span_id, etc.)
+  * `id` - `%Tapper.Id{}`
+  * `shared` - whether we originated the trace (`false`), or if we joined it (`true`); see `Tapper.Tracer.Trace.Convert.span_duration/2`.
   * `pid` - pid of process that called `Tapper.start/1` or `Tapper.join/6`.
   * `timestamp` (`Tapper.Timestamp.t`) - timestamp of trace receive/start event.
   * `opts` - options which were passed to start or join, see `Tapper.Tracer.Server.init/1`.
@@ -28,16 +29,15 @@ defmodule Tapper.Tracer.Server do
   ## See also
   * `init/1`.
   """
-  def start_link(config, trace_init = {trace_id, _span_id, _parent_id, _sample, _debug, _shared}, pid, timestamp, opts) do
-    debug(config, fn -> inspect {"Tracer: start_link", trace_init} end)
+  def start_link(config, id, shared, pid, timestamp, opts) do
+    debug(config, fn -> inspect {"Tracer: start_link", id} end)
 
-    GenServer.start_link(Tapper.Tracer.Server, [config, trace_init, pid, timestamp, opts], name: via_tuple(trace_id)) # calls Tapper.Tracer.Server.init/1
+    GenServer.start_link(Tapper.Tracer.Server, [config, id, shared, pid, timestamp, opts], name: via_tuple(id)) # calls Tapper.Tracer.Server.init/1
   end
 
   @doc "locate the server via the `Tapper.Id`."
-  def via_tuple(%Tapper.Id{trace_id: trace_id}), do: via_tuple(trace_id)
-  def via_tuple(trace_id) do
-    {:via, Registry, {Tapper.Tracers, trace_id}}
+  def via_tuple(%Tapper.Id{k: k}) do
+    {:via, Registry, {Tapper.Tracers, k}}
   end
 
   @doc """
@@ -45,7 +45,8 @@ defmodule Tapper.Tracer.Server do
 
   ## Arguments (as list)
   * `config` - worker config from Tapper.Tracer.Supervisor's worker spec.
-  * `trace_init` - trace parameters i.e. `{trace_id, span_id, parent_span_id, sample, debug, shared}`
+  * `id` - `%Tapper.Id{}`
+  * `shared` - whether we originated the trace (`false`), or if we joined it (`true`).
   * `pid` - pid of process that called `Tapper.start/1` or `Tapper.join/6`.
   * `timestamp` (`Tapper.Timestamp.t`) - timestamp of trace receive/start event.
   * `opts` - options passed to start or join, see below.
@@ -61,8 +62,10 @@ defmodule Tapper.Tracer.Server do
 
   NB passed the list of arguments supplied by `Tapper.Tracer.Server.start_link/5` via `Tapper.Tracer.Supervisor.start_tracer/3`.
   """
-  def init([config, trace_init = {trace_id, span_id, parent_id, sample, debug, shared}, _pid, timestamp, opts]) do
-    debug(config, fn -> inspect {"Tracer: started tracer", trace_init} end)
+  def init([config, id, shared, _pid, timestamp, opts]) do
+    debug(config, fn -> inspect {"Tracer: started tracer", id} end)
+
+    %{trace_id: trace_id, span_id: span_id, origin_parent_id: parent_id, sample: sample, debug: debug} = id
 
     server_trace(config, fn -> "Start Trace #{Tapper.TraceId.format(trace_id)}" end)
 
