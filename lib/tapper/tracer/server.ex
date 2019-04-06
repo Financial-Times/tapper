@@ -60,7 +60,7 @@ defmodule Tapper.Tracer.Server do
   * `ttl` (integer, ms) - set the no-activity time-out for this trace in milliseconds; defaults to 30,000 ms.
   * `reporter` (module atom or function) - override the configured reporter for this trace; useful for testing.
 
-  NB passed the list of arguments supplied by `Tapper.Tracer.Server.start_link/5` via `Tapper.Tracer.Supervisor.start_tracer/3`.
+  NB passed the list of arguments supplied by `Tapper.Tracer.Server.start_link/6` via `Tapper.Tracer.Supervisor.start_tracer/4`.
   """
   def init([config, id, shared, _pid, timestamp, opts]) do
     debug(config, fn -> inspect {"Tracer: started tracer", id} end)
@@ -174,7 +174,7 @@ defmodule Tapper.Tracer.Server do
 
   ## See also
   * `Tapper.start/1` and `Tapper.join/6` - setting the TTL for a trace using the `ttl` option.
-  * `Tapper.finish/2` and `Tapper.async/1` - declaring a trace or span asynchronous.
+  * `Tapper.finish/2` and `Tapper.async/0` - declaring a trace or span asynchronous.
   * `Tapper.Tracer.Timeout` - timeout behaviour.
   """
   def handle_info(:timeout, trace = %Trace{}) do
