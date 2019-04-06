@@ -25,10 +25,11 @@ id = Tapper.start(name: "fetch", sample: true, remote: service_host, annotations
   Tapper.http_host("my.server.co.uk"),
   Tapper.http_path("/index"),
   Tapper.http_method("GET"),
-  Tapper.tag("some-key", "some-value")
+  Tapper.tag("some-key", "some-value"),
+  Tapper.client_send()
 ])
 
-# ... do call ...
+# ... do remote call ...
 
 # add response details to span
 Tapper.update_span(id, [
@@ -54,7 +55,11 @@ id = Tapper.join(trace_id, span_id, parent_span_id, sample, debug, annotations: 
   Tapper.http_path(conn.request_path)
 ])
 
-# call another service in a child span
+# NB because the server joined the trace, rather than starting it, 
+# it must always start child spans for tracing anything it does, 
+# rather than using the incoming span
+
+# call another service in a child span, now as a client
 id = Tapper.start_span(id, name: "fetch-details", annotations: [
     Tapper.http_path("/service/xx"),
     Tapper.http_host("a-service.com")
@@ -62,7 +67,7 @@ id = Tapper.start_span(id, name: "fetch-details", annotations: [
 # ...
 Tapper.update_span(id, Tapper.client_send())
 
-# ... call service
+# ... call service ...
 
 Tapper.update_span(id, Tapper.client_receive())
 
@@ -75,11 +80,11 @@ id = Tapper.finish_span(id, annotations: [
 # perform some expensive local processing in a named local span:
 id = Tapper.start_span(id, name: "process", local: "compute-result") # adds 'lc' binary annotation
 
-# ... do processing
+# ... do processing ...
 
 id = Tapper.finish_span(id)
 
-# ... send response
+# ... send response to client ...
 
 # finish trace as far as this process is concerned
 Tapper.finish(id, annotations: Tapper.server_send())
@@ -143,9 +148,10 @@ If the API client starts spans in, or around, asynchronous processes, and exits 
 
 The API client is not effected by the termination, normally or otherwise, of a trace-server, and the trace-server is likewise isolated from the API client, i.e. there is a separate supervision tree. Thus if the API client crashes, then the span can still be reported. The trace-server monitors the API client process for abnormal termination, and annotates the trace with an error (TODO). If the trace-server crashes, any child spans and annotations registered with the server will be lost, but subsequent spans and the trace itself will be reported, since the supervisor will re-start the trace-server using the initial data from `Tapper.start/1` or `Tapper.join/6`.
 
-Trace ids have an additional, unique, identifier, so if a server receives parallel requests within the same client span, the traces are recorded separately: each will start their own trace-server.
+The id returned from the Tapper API tracks the trace id, enabling messages to be sent to the right server, and span nesting, to ensure annotations are added to the correct span.
 
-The id returned from the API simply tracks the trace id, enabling messages to be sent to the right server, and span nesting, to ensure annotations are added to the correct span.
+Tapper ids have an additional, unique, identifier, so if a server receives parallel requests within the same client span, the traces are recorded separately: each will start their own trace-server. In practice this should not happen, since clients should use a separate span
+for each remote call, however this protects against unconformant clients.
 
 ## Installation
 
