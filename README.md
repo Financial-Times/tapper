@@ -196,7 +196,7 @@ The Zipkin reporter (`Tapper.Reporter.Zipkin`) has its own configuration:
 
 | attribute | description |
 | --------- | ----------- |
-| `collector_url` | full URL of Zipkin server api for reeiving spans |
+| `collector_url` | full URL of Zipkin server api for receiving spans |
 | `client_opts` | additional options for `HTTPoison` client, see `HTTPoison.Base.request/5` |
 
 e.g. in `config.exs` (or `prod.exs` etc.)
