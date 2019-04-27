@@ -249,8 +249,16 @@ Will output something like:
 Note that `trace_id` metadata is added regardless of whether the trace is sampled, so when you propagate the trace context for 
 unsampled traces, you can still at least see the trace id in the logs, and track it across your system, which may be useful!
 
+## Erlang and Time
+
+It is recommended that you run the Erlang VM in [multi-time-warp mode](http://erlang.org/doc/apps/erts/time_correction.html#multi-time-warp-mode) for greater timing accuracy. This is achieved by setting the [`+C multi_time_warp`](http://erlang.org/doc/man/erl.html#+C_) command line option, e.g. by using the `ERL_FLAGS` environment var or `erl_opts` in your [Distillary release](https://hexdocs.pm/distillery/config/runtime.html#option-1-erl_opts).
+
+The default time mode (`no_time_warp`) works well enough, but may introduce an error of up to 1% in time stamp and time duration measurements, due to the way it keeps the Erlang monotonic clock in sync with the system clock.
+
 ## Why 'Tapper'?
 
 Dapper (Dutch - original Google paper) - Brave (English - Java client library) - Tapper (Swedish - Elixir client library)
 
-Because Erlang, Ericsson 🇸🇪.
+Because Erlang, Ericsson 🇸🇪. 
+
+*RIP Joe Armstrong - a glorious exception to the rule that you should never meet your heros.*
