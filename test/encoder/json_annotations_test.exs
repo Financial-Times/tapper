@@ -13,7 +13,7 @@ defmodule JsonAnnotationsTest do
     }
 
     assert %{
-             value: :cs,
+             value: "cs",
              timestamp: 1001,
              endpoint: %{
                serviceName: "a-service",
@@ -34,7 +34,7 @@ defmodule JsonAnnotationsTest do
     }
 
     assert %{
-             value: :cs,
+             value: "cs",
              timestamp: 1001,
              endpoint: %{
                serviceName: "a-service",
@@ -55,31 +55,27 @@ defmodule JsonAnnotationsTest do
 
   test "encode binary annotation value" do
     assert Tapper.Encoder.Json.encode_binary_annotation_value(:string, "a string") == "a string"
+    assert Tapper.Encoder.Json.encode_binary_annotation_value(:string, nil) == ""
+
     assert Tapper.Encoder.Json.encode_binary_annotation_value(:bool, true) == true
     assert Tapper.Encoder.Json.encode_binary_annotation_value(:bool, false) == false
+    assert Tapper.Encoder.Json.encode_binary_annotation_value(:bool, "false") == true
+    assert Tapper.Encoder.Json.encode_binary_annotation_value(:bool, nil) == false
 
-    assert Tapper.Encoder.Json.encode_binary_annotation_value(:i16, 32_767) == 32_767
+    assert Tapper.Encoder.Json.encode_binary_annotation_value(:double, 32_767) == "32767"
+    assert Tapper.Encoder.Json.encode_binary_annotation_value(:double, 32767.9) == to_string(32767.9)
 
-    assert_raise ArgumentError, fn ->
-      Tapper.Encoder.Json.encode_binary_annotation_value(:i16, 32_768)
-    end
+    assert Tapper.Encoder.Json.encode_binary_annotation_value(:i16, 32_767) == "32767"
+
 
     assert Tapper.Encoder.Json.encode_binary_annotation_value(:i32, 4_294_967_295) ==
-             4_294_967_295
-
-    assert_raise ArgumentError, fn ->
-      Tapper.Encoder.Json.encode_binary_annotation_value(:i32, 4_294_967_296)
-    end
+             "4294967295"
 
     assert Tapper.Encoder.Json.encode_binary_annotation_value(:i64, 9_007_199_254_740_991) ==
-             9_007_199_254_740_991
+             "9007199254740991"
 
     assert Tapper.Encoder.Json.encode_binary_annotation_value(:i64, 9_007_199_254_740_992) ==
              "9007199254740992"
-
-    assert_raise ArgumentError, fn ->
-      Tapper.Encoder.Json.encode_binary_annotation_value(:i64, 1.8_446_744_073_709_552e19)
-    end
 
     assert Tapper.Encoder.Json.encode_binary_annotation_value(:bytes, <<1, 2, 3, 4>>) ==
              Base.encode64(<<1, 2, 3, 4>>)
@@ -112,6 +108,6 @@ defmodule JsonAnnotationsTest do
         host: host
       })
 
-    assert as_i16 == %{key: "key_for_i16", value: 1024, type: "I16", endpoint: endpoint}
+    assert as_i16 == %{key: "key_for_i16", value: "1024", type: "I16", endpoint: endpoint}
   end
 end
