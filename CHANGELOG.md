@@ -1,3 +1,6 @@
+v0.6.1
+* DEFECT #19: The `value` field of v1 binary annotations must always be encoded as a JSON string or boolean, and no other type. (HT @chad-g-adams & @adriancole).
+
 v0.6.0
 * Trace and span ids are now treated as hex strings (binaries) throughout:
   * avoids multiple places where previous representation was converted from integer to hex string, e.g. in logging, propagation and reporting.
