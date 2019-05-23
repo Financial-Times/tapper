@@ -145,6 +145,23 @@ defmodule Tapper.TraceId do
 
   @doc "generate a trace id"
   @spec generate() :: t
+  def generate()
+
+if Application.get_env(:tapper, :trace_id_64_bit, false) do
+  def generate() do
+    <<c1, c2, c3, c4, c5, c6, c7, c8, _ :: bits>> = :crypto.strong_rand_bytes(8)
+    <<
+      hex(c1)::bytes-size(2),
+      hex(c2)::bytes-size(2),
+      hex(c3)::bytes-size(2),
+      hex(c4)::bytes-size(2),
+      hex(c5)::bytes-size(2),
+      hex(c6)::bytes-size(2),
+      hex(c7)::bytes-size(2),
+      hex(c8)::bytes-size(2),
+  >>
+  end
+else
   def generate() do
     <<c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, _ :: bits>> = :crypto.strong_rand_bytes(16)
     <<
@@ -166,6 +183,7 @@ defmodule Tapper.TraceId do
       hex(c16)::bytes-size(2)
   >>
   end
+end
 
   @doc "format a trace id for logs etc."
   @spec format(trace_id :: t) :: String.t
