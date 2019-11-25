@@ -388,7 +388,7 @@ defmodule Tapper.Tracer do
   | :wire_send | `ws` |
   | :wire_recv | `wr` |
   """
-  def map_annotation_type(type) when is_atom(type) do
+  def map_annotation_type(type) when is_atom(type) or is_binary(type) do
     case type do
       :client_send -> :cs
       :client_recv -> :cr

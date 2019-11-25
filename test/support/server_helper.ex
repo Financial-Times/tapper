@@ -99,7 +99,7 @@ defmodule Test.Helper.Server do
     {:update, span_id, timestamp, [Tracer.annotation_delta(value, endpoint)]}
   end
 
-  def annotation_update_message(span_id, timestamp, value) when is_atom(value) do
+  def annotation_update_message(span_id, timestamp, value) do
     {:update, span_id, timestamp, [value]}
   end
 

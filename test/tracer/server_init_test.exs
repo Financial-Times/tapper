@@ -183,6 +183,16 @@ defmodule Tracer.Server.InitTest do
     assert binary_annotation_by_key(trace.spans[span_id], "temp")
   end
 
+  test "init with string annotations adds annotations" do
+    {trace, span_id} = init_with_opts(name: "name", annotations: [
+      Tracer.annotation_delta("something"),
+      Tracer.binary_annotation_delta(:double, "temp", 69.2)
+    ])
+
+    assert annotation_by_value(trace.spans[span_id], "something")
+    assert binary_annotation_by_key(trace.spans[span_id], "temp")
+  end
+
   test "init with non-list annotations: adds annotation" do
     {trace, span_id} = init_with_opts(name: "name", annotations: Tracer.annotation_delta(:ws))
 

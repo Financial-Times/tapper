@@ -10,7 +10,7 @@ defmodule Tapper.Tracer.Annotations do
 
   @spec annotation(value :: atom() | String.t, timestamp :: Timestamp.t, Tapper.Endpoint.t) :: Trace.Annotation.t
   def annotation(value, timestamp, endpoint)
-  def annotation(value, timestamp, endpoint = %Tapper.Endpoint{}) when is_atom(value) and is_tuple(timestamp) do
+  def annotation(value, timestamp, endpoint = %Tapper.Endpoint{}) when (is_atom(value) or is_binary(value)) and is_tuple(timestamp) do
     Trace.Annotation.new(value, timestamp, endpoint)
   end
 
