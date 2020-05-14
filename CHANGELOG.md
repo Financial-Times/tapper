@@ -1,3 +1,7 @@
+v0.6.2
+* Produce correct logger metadata when running under Elixir 1.10+
+  * DEFECT logger metadata wasn't cleaned up when finishing unsampled traces.
+
 v0.6.1
 * DEFECT #19: The `value` field of v1 binary annotations must always be encoded as a JSON string or boolean, and no other type. (HT @chad-g-adams & @adriancole).
 
