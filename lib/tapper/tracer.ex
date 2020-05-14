@@ -132,27 +132,46 @@ defmodule Tapper.Tracer do
   end
 
   # roll our own Logger.metadata since generic fn is too slow; this is 2x
-  defp metadata(trace_id) do
-    trace_meta = {:trace_id, %Tapper.TraceId{value: trace_id}}
-    case :erlang.get(:logger_metadata) do
-      :undefined -> :erlang.put(:logger_metadata, {true, [trace_meta]})
-      {enabled, metadata} ->
-        :erlang.put(:logger_metadata, {
-          enabled,
-          :lists.keystore(:trace_id, 1, metadata, trace_meta)
-        })
-    end
-  end
+  if Version.match?(System.version(), ">= 1.10.0") do
+    defp metadata(trace_id) do
+      case :logger.get_process_metadata() do
+        :undefined ->
+          :logger.set_process_metadata(%{trace_id: trace_id})
 
-  defp remove_metadata do
-    case :erlang.get(:logger_metadata) do
-      :undefined -> :ok
-      {enabled, metadata} ->
-        :erlang.put(:logger_metadata, {
-          enabled,
-          :lists.keydelete(:trace_id, 1, metadata)
-        })
-        :ok
+        map when is_map(map) ->
+          :ok = :logger.set_process_metadata(Map.put(map, :trace_id, trace_id))
+      end
+    end
+    defp remove_metadata do
+      case :logger.get_process_metadata() do
+        :undefined -> :ok
+        map when is_map(map) ->
+          :ok = :logger.set_process_metadata(Map.delete(map, :trace_id))
+      end
+    end
+  else
+    defp metadata(trace_id) do
+      trace_meta = {:trace_id, %Tapper.TraceId{value: trace_id}}
+      case :erlang.get(:logger_metadata) do
+        :undefined -> :erlang.put(:logger_metadata, {true, [trace_meta]})
+        {enabled, metadata} ->
+          :erlang.put(:logger_metadata, {
+            enabled,
+            :lists.keystore(:trace_id, 1, metadata, trace_meta)
+          })
+      end
+    end
+
+    defp remove_metadata do
+      case :erlang.get(:logger_metadata) do
+        :undefined -> :ok
+        {enabled, metadata} ->
+          :erlang.put(:logger_metadata, {
+            enabled,
+            :lists.keydelete(:trace_id, 1, metadata)
+          })
+          :ok
+      end
     end
   end
 
@@ -215,7 +234,7 @@ defmodule Tapper.Tracer do
   * `Tapper.async/0` annotation.
   """
   def finish(id, opts \\ [])
-  def finish(%Tapper.Id{sampled: false}, _opts), do: :ok
+  def finish(%Tapper.Id{sampled: false}, _opts), do: remove_metadata()
   def finish(id = %Tapper.Id{}, opts) when is_list(opts) do
     end_timestamp = Timestamp.instant()
 
