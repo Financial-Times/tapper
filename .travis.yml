@@ -1,9 +1,17 @@
 language: elixir
 elixir:
     - '1.6'
-    - '1.7'
-    - '1.8'
-    - '1.10'
+jobs:
+  include:
+    - elixir: '1.7'
+      otp_release: '19.0'
+    - elixir: '1.8'
+      otp_release: '20.0'
+    - elixir: '1.9'
+      otp_release: '21.0'
+    - elixir: '1.10'
+      otp_release: '22.0'
+
 after_script:
   - cd $TRAVIS_BUILD_DIR
   - mix deps.get --only docs
