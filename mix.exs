@@ -62,11 +62,11 @@ defmodule Tapper.Mixfile do
       {:jason, "~> 1.1"},
       {:httpoison, "~> 0.12 or ~> 1.0"},
       {:deferred_config, "~> 0.1"},
-      {:credo, "~> 1.0", only: [:dev, :test]},
+      {:credo, ">= 1.0.0", only: [:dev, :test]},
       {:benchee, "~> 0.1", only: :bench},
-      {:mix_test_watch, "~> 0.3", only: :dev, runtime: false},
-      {:ex_doc, "~> 0.14", only: :dev, runtime: false},
-      {:dialyxir, "~> 0.5", only: [:dev]},
+      {:mix_test_watch, ">= 0.3.0", only: :dev, runtime: false},
+      {:ex_doc, ">= 0.14.0", only: :dev, runtime: false},
+      {:dialyxir, ">= 0.5.0", only: [:dev]},
       {:inch_ex, ">= 0.0.0", only: :docs, optional: true}
     ]
   end
