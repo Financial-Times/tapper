@@ -244,7 +244,7 @@ defmodule Tapper.Tracer.Server do
     %{trace | async: true}
   end
 
-  def apply_update(value, trace = %Trace{}, span_id, timestamp, default_endpoint) when is_atom(value) do
+  def apply_update(value, trace = %Trace{}, span_id, timestamp, default_endpoint) when is_atom(value) or is_binary(value) do
     annotation = Annotations.annotation(value, timestamp, default_endpoint)
     update_span(trace, span_id, fn(span) -> %{span | annotations: [annotation | span.annotations]} end)
   end

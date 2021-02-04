@@ -36,13 +36,19 @@ defmodule Tracer.Server.SpanTest do
     {:noreply, state, _ttl} = Tapper.Tracer.Server.handle_cast({:start_span, child_span, []}, trace)
 
     child_end_timestamp = Timestamp.incr(timestamp, 100, :millisecond)
-    {:noreply, state, _ttl} = Tapper.Tracer.Server.handle_cast({:finish_span, child_span.id, child_end_timestamp, annotations: [Tapper.Tracer.annotation_delta(:xx)]}, state)
+    {:noreply, state, _ttl} =
+      Tapper.Tracer.Server.handle_cast({:finish_span, child_span.id, child_end_timestamp,
+        annotations: [
+          Tapper.Tracer.annotation_delta(:xx),
+          Tapper.Tracer.annotation_delta("something")
+        ]}, state)
 
     assert state.spans[child_span.id]
     assert state.spans[child_span.id].start_timestamp == timestamp
     assert state.spans[child_span.id].end_timestamp == child_end_timestamp
     assert state.last_activity == child_end_timestamp
     assert annotation_by_value(state.spans[child_span.id], :xx)
+    assert annotation_by_value(state.spans[child_span.id], "something")
   end
 
   test "start_span with local context option adds lc annotation" do

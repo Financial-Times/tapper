@@ -52,6 +52,24 @@ defmodule Tracer.Server.AnnotationTest do
     } == hd(span.annotations)
   end
 
+  test "add string annotatation" do
+    {trace, span_id} = init_with_opts()
+
+    timestamp = Timestamp.instant()
+    value = "some annotation"
+
+    {:noreply, state, _ttl} =
+        Tapper.Tracer.Server.handle_cast(annotation_update_message(span_id, timestamp, "some annotation"), trace)
+
+    span = state.spans[span_id]
+
+    assert %Trace.Annotation{
+      value: value,
+      timestamp: timestamp,
+      host: Trace.endpoint_from_config(config())
+    } == hd(span.annotations)
+  end
+
   test "handles a single annotatation rather than a list of annotations" do
     {trace, span_id} = init_with_opts()
 
