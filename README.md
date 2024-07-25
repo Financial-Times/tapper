@@ -1,3 +1,5 @@
+# !!! This repository would be changed to private on 30th of September !!!
+
 # Tapper - Zipkin client for Elixir.
 
 Implements an interface for recording traces and sending them to a [Zipkin](http://zipkin.io/) server.
